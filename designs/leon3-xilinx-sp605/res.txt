@@ -1,0 +1,13 @@
+
+SPARTAN6 50 MHz, MIG DDR2, 2x8 + 2x4 cache, GRFPU
+
+			LEON3		LEON3FTV2
+Dhrystone		78.4		78.4
+Whetstone DP		27.7 		27.7
+gzip			43.98 s		41.38 s
+bzip2			248.22 s	200.10 s
+176.gcc			208.62 s	180.48 s
+coremark		100.12 i/s	100.12 i/s
+aocs_v8			12388.7 i/s	12388.7 i/s
+basicmath_large		13245.0 i/s	13245.0 i/s
+linpack_unroll_dp_v8	3265 KFLOPS	3563 KFLOPS

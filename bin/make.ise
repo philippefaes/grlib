@@ -1,0 +1,29 @@
+#######################################################
+# ISE targets for GRLIB2 Template Designs
+# Author: Magnus Sjalander
+# Based on targets from GRLIB's bin/Makefile
+#######################################################
+.PHONY: ise-synp ise-prog-fpga
+ISEDIR = ./work/ise
+VPATH   = $(ISEDIR):./work
+
+ise-synp: synplify
+	@mkdir -p $(ISEDIR)
+	@cd $(ISEDIR) && rm -f $(TOP).ngd $(TOP).ncd 					\
+	 	      && echo edif2ngd ../synplify/$(TOP).edf				\
+		      && edif2ngd ../synplify/$(TOP).edf				\
+		      && echo ngdbuild $(TOP).ngo -aul -uc ../../$(UCF) -p $(DEVICE)	\
+		      && ngdbuild $(TOP).ngo -aul -uc ../../$(UCF) -p $(DEVICE)		\
+		      && echo map -pr b -ol $(EFFORT) -p $(DEVICE) $(TOP) $(ISEMAPOPT)	\
+		      && map -pr b -ol $(EFFORT) -p $(DEVICE) $(TOP) $(ISEMAPOPT) 	\
+		      && echo par -ol $(EFFORT) -pl $(EFFORT) -w $(TOP) $(TOP).ncd	\
+		      && par -ol $(EFFORT) -pl $(EFFORT) -w $(TOP) $(TOP).ncd		\
+		      && echo trce -v 25 $(TOP).ncd $(TOP).pcf				\
+		      && trce -v 25 $(TOP).ncd $(TOP).pcf				\
+		      && echo bitgen $(TOP) -d -m -w -f $(BITGEN)			\
+		      && bitgen $(TOP) -d -m -w -f $(BITGEN)
+
+ise-prog-fpga:
+	cp $(ISEDIR)/$(TOP).bit $(ISEDIR)/$(BOARD).bit
+	cp $(ISEDIR)/$(TOP).msk $(ISEDIR)/$(BOARD).msk
+	cd $(ISEDIR) && impact -batch ../../$(GRLIB2)/boards/$(BOARD)/fpga.cmd

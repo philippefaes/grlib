@@ -1,0 +1,7 @@
+i2c.vhd
+i2cmst.vhd
+i2cmst_gen.vhd
+i2cslv.vhd
+i2c2ahbx.vhd
+i2c2ahb.vhd
+i2c2ahb_apb.vhd

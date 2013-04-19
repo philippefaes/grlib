@@ -1,0 +1,156 @@
+----------------------- Release 1.1.0-b4113 ----------------------------
+
+2012-01-18	Added template design for ZTEX USB-FPGA Module 1.15
+		(leon3-ztex-ufm-115). Renamed leon3-ztex-ufm-xc6slx25 to
+		leon3-ztex-ufm-111.
+
+2012-01-10	Moved I2C and SPI cores to separate directories.
+
+----------------------- Release 1.1.0-b4112 ----------------------------
+
+2012-01-02	Added template design for Xilinx SP605 board
+
+2011-12-29	Added template design for ZTEX USB-FPGA Module 1.11
+		(leon3-ztex-ufm-xc6slx25)
+
+2011-12-28	Added SPI to AHB bridge (SPI2AHB) core
+
+----------------------- Release 1.1.0-b4111 ----------------------------
+
+2011-12-19	Added RGMII interface for GR-XC6S-LX75 board.
+
+2011-11-29	Work-around for Xilinx SecureIP compilation bug
+
+2011-11-29	Added MIG wrapper to a few additional template designs
+
+2011-11-28	Added support for Xilinx ISIM simulator.
+
+2011-11-18	Improved Actel Libero script generation
+
+2011-10-14	MMU system test software: Do not use %local register in leaf
+		function. Could lead to test freeze with GCC 4.4.2.
+
+2011-10-06	DDR2SPA: Added support for registered SDRAM, and read-only
+		tech field to DDR2CFG2 register. Increased core revision to 1
+		in PnP entry.
+
+2011-09-29	SPICTRL: User was allowed to start a new transfer before SCK
+		had transitioned to idle state. If a transfer was started
+		early this could affect the clock phase for CPHA = 0.
+
+2011-09-26	Removed script support for early versions of eTools
+
+2011-09-26	Updated SPICTRL to rev 5 adding SCK filtering in slave mode
+
+2011-09-18	Added "Extending the xconfig GUI configuration" section to
+		GRLIB User's Manual (grlib.pdf).
+
+2011-09-18	Added I2C to AHB bridge (I2C2AHB) core
+
+2011-09-06	AHBCTRL: Update memory map intersection checks and clarify
+		in documentation that the AHB I/O area can be placed within
+		a slave memory area
+
+2011-08-06	Enable 16-bit FLASH interface in leon3-nuhorizon design
+
+2011-07-06	I2CMST: Added option to use dynamic filter
+
+----------------------- Release 1.1.0-b4108 ----------------------------
+
+2011-06-15	Added DDR2 MIG wrapper for template design for 
+		Xilinx SP601 Spartan6 board.
+
+2011-06-13	Added template design for new Pender Spartan-6 board,
+		including a wrapper for Xilinx MIG 16-bit DDR2 controller.
+
+2011-06-13	Added template designs for Xilinx ML605 board, including
+		a wrapper for Xilinx MIG 64-bit DDR3 controller.
+
+2011-06-01	Added template design for Altera DE2 board, including
+		16-bit SDRAM controller.
+
+2011-05-18	SPICTRL: Allow use of SYNCRAM_2P for buffers
+
+2011-04-12	Expanded section "9. Extending GRLIB" of GRLIB User's Manual
+
+2011-03-17	Added AHBTRACE_MMB capable of multi-bus tracing.
+
+2011-01-31	GRFPU-lite netlists for Altera could not be synthesized
+
+2011-01-13	SPICTRL: 3-wire transfer direction order can now be configured
+
+2011-01-09	Added template design for BeMicro SDK (leon3-arrow-bemicro-sdk)
+
+2011-01-04	Hynix DDR2 model, fix spurious error messages in simulation
+
+----------------------- Release 1.1.0-b4105 ----------------------------
+
+2010-11-29	DDR2SPA: Fast acknowlege on read was one cycle too early
+
+2010-11-22	DDR2SPA: Fix data selection for AHB buses wider than 2xDDR
+
+2010-11-17	DDR2SPA: Write mode register correctly based on CAS/TWR settings
+
+2010-11-15	DDR2SPA: Add bigmem generic to enable >1GB RAM bank support
+
+2010-11-16	APBUART: Set number of scaler bits via VHDL generic
+
+2010-11-15	DDR2SPA: Separate reset generation for AHB/DDR clock domains
+
+2010-11-12	GPTIMER: Allow external watchdog enable/disable.
+
+----------------------- Release 1.1.0-b4104 ----------------------------
+
+2010-10-29	Added design for TerASIC Altera Cyclone-IV DE2-115 board
+
+2010-10-29	Improved flow for Quartus-10
+
+2010-10-14	DDR2SPA: Reimplement DDR2 controller to merge all data sizes.
+
+----------------------- Release 1.1.0-b4102 ----------------------------
+
+2010-10-12	Support for Xilinx ISE12 flow.
+
+2010-10-01	Improved generation of Actel Libero project file to avoid
+		large amount of bogus warnings.
+
+2010-09-23	DDR2SPA: Support single-ended DQS for Virtex4-6
+
+2010-09-12	GPTIMER: IP field in timer control register is now write-clear
+
+2010-08-09	GRGPIO: Add generic to specify the first interrupt line the core
+		should drive. Add support to dynamically specify the interrupt
+		line to use for each GPIO line.
+
+2010-06-28	Added Testbench framework for PCI.
+
+2010-06-28	PCI_TARGET: Added support for PCI bus in big-little mode
+		and support for byte and half word PCI accesses. 
+
+2010-06-07      I2CMST/I2CSLV: Added generic that adjusts low-pass filter
+
+2010-05-19      AHBJTAG: Use bit 32 in read data to indicate if AHB access has
+                finished. Increased core version to 1.
+
+2010-05-10      SPICTRL: Extended system test with test that uses an external
+                simulation device. Function now has one additional argument.
+
+2010-05-06      XST: Remove -read_cores yes from XST script generation as yes
+                is the default read_cores setting. This allows specifying 
+                -read_cores yes, no or optimize via the XSTOPT variable.
+
+2010-05-05      FPU: GRFPU and GRFPU-lite netlists in both LEON3 and LEON4 
+                versions are now available for Cyclone2, Cyclone3, Stratix2,
+                Stratix3, Spartan3, Virtex2, Virtex4 and Virtex5.
+
+2010-05-05      FPU: Always use FPU netlists in distributions lacking FPU 
+                source code.
+
+2010-05-05      FPU: Use EDIF netlists for FPU netlist synthesis on Xilinx
+
+2010-03-21      Improved input data filtering in serial DSU link (DCOM_UART).
+
+2010-02-15	Added template design for Xilinx SP601 Spartan6 board
+
+2010-02-01	Support for 64- and 128-bit AHB buses
+

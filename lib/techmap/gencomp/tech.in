@@ -1,0 +1,37 @@
+  choice 'Target technology                           ' \
+	"Inferred		CONFIG_SYN_INFERRED \
+	Altera-Stratix        	CONFIG_SYN_STRATIX \
+	Altera-StratixII      	CONFIG_SYN_STRATIXII \
+	Altera-StratixIII      	CONFIG_SYN_STRATIXIII \
+	Altera-CycloneIII      	CONFIG_SYN_CYCLONEIII \
+	Altera-Others         	CONFIG_SYN_ALTERA \
+	Atmel-ATC18		CONFIG_SYN_ATC18 \
+        Lattice-EC/ECP/XP   	CONFIG_SYN_LATTICE \
+        Quicklogic-Eclipse  	CONFIG_SYN_ECLIPSE \
+	UMC180     		CONFIG_SYN_UMC     \
+	Xilinx-Spartan2		CONFIG_SYN_SPARTAN2 \
+	Xilinx-Spartan3		CONFIG_SYN_SPARTAN3 \
+	Xilinx-Spartan3E	CONFIG_SYN_SPARTAN3E \
+	Xilinx-Spartan6		CONFIG_SYN_SPARTAN6 \
+	Xilinx-Virtex		CONFIG_SYN_VIRTEX \
+	Xilinx-VirtexE		CONFIG_SYN_VIRTEXE \
+	Xilinx-Virtex2		CONFIG_SYN_VIRTEX2 \
+	Xilinx-Virtex4		CONFIG_SYN_VIRTEX4 \
+	Xilinx-Virtex5		CONFIG_SYN_VIRTEX5 \
+	Xilinx-Virtex6		CONFIG_SYN_VIRTEX6  " Inferred
+  if [ "$CONFIG_SYN_INFERRED" = "y" -o "$CONFIG_SYN_CUSTOM1" = "y" \
+       -o "$CONFIG_SYN_ATC18" = "y" -o "$CONFIG_SYN_TSMC90" = "y" \
+       -o "$CONFIG_SYN_UMC" = "y" \
+	-o "$CONFIG_SYN_RHUMC" = "y" -o "$CONFIG_SYN_ARTISAN" = "y"]; then
+    choice 'Memory Library                           ' \
+	"Inferred		CONFIG_MEM_INFERRED \
+	UMC18			CONFIG_MEM_UMC \
+	Virage			CONFIG_MEM_VIRAGE \
+        Virage-TSMC90           CONFIG_MEM_VIRAGE90" Inferred
+  fi
+  if [ "$CONFIG_SYN_INFERRED" != "y" ]; then
+    bool 'Infer RAM' CONFIG_SYN_INFER_RAM
+    bool 'Infer pads' CONFIG_SYN_INFER_PADS
+  fi
+  bool 'Disable asynchronous reset' CONFIG_SYN_NO_ASYNC
+  bool 'Enable scan support       ' CONFIG_SYN_SCAN

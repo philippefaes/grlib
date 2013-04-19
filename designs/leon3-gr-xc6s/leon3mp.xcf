@@ -1,0 +1,17 @@
+
+NET "clk" TNM_NET = "clk";
+TIMESPEC "TS_clk" = PERIOD "clk" 20.00 ns HIGH 50 %;
+
+NET "clk50" TNM_NET = "clk50";
+TIMESPEC "TS_clk50" = PERIOD "clk" 20.00 ns HIGH 50 %;
+
+NET "clk125" TNM_NET = "clk";
+TIMESPEC "TS_clk125" = PERIOD "clk" 8.00 ns HIGH 50 %;
+
+NET "erx_clk" TNM_NET = "clk";
+TIMESPEC "TS_erx_clk" = PERIOD "clk" 8.00 ns HIGH 50 %;
+
+NET usb_clk period = 16.667;
+OFFSET = out : 10.000 : AFTER usb_clk ;
+OFFSET = in : 8.000 : BEFORE usb_clk ;
+

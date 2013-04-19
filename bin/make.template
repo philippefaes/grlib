@@ -1,0 +1,43 @@
+#######################################################
+# GRLIB2 Template Design specific targets
+# Author: Magnus Sjalander
+#######################################################
+.PHONY: clean config
+VPATH  = ./work/
+
+# Get all SYN and SIM files this template design depends on
+-include ./work/file.deps
+
+
+ifeq ("$(XCONFIG)","true")
+CONF-DEP  = cfg/config.vhd.h cfg/.config
+CONF-TOOL = cpp -P -DGRLIB_PATH=$(GRLIB2) ./sw/xconfig/config.vhd.in > ./work/config.vhd 
+else
+CONF-DEP  = cfg/.config.xml
+CONF-TOOL = java -classpath $(GRLIB2)/bin:$(GRLIB2)/bin/config-tool Config writeVHDLconfiguration
+endif
+
+fileset.xml: $(GRLIB2)/work/grlib2.xml
+	@mkdir -p work 
+	@java -classpath $(GRLIB2)/bin:$(GRLIB2)/bin/config-tool Grlib2 $(GRLIB2) $(CFG)
+
+work/config.vhd: $(CONF-DEP)
+	@mkdir -p work
+	@$(CONF-TOOL)
+
+cfg/.config.xml: $(GRLIB2)/work/grlib2.xml
+	@mkdir -p work
+	@java -classpath $(GRLIB2)/bin:$(GRLIB2)/bin/config-tool Config $(GRLIB2) $(CFG)
+
+cfg/config.vhd.h:
+	@make xconfig
+
+config: $(GRLIB2)/work/grlib2.xml
+	@mkdir -p work
+	@java -classpath $(GRLIB2)/bin:$(GRLIB2)/bin/config-tool Config $(GRLIB2) $(CFG)
+	@java -classpath $(GRLIB2)/bin:$(GRLIB2)/bin/config-tool Config writeVHDLconfiguration
+
+clean:
+	@rm -rf work
+
+DEVICE=$(PART)-$(PACKAGE)$(SPEED)

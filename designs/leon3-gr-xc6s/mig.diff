@@ -1,0 +1,35 @@
+diff -Naur mig37/mig_37/user_design/rtl/memc3_infrastructure.vhd /home/jiri/ibm/vhdl/grlib/lib/work/grxc6s/rtl/memc3_infrastructure.vhd
+--- mig37/mig_37/user_design/rtl/memc3_infrastructure.vhd	2011-06-13 16:30:32.000000000 +0200
++++ /home/jiri/ibm/vhdl/grlib/lib/work/grxc6s/rtl/memc3_infrastructure.vhd	2011-05-30 19:02:02.000000000 +0200
+@@ -164,7 +164,8 @@
+       --***********************************************************************
+       -- SINGLE_ENDED input clock input buffers
+       --***********************************************************************
+-      u_ibufg_sys_clk : IBUFG
++--      u_ibufg_sys_clk : IBUFG
++      u_ibufg_sys_clk : BUFG
+         port map (
+           I  => sys_clk,
+           O  => sys_clk_ibufg
+diff -Naur mig37/mig_37/user_design/rtl/mig_37.vhd /home/jiri/ibm/vhdl/grlib/lib/work/grxc6s/rtl/mig_37.vhd
+--- mig37/mig_37/user_design/rtl/mig_37.vhd	2011-06-13 16:30:32.000000000 +0200
++++ /home/jiri/ibm/vhdl/grlib/lib/work/grxc6s/rtl/mig_37.vhd	2011-06-13 16:33:36.000000000 +0200
+@@ -362,7 +362,8 @@
+    constant C3_CLKOUT1_DIVIDE       : integer := 1; 
+    constant C3_CLKOUT2_DIVIDE       : integer := 16; 
+    constant C3_CLKOUT3_DIVIDE       : integer := 8; 
+-   constant C3_CLKFBOUT_MULT        : integer := 2; 
++--   constant C3_CLKFBOUT_MULT        : integer := 2; 
++   constant C3_CLKFBOUT_MULT        : integer := 8; 
+    constant C3_DIVCLK_DIVIDE        : integer := 1; 
+    constant C3_INCLK_PERIOD         : integer := ((C3_MEMCLK_PERIOD * C3_CLKFBOUT_MULT) / (C3_DIVCLK_DIVIDE * C3_CLKOUT0_DIVIDE * 2)); 
+    constant C3_ARB_NUM_TIME_SLOTS   : integer := 12; 
+@@ -429,7 +430,7 @@
+    constant C3_DQ13_TAP_DELAY_VAL   : integer := 0; 
+    constant C3_DQ14_TAP_DELAY_VAL   : integer := 0; 
+    constant C3_DQ15_TAP_DELAY_VAL   : integer := 0; 
+-   constant C3_SMALL_DEVICE         : string := ""; 
++   constant C3_SMALL_DEVICE         : string := "FALSE"; 
+ 
+   signal  c3_sys_clk_p                             : std_logic;
+   signal  c3_sys_clk_n                             : std_logic;

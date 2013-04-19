@@ -1,0 +1,54 @@
+
+mainmenu_option next_comment
+ comment 'LEON3FT processor              '
+  mainmenu_option next_comment
+    comment 'Processor core                                         '
+    bool 'SPARC V8 MUL/DIV instructions' CONFIG_IU_V8MULDIV
+      choice 'Instruction cache size (kbytes)' \
+	"1		CONFIG_ICACHE_SZ1 \
+	2		CONFIG_ICACHE_SZ2 \
+	4		CONFIG_ICACHE_SZ4 \
+	8		CONFIG_ICACHE_SZ8 \
+	16		CONFIG_ICACHE_SZ16 \
+	32		CONFIG_ICACHE_SZ32 \
+	64		CONFIG_ICACHE_SZ64 \
+	128		CONFIG_ICACHE_SZ128 \
+	256		CONFIG_ICACHE_SZ256" 4
+      choice 'Data cache size (kbytes)' \
+	"1		CONFIG_DCACHE_SZ1 \
+	2		CONFIG_DCACHE_SZ2 \
+	4		CONFIG_DCACHE_SZ4 \
+	8		CONFIG_DCACHE_SZ8 \
+	16		CONFIG_DCACHE_SZ16 \
+	32		CONFIG_DCACHE_SZ32 \
+	64		CONFIG_DCACHE_SZ64 \
+	128		CONFIG_DCACHE_SZ128 \
+	256		CONFIG_DCACHE_SZ256" 4
+    bool 'Enable FPU                             ' CONFIG_FPU_ENABLE
+    bool 'Enable MMU       ' CONFIG_MMU_ENABLE
+  endmenu
+
+  mainmenu_option next_comment
+    comment 'Debug Support Unit        '
+    bool 'Enable LEON3 Debug support unit    ' CONFIG_DSU_ENABLE
+    if [ "$CONFIG_DSU_ENABLE" = "y" ]; then
+      bool 'Instruction trace buffer' CONFIG_DSU_ITRACE
+      if [ "$CONFIG_DSU_ITRACE" = "y" ]; then
+        choice 'Instruction trace buffer size (kbytes)' \
+	"2		CONFIG_DSU_ITRACESZ2" 2
+      fi
+      bool 'AHB trace buffer' CONFIG_DSU_ATRACE
+      if [ "$CONFIG_DSU_ATRACE" = "y" ]; then
+        choice 'AHB trace buffer size (kbytes)' \
+	"1		CONFIG_DSU_ATRACESZ1 \
+	2		CONFIG_DSU_ATRACESZ2 \
+	4		CONFIG_DSU_ATRACESZ4 \
+	8		CONFIG_DSU_ATRACESZ8 \
+	16		CONFIG_DSU_ATRACESZ16" 1
+      fi
+    fi
+    bool 'Processor disassembly to console         ' CONFIG_IU_DISAS
+  endmenu
+
+endmenu
+
