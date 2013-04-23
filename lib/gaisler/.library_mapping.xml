@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings xmlns:com.sigasi.hdt.vhdl.scoping.librarymapping.model="com.sigasi.hdt.vhdl.scoping.librarymapping" Version="2">
+  <Mappings Location="" Library="gaisler"/>
+  <Mappings Location="ambatest" Library="not mapped"/>
+  <Mappings Location="can/can_mc.in.vhd" Library="not mapped"/>
+  <Mappings Location="can/can_oc.in.vhd" Library="not mapped"/>
+  <Mappings Location="can/grcan.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddr" Library="not mapped"/>
+  <Mappings Location="ddrv1/ddr2sp.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddrv1/ddrctrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddrv1/ddrsp.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddrv1/mig.in.vhd" Library="not mapped"/>
+  <Mappings Location="gr1553b/gr1553b.in.vhd" Library="not mapped"/>
+  <Mappings Location="gr1553b/gr1553b_2.in.vhd" Library="not mapped"/>
+  <Mappings Location="greth/greth.in.vhd" Library="not mapped"/>
+  <Mappings Location="greth/greth2.in.vhd" Library="not mapped"/>
+  <Mappings Location="i2c/i2c.in.vhd" Library="not mapped"/>
+  <Mappings Location="i2c/i2c2ahb.in.vhd" Library="not mapped"/>
+  <Mappings Location="i2c/i2cslv.in.vhd" Library="not mapped"/>
+  <Mappings Location="irqmp/irqmp.in.vhd" Library="not mapped"/>
+  <Mappings Location="jtag/bscan.in.vhd" Library="not mapped"/>
+  <Mappings Location="jtag/jtag.in.vhd" Library="not mapped"/>
+  <Mappings Location="jtag/jtag2.in.vhd" Library="not mapped"/>
+  <Mappings Location="leon3/irqmp.in.vhd" Library="not mapped"/>
+  <Mappings Location="leon3/leon3.in.vhd" Library="not mapped"/>
+  <Mappings Location="leon3ftv2/leon3net.in.vhd" Library="not mapped"/>
+  <Mappings Location="leon3v1/grfpuw.vhd" Library="not mapped"/>
+  <Mappings Location="memctrl/sdctrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="memctrl/srctrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="memctrl/ssrctrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/ahbram.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/ahbrom.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/ahbstat.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/gptimer.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/gracectrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/grgpio.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/grgpio2.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/grsysmon.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/ps2.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/ps2vga.in.vhd" Library="not mapped"/>
+  <Mappings Location="misc/svgactrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="net/edcl.in.vhd" Library="not mapped"/>
+  <Mappings Location="pci" Library="not mapped"/>
+  <Mappings Location="spacewire/router.in.vhd" Library="not mapped"/>
+  <Mappings Location="spacewire/spacewire.in.vhd" Library="not mapped"/>
+  <Mappings Location="spi/spi2ahb.in.vhd" Library="not mapped"/>
+  <Mappings Location="spi/spictrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="spi/spimctrl.in.vhd" Library="not mapped"/>
+  <Mappings Location="uart/dcom.in.vhd" Library="not mapped"/>
+  <Mappings Location="uart/uart1.in.vhd" Library="not mapped"/>
+  <Mappings Location="uart/uart2.in.vhd" Library="not mapped"/>
+  <Mappings Location="usb/grusb_dcl.in.vhd" Library="not mapped"/>
+  <Mappings Location="usb/grusbdc.in.vhd" Library="not mapped"/>
+  <Mappings Location="usb/grusbhc.in.vhd" Library="not mapped"/>
+</com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings>

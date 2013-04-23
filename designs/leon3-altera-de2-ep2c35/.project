@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>leon3-altera-de2-ep2c35</name>
+	<comment></comment>
+	<projects>
+		<project>esa</project>
+		<project>gaisler</project>
+		<project>grlib</project>
+		<project>ieee</project>
+		<project>micron</project>
+		<project>std</project>
+		<project>techmap</project>
+		<project>work</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.xtext.ui.shared.xtextBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>com.sigasi.hdt.vhdl.ui.vhdlNature</nature>
+		<nature>org.eclipse.xtext.ui.shared.xtextNature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>Common Libraries</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>Common Libraries/IEEE</name>
+			<type>2</type>
+			<locationURI>sigasiresource:/vhdl/93/IEEE</locationURI>
+		</link>
+		<link>
+			<name>Common Libraries/IEEE Synopsys</name>
+			<type>2</type>
+			<locationURI>sigasiresource:/vhdl/93/IEEE%20Synopsys</locationURI>
+		</link>
+		<link>
+			<name>Common Libraries/STD</name>
+			<type>2</type>
+			<locationURI>sigasiresource:/vhdl/93/STD</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>

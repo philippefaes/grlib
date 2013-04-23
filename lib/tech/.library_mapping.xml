@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings xmlns:com.sigasi.hdt.vhdl.scoping.librarymapping.model="com.sigasi.hdt.vhdl.scoping.librarymapping" Version="2">
+  <Mappings Location="altera" Library="altera"/>
+  <Mappings Location="altera_mf" Library="altera_mf"/>
+  <Mappings Location="atc18" Library="atc18"/>
+  <Mappings Location="cycloneiii" Library="cycloneiii"/>
+  <Mappings Location="dware" Library="dware"/>
+  <Mappings Location="ec" Library="ec"/>
+  <Mappings Location="eclipsee" Library="eclipsee"/>
+  <Mappings Location="gtech" Library="gtech"/>
+  <Mappings Location="" Library="not mapped"/>
+  <Mappings Location="secureip" Library="secureip"/>
+  <Mappings Location="simprim" Library="simprim"/>
+  <Mappings Location="snps" Library="snps"/>
+  <Mappings Location="stratixii" Library="stratixii"/>
+  <Mappings Location="stratixiii" Library="stratixiii"/>
+  <Mappings Location="umc18" Library="umc18"/>
+  <Mappings Location="unisim" Library="unisim"/>
+  <Mappings Location="virage" Library="virage"/>
+</com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings>

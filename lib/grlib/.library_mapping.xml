@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings xmlns:com.sigasi.hdt.vhdl.scoping.librarymapping.model="com.sigasi.hdt.vhdl.scoping.librarymapping" Version="2">
+  <Mappings Location="" Library="grlib"/>
+  <Mappings Location="amba/amba.in.vhd" Library="not mapped"/>
+  <Mappings Location="util/debug.in.vhd" Library="not mapped"/>
+</com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings>
