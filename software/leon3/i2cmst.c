@@ -66,6 +66,7 @@ int i2cmst_test(int addr)
 
   struct i2cmstregs *regs;
 
+  regs = (struct i2cmstregs *) addr;
   report_device(0x01028000);
   report_subtest(1);
   

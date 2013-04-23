@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -47,14 +47,13 @@ entity ssrctrl_net is
       n_ahbsi_hmaster:  in    Std_Logic_Vector(3 downto 0);
       n_ahbsi_hmastlock:in    Std_Logic;
       n_ahbsi_hmbsel:   in    Std_Logic_Vector(0 to 3);
-      n_ahbsi_hcache:   in    Std_Logic;
       n_ahbsi_hirq:     in    Std_Logic_Vector(31 downto 0);
 
       n_ahbso_hready:   out   Std_Logic;
       n_ahbso_hresp:    out   Std_Logic_Vector(1 downto 0);
       n_ahbso_hrdata:   out   Std_Logic_Vector(31 downto 0);
       n_ahbso_hsplit:   out   Std_Logic_Vector(15 downto 0);
-      n_ahbso_hcache:   out   Std_Logic;
+ 
       n_ahbso_hirq:     out   Std_Logic_Vector(31 downto 0);
 
       n_apbi_psel:      in    Std_Logic_Vector(0 to 15);
@@ -177,6 +176,8 @@ architecture rtl of ssrctrl_net is
       n_sro_ce:         out   Std_Logic);
    end component;
 
+   signal gnd : std_ulogic;
+   
 begin
    xil : if (is_unisim(tech) = 1) and (bus16 = 1) generate
       ssrctrlxil: ssrctrl_unisim
@@ -195,13 +196,13 @@ begin
             n_ahbsi_hmaster   => n_ahbsi_hmaster,
             n_ahbsi_hmastlock => n_ahbsi_hmastlock,
             n_ahbsi_hmbsel    => n_ahbsi_hmbsel,
-            n_ahbsi_hcache    => n_ahbsi_hcache,
+            n_ahbsi_hcache    => gnd,
             n_ahbsi_hirq      => n_ahbsi_hirq,
             n_ahbso_hready    => n_ahbso_hready,
             n_ahbso_hresp     => n_ahbso_hresp,
             n_ahbso_hrdata    => n_ahbso_hrdata,
             n_ahbso_hsplit    => n_ahbso_hsplit,
-            n_ahbso_hcache    => n_ahbso_hcache,
+            n_ahbso_hcache    => open,
             n_ahbso_hirq      => n_ahbso_hirq,
             n_apbi_psel       => n_apbi_psel,
             n_apbi_penable    => n_apbi_penable,

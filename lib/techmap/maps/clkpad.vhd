@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ begin
     o <= to_X01(pad); lock <= '1';
   end generate;
   xcv2 : if (is_unisim(tech) = 1) generate
-    u0 : unisim_clkpad generic map (level, voltage, arch, hf) port map (pad, o, rstn, lock);
+    u0 : unisim_clkpad generic map (level, voltage, arch, hf, tech) port map (pad, o, rstn, lock);
   end generate;
   axc : if (tech = axcel) or (tech = axdsp) generate
     u0 : axcel_clkpad generic map (level, voltage, arch) port map (pad, o); lock <= '1';

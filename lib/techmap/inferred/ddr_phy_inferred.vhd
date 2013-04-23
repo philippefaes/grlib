@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -20,125 +20,13 @@
 -- Entity:      generic_ddr_phy
 -- File:        ddr_phy_inferred.vhd
 -- Author:      Nils-Johan Wessman - Gaisler Research
--- Description: Generic DDR PHY
+-- Modified:    Magnus Hjorth - Aeroflex Gaisler
+-- Description: Generic DDR PHY (simulation only)
 ------------------------------------------------------------------------------
 
---###################################################################################
--- Generic DDR Output Register
---###################################################################################
-library ieee;
-use ieee.std_logic_1164.all;
-entity gen_ddr_phy_oreg is
-  generic(
-    sameedge : integer := 0
-         );
-  port(
-    Q : out std_ulogic;
-    C0 : in std_ulogic;
-    C1 : in std_ulogic;
-    CE : in std_ulogic;
-    D0 : in std_ulogic;
-    D1 : in std_ulogic;
-    R  : in std_ulogic;
-    S  : in std_ulogic
-      );
-end;
-
-architecture rtl of gen_ddr_phy_oreg is
-signal tmpD1, Q1, Q2 : std_logic;
-begin
-  same_edge : if sameedge = 0 generate
-    tmpD1 <= D1;
-  end generate;
-  
-  nosame_edge : if sameedge = 1 generate
-    reg : process(C0)
-    begin
-      if rising_edge(C0) then
-          tmpD1 <= D1;
-      end if;
-    end process;
-  end generate;
-
-  reg : process(C0)
-  begin
-    if rising_edge(C0) then
-      Q1 <= D0; 
-    end if;
-  end process;
-
-  regn : process(C0)
-  begin
-    if falling_edge(C0) then
-      Q2 <= tmpD1;
-    end if;
-  end process;
-
-  Q <= Q1 when C0 = '1' else Q2;
-
-end;
 
 --###################################################################################
--- Generic DDR Inout Register
---###################################################################################
-library ieee;
-use ieee.std_logic_1164.all;
-entity gen_ddr_phy_ireg is
-  port(
-    Q0 : out std_ulogic;
-    Q1 : out std_ulogic;
-    C0 : in std_ulogic;
-    C1 : in std_ulogic;
-    CE : in std_ulogic;
-    D  : in std_ulogic;
-    R  : in std_ulogic;
-    S  : in std_ulogic
-      );
-end;
-
-architecture rtl of gen_ddr_phy_ireg is
-begin
-  reg0 : process(C0)
-  begin
-    if rising_edge(C0) then
-      if R = '1' then Q0 <= '0';
-      elsif S = '1' then Q0 <= '1';
-      elsif CE = '1' then Q0 <= D; end if;
-    end if;
-  end process;
-  reg1 : process(C1)
-  begin
-    if rising_edge(C1) then
-      if R = '1' then Q1 <= '0';
-      elsif S = '1' then Q1 <= '1';
-      elsif CE = '1' then Q1 <= D; end if;
-    end if;
-  end process;
-end;
-
---###################################################################################
--- Generic DDR Register
---###################################################################################
-library ieee;
-use ieee.std_logic_1164.all;
-entity gen_ddr_phy_reg is
-  port(
-    Q : out std_ulogic;
-    C : in std_ulogic;
-    D  : in std_ulogic
-      );
-end;
-
-architecture rtl of gen_ddr_phy_reg is
-begin
-  reg : process(C)
-  begin
-    if rising_edge(C) then Q <= D; end if;
-  end process;
-end;
-
---###################################################################################
--- Generic DDR PHY
+-- Generic DDR1 PHY
 --###################################################################################
 library ieee;
 use ieee.std_logic_1164.all;
@@ -147,33 +35,38 @@ use techmap.gencomp.all;
 library grlib;
 use grlib.stdlib.all;
 
-entity generic_ddr_phy is
+entity generic_ddr_phy_wo_pads is
   generic (MHz : integer := 100; rstdelay : integer := 200;
     dbits : integer := 16; clk_mul : integer := 2 ;
-    clk_div : integer := 2; rskew : integer := 0; mobile : integer := 0);
+    clk_div : integer := 2; rskew : integer := 0; mobile : integer := 0;
+           abits: integer := 14; nclk: integer := 3; ncs: integer := 2);
   port(
     rst       : in  std_ulogic;
     clk       : in  std_logic;  -- input clock
     clkout    : out std_ulogic; -- system clock
-    --clkread   : out std_ulogic;
+    clk0r     : in  std_ulogic;
     lock      : out std_ulogic; -- DCM locked
 
-    ddr_clk   : out std_logic_vector(2 downto 0);
-    ddr_clkb  : out std_logic_vector(2 downto 0);
+    ddr_clk   : out std_logic_vector(nclk-1 downto 0);
+    ddr_clkb  : out std_logic_vector(nclk-1 downto 0);
     ddr_clk_fb_out  : out std_logic;
     ddr_clk_fb: in std_logic;
-    ddr_cke   : out std_logic_vector(1 downto 0);
-    ddr_csb   : out std_logic_vector(1 downto 0);
+    ddr_cke   : out std_logic_vector(ncs-1 downto 0);
+    ddr_csb   : out std_logic_vector(ncs-1 downto 0);
     ddr_web   : out std_ulogic;                       -- ddr write enable
     ddr_rasb  : out std_ulogic;                       -- ddr ras
     ddr_casb  : out std_ulogic;                       -- ddr cas
     ddr_dm    : out std_logic_vector (dbits/8-1 downto 0);    -- ddr dm
-    ddr_dqs   : inout std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
-    ddr_ad    : out std_logic_vector (13 downto 0);   -- ddr address
+    ddr_dqs_in  : in std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
+    ddr_dqs_out : out std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
+    ddr_dqs_oen : out std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
+    ddr_ad    : out std_logic_vector (abits-1 downto 0);   -- ddr address
     ddr_ba    : out std_logic_vector (1 downto 0);    -- ddr bank address
-    ddr_dq    : inout  std_logic_vector (dbits-1 downto 0); -- ddr data
+    ddr_dq_in   : in  std_logic_vector (dbits-1 downto 0); -- ddr data
+    ddr_dq_out  : out  std_logic_vector (dbits-1 downto 0); -- ddr data
+    ddr_dq_oen  : out  std_logic_vector (dbits-1 downto 0); -- ddr data
 
-    addr      : in  std_logic_vector (13 downto 0); -- data mask
+    addr      : in  std_logic_vector (abits-1 downto 0); -- data mask
     ba        : in  std_logic_vector ( 1 downto 0); -- data mask
     dqin      : out std_logic_vector (dbits*2-1 downto 0); -- ddr input data
     dqout     : in  std_logic_vector (dbits*2-1 downto 0); -- ddr input data
@@ -184,93 +77,97 @@ entity generic_ddr_phy is
     rasn      : in  std_ulogic;
     casn      : in  std_ulogic;
     wen       : in  std_ulogic;
-    csn       : in  std_logic_vector(1 downto 0);
-    cke       : in  std_logic_vector(1 downto 0);
-    ck        : in  std_logic_vector(2 downto 0);
+    csn       : in  std_logic_vector(ncs-1 downto 0);
+    cke       : in  std_logic_vector(ncs-1 downto 0);
+    ck        : in  std_logic_vector(nclk-1 downto 0);
     moben     : in  std_logic -- Mobile DDR enable
       );
 end;
 
-architecture rtl of generic_ddr_phy is
-component gen_ddr_phy_oreg is
-generic(sameedge : integer := 0 );
-port(Q : out std_ulogic; C0 : in std_ulogic; C1 : in std_ulogic; CE : in std_ulogic;
-     D0 : in std_ulogic; D1 : in std_ulogic; R  : in std_ulogic; S  : in std_ulogic);
+architecture rtl of generic_ddr_phy_wo_pads is
+
+component sim_pll
+  generic (
+    clkmul: integer := 1;
+    clkdiv1: integer := 1;
+    clkphase1: integer := 0;
+    clkdiv2: integer := 1;
+    clkphase2: integer := 0;
+    clkdiv3: integer := 1;
+    clkphase3: integer := 0;
+    clkdiv4: integer := 1;
+    clkphase4: integer := 0;
+    minfreq: integer := 0;
+    maxfreq: integer := 10000000
+    );
+  port (
+    i: in std_logic;
+    o1: out std_logic;
+    o2: out std_logic;
+    o3: out std_logic;
+    o4: out std_logic;
+    lock: out std_logic;
+    rst: in std_logic
+    );
 end component;
-component gen_ddr_phy_ireg is
-  port(Q0 : out std_ulogic; Q1 : out std_ulogic; C0 : in std_ulogic; C1 : in std_ulogic;
-       CE : in std_ulogic; D  : in std_ulogic; R  : in std_ulogic; S  : in std_ulogic);
-end component;
-component gen_ddr_phy_reg is
-  port(Q : out std_ulogic; C : in std_ulogic; D  : in std_ulogic);
-end component;
+
+constant freq_khz: integer := (1000*MHz*clk_mul)/(clk_div);
+constant freq_mhz: integer := freq_khz / 1000;
+constant td90: time := 250 us * (1.0 / real(freq_khz));
 
 signal vcc, gnd : std_logic;                                    -- VCC and GND
-signal clk0r, clk90r, clk180r, clk270r : std_ulogic 
--- pragma translate_off
-	:= '0'
--- pragma translate_on
-	;     -- Clocks
-signal rclk90r, rclk270r : std_ulogic;                          -- DDR Read clock
-signal ddr_clkl, ddr_clkbl, ckn : std_logic_vector(2 downto 0); -- DDR clk generation
-signal ddr_rasnr, ddr_casnr, ddr_wenr : std_ulogic;             -- RAS, CAS, WEN generation
-signal ddr_csnr, ddr_ckenr, ckel : std_logic_vector(1 downto 0);-- CSN, CKE generation
-signal ddr_adr      : std_logic_vector (13 downto 0);           -- DDR ADDRESS generation
-signal ddr_bar      : std_logic_vector (1 downto 0);            -- DDR BA generation
+signal clk0, clk90r, clk180r, clk270r : std_ulogic;
+signal lockl,vlockl,locked: std_ulogic;
+signal dqs90,dqs90n: std_logic_vector(dbits/8-1 downto 0);
 
-signal dqsn, oe     : std_logic;                                -- DQS generation
-signal ddr_dqsin    : std_logic_vector (dbits/8-1 downto 0);    -- DQS generation
-signal ddr_dqsoen   : std_logic_vector (dbits/8-1 downto 0);    -- DQS generation
-signal ddr_dqsoutl  : std_logic_vector (dbits/8-1 downto 0);    -- DQS generation
+signal ckl: std_logic_vector(nclk-1 downto 0);
+signal ckel: std_logic_vector(ncs-1 downto 0);
 
-signal ddr_dmr      : std_logic_vector (dbits/8-1 downto 0);    -- DQM generation
-
-signal ddr_dqin     : std_logic_vector (dbits-1 downto 0);      -- DDR DQ generation
-signal ddr_dqout    : std_logic_vector (dbits-1 downto 0);      -- DDR DQ generation
-signal ddr_dqoen    : std_logic_vector (dbits-1 downto 0);      -- DDR DQ generation
-signal dqinl,dqinl2 : std_logic_vector (dbits-1 downto 0);      -- DDR DQ generation
-signal dqinl3,dqinl4: std_logic_vector (dbits-1 downto 0);      -- DDR DQ generation
-
-signal lockl, locked, vlockl : std_ulogic;                      -- Lock delay
-
-constant DDR_FREQ : integer := (MHz * clk_mul) / clk_div;
-constant clkperiod : real := ((100000.0 / real(DDR_FREQ))/2.0)/100.0;
-constant phase90 : real := ((100000.0 / real(DDR_FREQ))/4.0)/100.0;
-constant readskew : real := ((100000.0 / real(DDR_FREQ))*real(rskew))/25500.0;
 begin
-  oe <= not oen;
   vcc <= '1'; gnd <= '0';
 
   -----------------------------------------------------------------------------------
   -- Clock generation (Only for simulation)
   -----------------------------------------------------------------------------------
-  -- Phase shifted clocks
-  -- *** Should be generated from clk input ***
--- pragma translate_off
-  clk0r <= not clk0r after clkperiod* 1 ns;
-  clk90r <= transport clk0r after phase90 *1 ns;
--- pragma translate_on
-  clk180r <= not clk0r;
-  clk270r <= not clk90r;
+  -- Phase shifted clocks  
+--pragma translate_off
+  -- To avoid jitter problems when using ddr without sync regs we shift
+  -- 10 degrees extra.
+  pll0: sim_pll
+    generic map (
+      clkmul => clk_mul,
+      clkdiv1 => clk_div,
+      clkphase1 => 0-10+360,
+      clkdiv2 => clk_div,
+      clkphase2 => 90-10,
+      clkdiv3 => clk_div,
+      clkphase3 => 180-10,
+      clkdiv4 => clk_div,
+      clkphase4 => 270-10,
+      minfreq => MHz*1000,
+      maxfreq => MHz*1000
+      )
+    port map (
+      i => clk,
+      o1 => clk0,
+      o2 => clk90r,
+      o3 => clk180r,
+      o4 => clk270r,
+      lock => lockl,
+      rst => rst);
+--pragma translate_on
 
   -- Clock to DDR controller
-  clkout <= clk0r;
+  clkout <= clk0;
 
-  -- Read clocks
--- pragma translate_off
-  rclk90r <= transport ddr_clk_fb after readskew*1 ns;
--- pragma translate_on
-  rclk270r <= not rclk90r;
-
-  -- Clock generator lock signal
-  lockl <= rst;
+  ddr_clk_fb_out <= '0';
   
   -----------------------------------------------------------------------------------
   -- Lock delay
   -----------------------------------------------------------------------------------
 
   rdel : if rstdelay /= 0 generate
-    rcnt : process (clk0r, lockl)
+    rcnt : process (clk0r, lockl, rst)
     variable cnt : std_logic_vector(15 downto 0);
     variable vlock, co : std_ulogic;
     begin
@@ -278,14 +175,14 @@ begin
         co := cnt(15);
         vlockl <= vlock;
         if lockl = '0' then
-          cnt := conv_std_logic_vector(rstdelay*DDR_FREQ, 16); vlock := '0';
+          cnt := conv_std_logic_vector(rstdelay*FREQ_MHZ, 16); vlock := '0';
         else
           if vlock = '0' then
             cnt := cnt -1;  vlock := cnt(15) and not co;
           end if;
         end if;
       end if;
-      if lockl = '0' then
+      if lockl = '0' or rst='0' then
         vlock := '0';
       end if;
     end process;
@@ -293,156 +190,77 @@ begin
 
   locked <= lockl when rstdelay = 0 else vlockl;
   lock <= locked;
-  -----------------------------------------------------------------------------------
-  -- Generate external DDR clock
-  -----------------------------------------------------------------------------------
 
-  --fbdclk0r : FDDRRSE port map ( Q => ddr_clk_fb_outr, C0 => clk90r, C1 => clk270r,
-  --  CE => vcc, D0 => vcc, D1 => gnd, R => gnd, S => gnd);
-  --fbclk_pad : outpad generic map (tech => virtex4, level => sstl2_i) 
-  --  port map (ddr_clk_fb_out, ddr_clk_fb_outr);
-
-  ddrclocks : for i in 0 to 2 generate
-    ckn(i) <= not ck(i);
-
-    -- DDR_CLK
-    dclk0r : gen_ddr_phy_oreg port map ( Q => ddr_clkl(i), C0 => clk90r, C1 => clk270r, 
-      CE => vcc, D0 => ck(i), D1 => gnd, R => gnd, S => gnd);
-    ddrclk_pad : outpad generic map (tech => 0) 
-      port map (ddr_clk(i), ddr_clkl(i));
-
-    -- DDR_CLKB
-    dclk0rb : gen_ddr_phy_oreg port map ( Q => ddr_clkbl(i), C0 => clk90r, C1 => clk270r,
-      CE => vcc, D0 => ckn(i), D1 => vcc, R => gnd, S => gnd);
-    ddrclkb_pad : outpad generic map (tech => 0) 
-      port map (ddr_clkb(i), ddr_clkbl(i));
-  end generate;
-
-
-  -----------------------------------------------------------------------------------
-  --  DDR single-edge control signals
-  -----------------------------------------------------------------------------------
-  -- RAS
-  rasgen : gen_ddr_phy_reg port map ( Q => ddr_rasnr, C => clk0r, D => rasn);
-  rasn_pad : outpad generic map (tech => 0) 
-    port map (ddr_rasb, ddr_rasnr);
-
-  -- CAS
-  casgen : gen_ddr_phy_reg port map ( Q => ddr_casnr, C => clk0r, D => casn);
-  casn_pad : outpad generic map (tech => 0) 
-    port map (ddr_casb, ddr_casnr);
-
-  -- WEN
-  wengen : gen_ddr_phy_reg port map ( Q => ddr_wenr, C => clk0r, D => wen);
-  wen_pad : outpad generic map (tech => 0) 
-    port map (ddr_web, ddr_wenr);
-
-  -- BA
-  bagen : for i in 0 to 1 generate
-    da0 : gen_ddr_phy_reg port map ( Q => ddr_bar(i), C => clk0r, D => ba(i));
-    ddr_ba_pad  : outpad generic map (tech => 0) 
-      port map (ddr_ba(i), ddr_bar(i));
-  end generate;
-
-  -- ADDRESS
-  dagen : for i in 0 to 13 generate
-    da0 : gen_ddr_phy_reg port map ( Q => ddr_adr(i), C => clk0r, D => addr(i));
-    ddr_ad_pad  : outpad generic map (tech => 0) 
-      port map (ddr_ad(i), ddr_adr(i));
-  end generate;
-
-  -- CSN and CKE
-  ddrbanks : for i in 0 to 1 generate
-    csn0gen : gen_ddr_phy_reg port map ( Q => ddr_csnr(i), C => clk0r, D => csn(i));
-    csn0_pad : outpad generic map (tech => 0) 
-      port map (ddr_csb(i), ddr_csnr(i));
-    ckel(i) <= cke(i) and (locked or moben); -- CKE Starts high for Mobile DDR
-    ckegen : gen_ddr_phy_reg port map ( Q => ddr_ckenr(i), C => clk0r, D => ckel(i));
-    cke_pad : outpad generic map (tech => 0) 
-      port map (ddr_cke(i), ddr_ckenr(i));
-  end generate;
+  -----------------------------------------------------------------------------
+  -- DQS shifting
+  -----------------------------------------------------------------------------
+-- pragma translate_off
+  dqs90 <= transport ddr_dqs_in after td90;
+  dqs90n <= not dqs90;
+-- pragma translate_on
   
-  -----------------------------------------------------------------------------------
-  -- DQS generation
-  -----------------------------------------------------------------------------------
-  dsqreg : gen_ddr_phy_reg port map ( Q => dqsn, C => clk180r, D => oe);
-  dqsgen : for i in 0 to dbits/8-1 generate
-    da0 : gen_ddr_phy_oreg
-      generic map(sameedge => 1)
-      port map( Q => ddr_dqsin(i), C0 => clk90r,  C1 => clk270r, 
-        CE => vcc, D0 => dqsn, D1 => gnd, R => gnd, S => gnd);
-    doen : gen_ddr_phy_reg port map ( Q => ddr_dqsoen(i), C => clk0r, D => dqsoen);
-    dqs_pad : iopad generic map (tech => 0)
-      port map (pad => ddr_dqs(i), i => ddr_dqsin(i), en => ddr_dqsoen(i), 
-        o => ddr_dqsoutl(i));
+  -----------------------------------------------------------------------------
+  -- Data path
+  -----------------------------------------------------------------------------
+
+  -- For mobile SDRAM, force Cke high during reset and reset-delay,
+  -- For regular SDRAM, force Cke low
+  -- also disable outgoing clock until we have achieved PLL lock
+  mobgen: if mobile > 1 generate
+    ckel <= cke or (cke'range => not locked);
   end generate;
-
-  -----------------------------------------------------------------------------------
-  -- DQM generation
-  -----------------------------------------------------------------------------------
-  dmgen : for i in 0 to dbits/8-1 generate
-    da0 : gen_ddr_phy_oreg
-      generic map(sameedge => 1)
-      port map ( Q => ddr_dmr(i), C0 => clk0r, C1 => clk180r,
-        CE => vcc, D0 => dm(i+dbits/8), D1 => dm(i), R => gnd, S => gnd);
-    ddr_bm_pad  : outpad generic map (tech => 0) 
-      port map (ddr_dm(i), ddr_dmr(i));
+  nmobgen: if mobile < 2 generate
+    ckel <= cke and (cke'range => locked);    
   end generate;
-
-  -----------------------------------------------------------------------------------
-  -- Data bus
-  -----------------------------------------------------------------------------------
-
-  ddgen : for i in 0 to dbits-1 generate
-    -- DQ Input
-    nomobile : if mobile = 0 generate -- No Mobile DDR support
-      dinq1 : gen_ddr_phy_reg port map ( Q => dqin(i+dbits), C => rclk90r, D => dqinl(i));  -- Standard DDR
-      dqin(i) <= dqinl2(i);
-    end generate;
-    mobsupport : if (mobile = 1) or (mobile = 2) generate -- Standard/Mobile DDR support
-      dinq1 : gen_ddr_phy_reg port map ( Q => dqinl3(i), C => rclk90r, D => dqinl(i));      -- Standard DDR
-      dinq2 : gen_ddr_phy_reg port map ( Q => dqinl4(i), C => rclk90r, D => dqinl2(i));     -- Mobile DDR    
-      dqin(i) <= dqinl2(i) when moben = '0' else dqinl3(i); 
-      dqin(i+dbits) <= dqinl3(i) when moben = '0' else dqinl4(i);
-    end generate;
-    mobenable : if mobile = 3 generate -- Mobile DDR support
-      dinq1 : gen_ddr_phy_reg port map ( Q => dqin(i), C => rclk90r, D => dqinl(i));        -- Mobile DDR
-      dinq2 : gen_ddr_phy_reg port map ( Q => dqin(i+dbits), C => rclk90r, D => dqinl2(i));
-    end generate;
-    
-    qi : gen_ddr_phy_ireg
-    port map ( Q0 => dqinl(i),    -- 1-bit output for positive edge of clock 
-               Q1 => dqinl2(i),   -- 1-bit output for negative edge of clock 
-               C0 => rclk270r,    -- 1-bit clock input 
-               C1 => rclk90r,     -- 1-bit clock input 
-               CE => vcc,         -- 1-bit clock enable input 
-               D => ddr_dqin(i),  -- 1-bit DDR data input 
-               R => gnd,          -- 1-bit reset 
-               S => gnd           -- 1-bit set 
-             );
-
-    -- DQ Output
-    da0 : gen_ddr_phy_oreg
-      generic map(sameedge => 1)
-      port map ( Q => ddr_dqout(i), C0 => clk0r, C1 => clk180r, CE => vcc,
-        D0 => dqout(i+dbits), D1 => dqout(i), R => gnd, S => gnd);
-    
-    -- DQ Output enable
-    doen : gen_ddr_phy_reg port map ( Q => ddr_dqoen(i), C => clk0r, D => oen);
-    
-    -- DQ PAD
-    dq_pad : iopad generic map (tech => 0)
-         port map (pad => ddr_dq(i), i => ddr_dqout(i), en => ddr_dqoen(i), o => ddr_dqin(i));
-  end generate;
-
-  -----------------------------------------------------------------------------------
-  --
-  -----------------------------------------------------------------------------------
+  ckl <= ck and (ck'range => lockl);
+  
+  dp0: ddrphy_datapath
+    generic map (
+      regtech => inferred, dbits => dbits, abits => abits,
+      bankbits => 2, ncs => ncs, nclk => nclk,
+      resync => 2 )
+    port map (
+      clk0 => clk0r,
+      clk90 => clk90r,
+      clk180 => clk180r,
+      clk270 => clk270r,
+      clkresync => gnd,
+      ddr_clk => ddr_clk,
+      ddr_clkb => ddr_clkb,
+      ddr_dq_in => ddr_dq_in,
+      ddr_dq_out => ddr_dq_out,
+      ddr_dq_oen => ddr_dq_oen,
+      ddr_dqs_in90 => dqs90,
+      ddr_dqs_in90n => dqs90n,
+      ddr_dqs_out => ddr_dqs_out,
+      ddr_dqs_oen => ddr_dqs_oen,
+      ddr_cke => ddr_cke,
+      ddr_csb => ddr_csb,
+      ddr_web => ddr_web,
+      ddr_rasb => ddr_rasb,
+      ddr_casb => ddr_casb,
+      ddr_ad => ddr_ad,
+      ddr_ba => ddr_ba,
+      ddr_dm => ddr_dm,
+      ddr_odt => open,
+      dqin => dqin,
+      dqout => dqout,
+      addr => addr,
+      ba => ba,
+      dm => dm,
+      oen => oen,
+      rasn => rasn,
+      casn => casn,
+      wen => wen,
+      csn => csn,
+      cke => ckel,
+      odt => (others => '0'),
+      dqs_en => dqs,
+      dqs_oen => dqsoen,
+      ddrclk_en => ckl
+      );
 
 end;
-
-
-
 
 
 --###################################################################################
@@ -461,7 +279,8 @@ entity generic_ddr2_phy_wo_pads is
     dbits : integer := 16; clk_mul : integer := 2 ;
     clk_div : integer := 2; rskew : integer := 0;
            eightbanks: integer := 0; abits: integer := 14;
-           cben: integer := 0; chkbits: integer := 8);
+           cben: integer := 0; chkbits: integer := 8;
+           nclk: integer := 3; ncs: integer := 2);
   port(
     rst         : in  std_ulogic;
     clk         : in  std_logic;  -- input clock
@@ -469,12 +288,12 @@ entity generic_ddr2_phy_wo_pads is
     clk0r       : in  std_ulogic; -- system clock returned
     lock        : out std_ulogic; -- DCM locked
 
-    ddr_clk     : out std_logic_vector(2 downto 0);
-    ddr_clkb    : out std_logic_vector(2 downto 0);
+    ddr_clk     : out std_logic_vector(nclk-1 downto 0);
+    ddr_clkb    : out std_logic_vector(nclk-1 downto 0);
     ddr_clk_fb_out  : out std_logic;
     ddr_clk_fb  : in std_logic;
-    ddr_cke     : out std_logic_vector(1 downto 0);
-    ddr_csb     : out std_logic_vector(1 downto 0);
+    ddr_cke     : out std_logic_vector(ncs-1 downto 0);
+    ddr_csb     : out std_logic_vector(ncs-1 downto 0);
     ddr_web     : out std_ulogic;                       -- ddr write enable
     ddr_rasb    : out std_ulogic;                       -- ddr ras
     ddr_casb    : out std_ulogic;                       -- ddr cas
@@ -487,7 +306,7 @@ entity generic_ddr2_phy_wo_pads is
     ddr_dq_in   : in  std_logic_vector (dbits-1 downto 0); -- ddr data
     ddr_dq_out  : out  std_logic_vector (dbits-1 downto 0); -- ddr data
     ddr_dq_oen  : out  std_logic_vector (dbits-1 downto 0); -- ddr data
-    ddr_odt     : out std_logic_vector(1 downto 0);  -- ddr odt
+    ddr_odt     : out std_logic_vector(ncs-1 downto 0);  -- ddr odt
 
     addr        : in  std_logic_vector (abits-1 downto 0); -- data mask
     ba          : in  std_logic_vector (2 downto 0); -- data mask
@@ -500,8 +319,8 @@ entity generic_ddr2_phy_wo_pads is
     rasn        : in  std_ulogic;
     casn        : in  std_ulogic;
     wen         : in  std_ulogic;
-    csn         : in  std_logic_vector(1 downto 0);
-    cke         : in  std_logic_vector(1 downto 0);
+    csn         : in  std_logic_vector(ncs-1 downto 0);
+    cke         : in  std_logic_vector(ncs-1 downto 0);
     ck          : in  std_logic_vector(2 downto 0);
     odt         : in  std_logic_vector(1 downto 0)
     );
@@ -551,17 +370,19 @@ begin
   -----------------------------------------------------------------------------------
   -- Phase shifted clocks
 --pragma translate_off
+  -- To avoid jitter problems when using ddr2 without sync regs we shift
+  -- 10 degrees extra.
   pll0: sim_pll
     generic map (
       clkmul => clk_mul,
       clkdiv1 => clk_div,
-      clkphase1 => 0,
+      clkphase1 => 0-10+360,
       clkdiv2 => clk_div,
-      clkphase2 => 90,
+      clkphase2 => 90-10,
       clkdiv3 => clk_div,
-      clkphase3 => 180,
+      clkphase3 => 180-10,
       clkdiv4 => clk_div,
-      clkphase4 => 270,
+      clkphase4 => 270-10,
       minfreq => MHz*1000,
       maxfreq => MHz*1000
       )
@@ -578,6 +399,8 @@ begin
   -- Clock to DDR controller
   clkout <= clk0;
 
+  ddr_clk_fb_out <= '0';
+  
   -----------------------------------------------------------------------------------
   -- Lock delay
   -----------------------------------------------------------------------------------
@@ -621,7 +444,7 @@ begin
   dp0: ddrphy_datapath
     generic map (
       regtech => inferred, dbits => dbits, abits => abits,
-      bankbits => 2+EIGHTBANKS, ncs => 2, nclk => 3,
+      bankbits => 2+EIGHTBANKS, ncs => ncs, nclk => nclk,
       resync => 0 )
     port map (
       clk0 => clk0r,
@@ -661,7 +484,7 @@ begin
       odt => odt,
       dqs_en => dqs,
       dqs_oen => dqsoen,
-      ddrclk_en => ck
+      ddrclk_en => ck(nclk-1 downto 0)
       );
   
 end;

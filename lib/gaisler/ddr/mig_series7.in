@@ -1,0 +1,4 @@
+mainmenu_option next_comment
+    comment 'MIG Series 7 memory controller   '
+	bool 'Enable Xilinx DDR3 MIG memory controller' CONFIG_MIG_SERIES7
+endmenu

@@ -22,21 +22,124 @@ reference config).
 1. Boot ROM
 -----------
 
-The board does not have a PROM that can hold boot software. In order
-to have the processor boot successfully after reset there are two
-options: 1) Include an AHBROM on the device. 2) Use SPIMCTRL and place
-boot software on SD card.
+Boot Flash is provided via SPIMCTRL from the board's EPCS device.
 
-For the (simulation) system test to function, the design is by default
-configured to include an AHBROM. If you don't update the AHBROM with
-something sensible for hardware it is better to disable it before
-running synthesis.
+The design can also use on-chip ROM via the AHBROM core. Note that the
+SPI memory controller must be disabled to include the AHBROM core in
+the design. If both cores are enabled in xconfig only the AHBROM core
+will be instantiated in leon3mp.vhd.
 
-The SPI memory controller (SPIMCTRL) and AHBROM cores cannot both be
-enabled simultaneously. If you want this, you need to edit
-leon3mp.vhd.
+The rest of this section explains how to work with SPIMCTRL in this
+design:
 
-See comment about SPI SD Card interface below.
+Typically the lower part of the EPCS device will hold the
+configuration bitstream for the FPGA. The SPIMCTRL core is configured
+with an offset value that will be added to the incoming AHB address
+before the address is propagated to the EPCS device. The default
+offset is 0x50000 (this value is set via xconfig and the constant is
+called CFG_SPIMCTRL_OFFSET). When the processor starts after power-up
+it will read address 0x0, this will be translated by SPIMCTRL to
+0x50000. (See section below for how to program the FPGA configuration
+bitstream into the EPCS device).
+
+SPIMCTRL can only add this offset to accesses made via the core's
+memory area. For accesses made via the register interface the offset
+must be taken into account. This means that if we want to program the
+Flash with an application which is linked to address 0x0 (our typical
+bootloader) then we need to add the offset 0x50000 before programming
+the file with GRMON. We load the Flash with our application starting
+at 0x50000 and SPIMCTRL will then translate accesses from AMBA address
+0x0 + n to Flash address 0x50000 + n.
+
+The example below shows how to program prom.srec, which should be
+present at AMBA address 0x0 to a SPI Flash device where SPIMCTRL adds
+an offset to the incoming address.
+
+First we check which offset that SPIMCTRL adds:
+
+user@host$ grep SPIMCTRL_OFFSET config.vhd
+  constant CFG_SPIMCTRL_OFFSET : integer := 16#50000#;
+
+.. SPIMCTRL will add 0x50000 to the AMBA address. We now create a
+S-REC file where we add this offset to our data. There are several
+tools that allow us to do this (including search and replace in a text
+editor) here we use srec_cat to create prom_off.srec:
+
+user@host$ srec_cat prom.srec -offset 0x50000 -o prom_off.srec
+user@host$ srec_info prom.srec 
+Format: Motorola S-Record
+Header: "prom.srec"
+Execution Start Address: 00000000
+Data:   0000 - 022F
+user@host$ srec_info prom_off.srec 
+Format: Motorola S-Record
+Header: "prom.srec"
+Execution Start Address: 00050000
+Data:   050000 - 05022F
+user@host$ 
+
+We then use GRMON2 to load the S-REC. First we check that our Flash device does not
+contain data at (AMBA) address 0x0:
+
+grmon2> mem 0
+  0x00000000  ffffffff  ffffffff  ffffffff  ffffffff    ................
+  0x00000010  ffffffff  ffffffff  ffffffff  ffffffff    ................
+  0x00000020  ffffffff  ffffffff  ffffffff  ffffffff    ................
+  0x00000030  ffffffff  ffffffff  ffffffff  ffffffff    ................
+
+If all data is not 0xff at this address then either there is
+configuration data at the specified offset (and the design can be
+synthesized with a larger offset), or the Flash has previously been
+programmed with application data.
+
+If the Flash is erased (all 0xFF) we can proceed with loading our S-REC:
+
+grmon2> spim flash detect
+ Got manufacturer ID 0x20 and Device ID 0x2015
+ No device match for READ ID instruction, trying RES instruction..
+ Found matching device: ST/Numonyx M25P16
+  
+grmon2> spim flash load prom_off.srec
+  00050000 prom.srec                  1.4kB /   1.4kB   [===============>] 100%
+  Total size: 560B (1.52kbit/s)
+  Entry point 0x50000
+  Image prom_off.srec loaded
+
+The data has been loaded and is available at address 0x0:
+
+grmon2> mem 0
+  0x00000000  81d82000  03000004  821060e0  81884000    .. .......`...@.
+  0x00000010  81900000  81980000  81800000  a1800000    ................
+  0x00000020  01000000  03002040  8210600f  c2a00040    ...... @..`....@
+  0x00000030  84100000  01000000  01000000  01000000    ................
+  
+grmon2> 
+
+The "verify" command in GRMON performs normal memory accesses. Using
+this command we can check that what the processor will see matches
+what we have in the (unmodified) prom.srec:
+
+grmon2> verify prom.srec
+  00000000 prom.srec                  1.5kB /   1.5kB   [===============>] 100%
+  Total size: 560B (10.64kbit/s)
+  Entry point 0x0
+  Image of prom.srec verified without errors
+  
+grmon2> 
+
+The flash can be cleared using the GRMON command "spim flash erase".
+Note that this will erase the entire Flash device, including the FPGA
+configuration bitstream.
+
+For simulation, the spi_flash simulation Model in testbench.vhd knows
+about the offset and will subtract the offset value before accessing
+its internal memory array. To illustrate:
+
+1. Processor AMBA address ->  SPIMCTRL
+2. SPIMCTRL creates Flash address = Amba address + CFG_SPIMCTRL_OFFSET 
+    and sends to spi_flash 
+3. spi_flash calculates: Memory array address = Flash address-CFG_SPIMCTRL_OFFSET = AMBA address
+4. spi_flash returns data, which is prom.srec[AMBA address]
 
 2. Simulation
 --------------
@@ -228,8 +331,8 @@ Celsius.
 6. SPI SD Card interface
 ----------------
 
-The design can be configured to include a SPIMCTRL core that is
-connected to the SD card slot.  The SPIMCTRL core allows reading from
+The design can be modified to include a SPIMCTRL core that is
+connected to the SD card slot. The SPIMCTRL core allows reading from
 a SD card without software support. This means that the SD card can be
 used as a boot PROM if a PROM file is written in raw mode directly to
 the start of card.
@@ -246,11 +349,12 @@ support. If the design is configured to include more than one SPI
 controller, the second SPI controller will be connected to the SD card
 slot.
 
-If more than one SPICTRL core is included in the design, the SPI
-memory controller (SPIMCTRL) core must be disabled.
-
-Also note that the SPIMCTRL core cannot be enabled if the on-chip AHB
-ROM is enabled.
+In the current version of this design the SPIMCTRL connected to the
+SD card has been commented out. To interface with the SD card either:
+1) Enable both SPICTRL cores and use the second core to communicate
+with the SD card, or
+2) Modify leon3mp.vhd and include the instantiations of the, now
+commented out, SPIMCTRL core connected to the SD card signals.
 
 7. Ethernet interface
 ---------------------

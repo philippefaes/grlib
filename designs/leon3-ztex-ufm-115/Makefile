@@ -2,13 +2,14 @@ include .config
 GRLIB=../..
 TOP=leon3mp
 BOARD=ztex-ufm-115
+DESIGN=leon3-ztex-ufm-115
 include $(GRLIB)/boards/$(BOARD)/Makefile.inc
 DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 UCF=$(TOP).ucf
-#ISEMAPOPT=-timing
+UCF_PLANAHEAD=$(UCF)
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=high
-XSTOPT="-uc leon3mp.xcf"
+XSTOPT=-uc leon3mp.xcf
 SYNPOPT="set_option -pipe 1; set_option -retiming 1; set_option -write_apr_constraint 0"
 # Set ZTEX variable to SDK directory in your shell
 # or modify the variable below:
@@ -22,9 +23,16 @@ VHDLOPTSYNFILES = \
 	mig37/mig_37/user_design/rtl/mcb_soft_calibration_top.vhd \
 	mig37/mig_37/user_design/rtl/memc3_infrastructure.vhd \
 	mig37/mig_37/user_design/rtl/memc3_wrapper.vhd \
-	mig37/mig_37/user_design/rtl/mig_37.vhd
-
-VHDLSYNFILES = config.vhd ahbrom.vhd ahb2mig_ztex.vhd leon3mp.vhd
+	mig37/mig_37/user_design/rtl/mig_37.vhd \
+	mig39/mig_39/user_design/rtl/iodrp_controller.vhd \
+	mig39/mig_39/user_design/rtl/iodrp_mcb_controller.vhd \
+	mig39/mig_39/user_design/rtl/mcb_raw_wrapper.vhd \
+	mig39/mig_39/user_design/rtl/mcb_soft_calibration.vhd \
+	mig39/mig_39/user_design/rtl/mcb_soft_calibration_top.vhd \
+	mig39/mig_39/user_design/rtl/memc3_infrastructure.vhd \
+	mig39/mig_39/user_design/rtl/memc3_wrapper.vhd \
+	mig39/mig_39/user_design/rtl/mig_39.vhd \
+	config.vhd ahbrom.vhd ahb2mig_ztex.vhd leon3mp.vhd
 
 VHDLSIMFILES=testbench.vhd
 
@@ -36,10 +44,10 @@ CLEAN=soft-clean
 TECHLIBS = secureip unisim
 
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	tmtc openchip ihp gleichmann usbhc spw
+	tmtc openchip ihp usbhc spw
 DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
-	usb grusbhc spacewire ata haps coremp7 ascs slink hcan \
-	leon4 leon4b64 l2cache pwm gr1553b iommu
+	usb grusbhc spacewire ascs slink hcan \
+	leon4 leon4v0 l2cache pwm gr1553b iommu
 FILEADD = MCB.vhd
 FILESKIP = grcan.vhd
 
@@ -71,3 +79,13 @@ ztex-upload-fw:
 	-uu $(ZTEX)/examples/usb-fpga-1.15/standalone/standalone.ihx \
 	-rf -uf $(TOP).bit
 
+mig39:
+	coregen -b mig39/mig.xco -p mig39
+	patch -p0 < mig_patch.txt
+	patch -p0 < memc3_infrastructure_patch.txt
+	patch -p0 < mcb_soft_calibration_patch.txt
+
+mig39clean:
+	-rm -rf mig39/mig_39* mig39/tmp
+
+.PHONY : mig mig39 mig39clean

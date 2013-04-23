@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ use grlib.stdlib.all;
 library gaisler;
 use grlib.devices.all;
 use gaisler.memctrl.all;
+use gaisler.ddrpkg.all;
 library techmap;
 use techmap.gencomp.all;
 
@@ -58,7 +59,11 @@ entity ddrspa is
     confapi : integer := 0;
     conf0   : integer := 0;
     conf1   : integer := 0;
-    regoutput : integer := 0
+    regoutput : integer := 0;
+    nosync    : integer := 0;
+    ddr400  : integer := 1;
+    scantest: integer := 0;
+    phyiconf : integer := 0
   );
   port (
     rst_ddr : in  std_ulogic;
@@ -91,48 +96,53 @@ end;
 architecture rtl of ddrspa is
 
 constant DDR_FREQ : integer := (clkmul * MHz) / clkdiv;
-constant FAST_AHB : integer := AHBFREQ / DDR_FREQ;
 signal sdi     : sdctrl_in_type;
 signal sdo     : sdctrl_out_type;
 signal clkread  : std_ulogic;
 
+signal ilock: std_ulogic;
+signal ddr_rst: std_logic;
+signal ddr_rst_gen: std_logic_vector(3 downto 0);
+
+constant ddr_syncrst: integer := 0;
+
 begin
 
-  ddr_phy0 : ddrphy_wrap generic map (tech => fabtech, MHz => MHz,  
-	dbits => ddrbits, rstdelay => rstdel, clk_mul => clkmul, 
-	clk_div => clkdiv, rskew => rskew, mobile => mobile)
+  lock <= ilock;
+
+  ddr_rst <= (ddr_rst_gen(3) and ddr_rst_gen(2) and ddr_rst_gen(1) and rst_ahb); -- Reset signal in DDR clock domain
+
+  ddrrstproc: process(clkddri, ilock)
+  begin
+    if rising_edge(clkddri) then
+      ddr_rst_gen <= ddr_rst_gen(2 downto 0) & '1';
+      if ddr_syncrst /= 0 and rst_ahb='0' then
+        ddr_rst_gen <= "0000";
+      end if;
+    end if;
+    if ddr_syncrst=0 and ilock='0' then
+      ddr_rst_gen <= "0000";
+    end if;
+  end process;       
+  
+  ddr_phy0 : ddrphy_wrap_cbd generic map (tech => fabtech, MHz => MHz,  
+	dbits => ddrbits, rstdelay => 0, clk_mul => clkmul, 
+	clk_div => clkdiv, rskew => rskew, mobile => mobile,
+	scantest => scantest, phyiconf => phyiconf)
   port map (
-	rst_ddr, clk_ddr, clkddro, clkread, lock,
+	rst_ddr, clk_ddr, clkddro, clkddri, clkread, ilock,
 	ddr_clk, ddr_clkb, ddr_clk_fb_out, ddr_clk_fb,
 	ddr_cke, ddr_csb, ddr_web, ddr_rasb, ddr_casb, 
-	ddr_dm, ddr_dqs, ddr_ad, ddr_ba, ddr_dq, sdi, sdo);
+	ddr_dm, ddr_dqs, ddr_ad, ddr_ba, ddr_dq, sdi, sdo,
+        ahbsi.testen, ahbsi.testrst, ahbsi.scanen, ahbsi.testoen);
 
-  ddr16 : if ddrbits = 16 generate
-    ddrc : ddrsp16a generic map (memtech => memtech, hindex => hindex, 
-	haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask,
+  ddrc : ddr1spax generic map (ddrbits => ddrbits, memtech => memtech, phytech => fabtech,
+        hindex => hindex, haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask,
 	pwron => pwron, MHz => DDR_FREQ, col => col, Mbyte => Mbyte,
-	fast => FAST_AHB, mobile => mobile, confapi => confapi, conf0 => conf0, 
-  conf1 => conf1, regoutput => regoutput)
-  	port map (rst_ahb, clkddri, clk_ahb, clkread, ahbsi, ahbso, sdi, sdo);
-  end generate;
-
-  ddr32 : if ddrbits = 32 generate
-    ddrc : ddrsp32a generic map (memtech => memtech, hindex => hindex,
-	haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask,
-	pwron => pwron, MHz => DDR_FREQ, col => col, Mbyte => Mbyte,
-	fast => FAST_AHB/2, mobile => mobile, confapi => confapi, conf0 => conf0, 
-  conf1 => conf1, regoutput => regoutput)
-  	port map (rst_ahb, clkddri, clk_ahb, ahbsi, ahbso, sdi, sdo);
-  end generate;
-
-  ddr64 : if ddrbits = 64 generate
-    ddrc : ddrsp64a generic map (memtech => memtech, hindex => hindex,
-	haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask,
-	pwron => pwron, MHz => DDR_FREQ, col => col, Mbyte => Mbyte,
-	fast => FAST_AHB/4, mobile => mobile, confapi => confapi, conf0 => conf0, 
-  conf1 => conf1, regoutput => regoutput)
-  	port map (rst_ahb, clkddri, clk_ahb, ahbsi, ahbso, sdi, sdo);
-  end generate;
-
+        mobile => mobile, confapi => confapi, conf0 => conf0, 
+        conf1 => conf1, regoutput => regoutput, nosync => nosync, ddr400 => ddr400, ahbbits => 32,
+        rstdel => rstdel, scantest => scantest)
+    port map (ddr_rst, rst_ahb, clkddri, clk_ahb, ahbsi, ahbso, sdi, sdo);
+    
 end;
 

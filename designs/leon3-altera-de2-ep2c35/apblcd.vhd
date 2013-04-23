@@ -149,6 +149,7 @@ begin
     rin <= v;
 
     --drive outputs
+    apbo.prdata              <= (others => '0');
     apbo.prdata(19 downto 0) <= r.cfg.epw & r.cfg.tas & r.busy & r.prdata; --***** 11 + 1 + 8
     apbo.pirq                <= (others => '0');
     apbo.pindex              <= pindex;

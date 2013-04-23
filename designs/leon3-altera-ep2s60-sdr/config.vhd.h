@@ -145,13 +145,6 @@
   constant CFG_GRGPIO_IMASK  : integer := 16#CONFIG_GRGPIO_IMASK#;
   constant CFG_GRGPIO_WIDTH  : integer := CONFIG_GRGPIO_WIDTH;
 
--- ATA interface
-  constant CFG_ATA      : integer := CONFIG_ATA_ENABLE;
-  constant CFG_ATAIO    : integer := 16#CONFIG_ATAIO#;
-  constant CFG_ATAIRQ   : integer := CONFIG_ATAIRQ;
-  constant CFG_ATADMA   : integer := CONFIG_ATA_MWDMA;
-  constant CFG_ATAFIFO  : integer := CONFIG_ATA_FIFO;
-
 -- GRLIB debugging
   constant CFG_DUART    : integer := CONFIG_DEBUG_UART;
 

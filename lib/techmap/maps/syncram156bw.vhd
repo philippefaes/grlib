@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,11 @@ library ieee;
 library techmap;
 use ieee.std_logic_1164.all;
 use techmap.gencomp.all;
-  
+library grlib;
+use grlib.config.all;
+use grlib.config_types.all;
+use grlib.stdlib.all;
+
 entity syncram156bw is
   generic (tech : integer := 0; abits : integer := 6; testen : integer := 0);
   port (
@@ -39,16 +43,10 @@ entity syncram156bw is
     dataout : out std_logic_vector (155 downto 0);
     enable  : in  std_logic_vector (15 downto 0);
     write   : in  std_logic_vector (15 downto 0);
-    testin  : in  std_logic_vector (3 downto 0) := "0000");
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
 end;
 
 architecture rtl of syncram156bw is
-
-constant has_sram156bw : tech_ability_type := (
-	virtex2 => 0, virtex4 => 0, virtex5 => 0, spartan3 => 0,
-	spartan3e => 0, spartan6 => 0, virtex6 => 0, 
-	altera => 0, cyclone3 => 0, stratix2 => 0, stratix3 => 0,
-	tm65gpl => 0, custom1 => 1, ut90 => 1, others => 0);
 
 --  component unisim_syncram128bw
 --  generic ( abits : integer := 9);
@@ -99,7 +97,12 @@ constant has_sram156bw : tech_ability_type := (
     testin  : in  std_logic_vector (3 downto 0) := "0000");
   end component;
 
+  signal xenable, xwrite : std_logic_vector(15 downto 0);
+
 begin
+
+  xenable <= enable when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
+  xwrite <= write when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
 
   s156 : if has_sram156bw(tech) = 1 generate
 --    xc2v : if (is_unisim(tech) = 1) generate 
@@ -113,12 +116,23 @@ begin
 --    end generate;
     cust1u : if tech = custom1 generate
       x0 : cust1_syncram156bw generic map (abits, testen)
-         port map (clk, address, datain, dataout, enable, write, testin);
+         port map (clk, address, datain, dataout, xenable, xwrite, testin);
     end generate;
     ut90u : if tech = ut90 generate
       x0 : ut90nhbd_syncram156bw generic map (abits, testen)
-         port map (clk, address, datain, dataout, enable, write, testin);
+         port map (clk, address, datain, dataout, xenable, xwrite, testin);
     end generate;
+-- pragma translate_off
+    dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
+      x : process
+      begin
+        assert false report "syncram156bw: " & tost(2**abits) & "x156" &
+         " (" & tech_table(tech) & ")"
+        severity note;
+        wait;
+      end process;
+    end generate;
+-- pragma translate_on
   end generate;
 
   nos156 : if has_sram156bw(tech) = 0 generate

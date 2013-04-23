@@ -1,0 +1,4 @@
+
+#ifndef CONFIG_MIG_SERIES7
+#define CONFIG_MIG_SERIES7 0
+#endif

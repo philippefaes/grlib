@@ -9,8 +9,8 @@ UCF=leon3mp.ucf
 #UCF=leon3mp_gbit_usb.ucf
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=high
-XSTOPT=""
-ISEMAPOPT="-timing"
+XSTOPT=
+ISEMAPOPT=-timing
 VHDLSYNFILES=config.vhd leon3mp.vhd
 VHDLSIMFILES=testbench.vhd
 SIMTOP=testbench
@@ -22,12 +22,12 @@ SYNPOPT="set_option -pipe 1; set_option -retiming 1; set_option -write_apr_const
 
 TECHLIBS = altera altera_mf cycloneiii
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	tmtc openchip hynix cypress ihp gleichmann fmf spansion gsi
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan ddr ata haps \
-	slink ascs coremp7 ac97 eon3ft leon4 leon4b64 l2cache \
+	tmtc openchip hynix cypress ihp fmf spansion gsi
+DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan ddr \
+	slink ascs leon3ft leon4 leon4v0 l2cache \
 	spacewire usb pwm gr1553b iommu pci leon3ft hcan 
 
-FILESKIP = grcan.vhd simple_spi_top.v ata_device.v i2c_slave_model.v
+FILESKIP = grcan.vhd ata_device.v i2c_slave_model.v
 
 include $(GRLIB)/bin/Makefile
 include $(GRLIB)/software/leon3/Makefile

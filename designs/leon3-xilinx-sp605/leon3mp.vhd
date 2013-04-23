@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2011, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 ------------------------------------------------------------------------------
 
-
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib, techmap;
@@ -36,6 +35,7 @@ use gaisler.leon3.all;
 use gaisler.uart.all;
 use gaisler.misc.all;
 use gaisler.spi.all;
+use gaisler.i2c.all;
 use gaisler.can.all;
 use gaisler.net.all;
 use gaisler.jtag.all;
@@ -138,8 +138,14 @@ entity leon3mp is
     -- SPI flash
     spi_sel_n : inout std_ulogic;
     spi_clk   : out   std_ulogic;
-    spi_mosi  : out   std_ulogic
-	
+    spi_mosi  : out   std_ulogic;
+
+    sysace_mpa      : out std_logic_vector(6 downto 0);
+    sysace_mpce     : out std_ulogic;
+    sysace_mpirq    : in  std_ulogic;
+    sysace_mpoe     : out std_ulogic;
+    sysace_mpwe     : out std_ulogic;
+    sysace_d        : inout std_logic_vector(7 downto 0)
    );
 end;
 
@@ -238,13 +244,10 @@ signal spmo2 : spimctrl_out_type;
 
 constant BOARD_FREQ : integer := 33000;   -- input frequency in KHz
 constant CPU_FREQ : integer := BOARD_FREQ * CFG_CLKMUL / CFG_CLKDIV;  -- cpu frequency in KHz
-constant IOAEN : integer := 0;
+constant IOAEN : integer := CFG_GRACECTRL;
 constant DDR2_FREQ  : integer := 200000;                               -- DDR2 input frequency in KHz
 
 signal stati : ahbstat_in_type;
-
-signal ddsi  : ddrmem_in_type;
-signal ddso  : ddrmem_out_type;
 
 signal fpi : grfpu_in_vector_type;
 signal fpo : grfpu_out_vector_type;
@@ -261,6 +264,9 @@ signal fpo : grfpu_out_vector_type;
 signal video_clk : std_ulogic;  -- signals to vga_clkgen.
 signal clk_sel : std_logic_vector(1 downto 0);
 signal clkvga, clkvga_p, clkvga_n : std_ulogic;
+
+signal acei   : gracectrl_in_type;
+signal aceo   : gracectrl_out_type;
 
 attribute keep : boolean;
 attribute syn_keep : boolean;
@@ -299,7 +305,7 @@ begin
 
   ahb0 : ahbctrl       -- AHB arbiter/multiplexer
   generic map (defmast => CFG_DEFMST, split => CFG_SPLIT, 
-   rrobin => CFG_RROBIN, ioaddr => CFG_AHBIO,
+   rrobin => CFG_RROBIN, ioaddr => CFG_AHBIO, fpnpen => CFG_FPNPEN,
    ioen => IOAEN, nahbm => maxahbm, nahbs => 16)
   port map (rstn, clkm, ahbmi, ahbmo, ahbsi, ahbso);
 
@@ -331,7 +337,7 @@ begin
 	  CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
           CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP,
           CFG_LDDEL, disas, CFG_ITBSZ, CFG_PWD, CFG_SVT, CFG_RSTADDR, CFG_NCPU-1,
-	  CFG_DFIXED, CFG_SCAN, CFG_MMU_PAGE)
+	  CFG_DFIXED, CFG_SCAN, CFG_MMU_PAGE, CFG_BP)
         port map (clkm, rstn, ahbmi, ahbmo(i), ahbsi, ahbso,
     		irqi(i), irqo(i), dbgi(i), dbgo(i));
       end generate;
@@ -403,24 +409,30 @@ begin
   memi.writen <= '1'; memi.wrn <= "1111"; memi.bwidth <= "01";
   memi.brdyn <= '0'; memi.bexcn <= '1';
 
-  mctrl0 : mctrl generic map (hindex => 0, pindex => 0,
-   paddr => 0, srbanks => 2, ram8 => CFG_MCTRL_RAM8BIT, 
-   ram16 => CFG_MCTRL_RAM16BIT, sden => CFG_MCTRL_SDEN, 
-   invclk => CFG_CLK_NOFB, sepbus => CFG_MCTRL_SEPBUS,
-   pageburst => CFG_MCTRL_PAGE, rammask => 0, iomask => 0)
-  port map (rstn, clkm, memi, memo, ahbsi, ahbso(0), apbi, apbo(0), wpo, sdo);
-
-  addr_pad : outpadv generic map (width => 24, tech => padtech) 
-   port map (address, memo.address(24 downto 1)); 
-  roms_pad : outpad generic map (tech => padtech) 
-   port map (romsn, memo.romsn(0)); 
-  oen_pad  : outpad generic map (tech => padtech) 
-   port map (oen, memo.oen);
-  wri_pad  : outpad generic map (tech => padtech) 
-   port map (writen, memo.writen);
-  data_pad : iopadvv generic map (tech => padtech, width => 16)
-      port map (data(15 downto 0), memo.data(31 downto 16),
-   memo.vbdrive(31 downto 16), memi.data(31 downto 16));
+  mctrl_gen : if CFG_MCTRL_LEON2 /= 0 generate
+    mctrl0 : mctrl generic map (hindex => 0, pindex => 0,
+     paddr => 0, srbanks => 2, ram8 => CFG_MCTRL_RAM8BIT, 
+     ram16 => CFG_MCTRL_RAM16BIT, sden => CFG_MCTRL_SDEN, 
+     invclk => CFG_CLK_NOFB, sepbus => CFG_MCTRL_SEPBUS,
+     pageburst => CFG_MCTRL_PAGE, rammask => 0, iomask => 0)
+    port map (rstn, clkm, memi, memo, ahbsi, ahbso(0), apbi, apbo(0), wpo, sdo);
+  
+    addr_pad : outpadv generic map (width => 24, tech => padtech) 
+     port map (address, memo.address(24 downto 1)); 
+    roms_pad : outpad generic map (tech => padtech) 
+     port map (romsn, memo.romsn(0)); 
+    oen_pad  : outpad generic map (tech => padtech) 
+     port map (oen, memo.oen);
+    wri_pad  : outpad generic map (tech => padtech) 
+     port map (writen, memo.writen);
+    data_pad : iopadvv generic map (tech => padtech, width => 16)
+        port map (data(15 downto 0), memo.data(31 downto 16),
+     memo.vbdrive(31 downto 16), memi.data(31 downto 16));
+  end generate;
+  nomctrl : if CFG_MCTRL_LEON2 = 0 generate
+    roms_pad : outpad generic map (tech => padtech) 
+     port map (romsn, vcc); --ahbso(0) <= ahbso_none;
+  end generate;
 
 -----------------------------------------------------------------------
 ---  Test report module  ----------------------------------------------
@@ -513,6 +525,43 @@ begin
       port map (spi_sel_n, spmo.csn);  
   end generate;
 
+  nospimc: if ((CFG_SPICTRL_ENABLE = 0 and CFG_SPIMCTRL = 0) or 
+               (CFG_SPICTRL_ENABLE = 1 and CFG_SPIMCTRL = 1) or
+               (CFG_SPICTRL_ENABLE = 1 and CFG_SPIMCTRL = 0))generate
+    mosi_pad : outpad generic map (tech => padtech)
+      port map (spi_mosi, '0');
+    sck_pad  : outpad generic map (tech => padtech)
+      port map (spi_clk, '0'); 
+  end generate;
+
+----------------------------------------------------------------------
+---  System ACE I/F Controller ---------------------------------------
+----------------------------------------------------------------------
+  
+  grace: if CFG_GRACECTRL = 1 generate
+    grace0 : gracectrl generic map (hindex => 8, hirq => 10,
+        haddr => 16#002#, hmask => 16#fff#, split => CFG_SPLIT, mode => 2)
+      port map (rstn, clkm, lclk, ahbsi, ahbso(8), acei, aceo);
+  end generate;
+  nograce: if CFG_GRACECTRL /= 1 generate
+    aceo <= gracectrl_none;
+  end generate;
+  
+  sysace_mpa_pads : outpadv generic map (width => 7, tech => padtech) 
+    port map (sysace_mpa, aceo.addr); 
+  sysace_mpce_pad : outpad generic map (tech => padtech)
+    port map (sysace_mpce, aceo.cen); 
+  sysace_d_pads : iopadv generic map (tech => padtech, width => 8)
+    port map (sysace_d, aceo.do(7 downto 0), aceo.doen, acei.di(7 downto 0));
+  acei.di(15 downto 8) <= (others => '0');
+  sysace_mpoe_pad : outpad generic map (tech => padtech)
+    port map (sysace_mpoe, aceo.oen);
+  sysace_mpwe_pad : outpad generic map (tech => padtech)
+    port map (sysace_mpwe, aceo.wen); 
+  sysace_mpirq_pad : inpad generic map (tech => padtech)
+    port map (sysace_mpirq, acei.irq); 
+
+  
 ----------------------------------------------------------------------
 ---  APB Bridge and various periherals -------------------------------
 ----------------------------------------------------------------------
@@ -680,6 +729,16 @@ begin
       ethi.gtx_clk <= egtx_clk;
 
     end generate;
+
+-----------------------------------------------------------------------
+---  AHB ROM ----------------------------------------------------------
+-----------------------------------------------------------------------
+
+  bpromgen : if CFG_AHBROMEN /= 0 generate
+    brom : entity work.ahbrom
+      generic map (hindex => 5, haddr => CFG_AHBRODDR, pipe => CFG_AHBROPIP)
+      port map ( rstn, clkm, ahbsi, ahbso(5));
+  end generate;
 
 -----------------------------------------------------------------------
 ---  AHB RAM ----------------------------------------------------------

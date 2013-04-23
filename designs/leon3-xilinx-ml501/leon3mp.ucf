@@ -1,15 +1,6 @@
 
 NET sram_clk FEEDBACK = 1.0 NET sram_clk_fb;
 NET "clkm" 		TNM_NET = "clkm";
-NET "clkml" 		TNM_NET = "clkml";
-TIMESPEC "TS_clkm_clkml" = FROM "clkm" TO "clkml" TIG;
-TIMESPEC "TS_clkml_clkm" = FROM "clkml" TO "clkm" TIG;
-#NET "lock"  TIG;
-
-NET "egtx_clk" 	TNM_NET = "egtx_clk";
-TIMESPEC "TS_clkm_egtx_clk" = FROM "clkm" TO "egtx_clk" TIG;
-TIMESPEC "TS_egtx_clk_clkm" = FROM "egtx_clk" TO "clkm" TIG;
-
 
 NET sysace_clk_in   TNM_NET    = "sysace_clk_in";
 # Leave 1 ns margin
@@ -18,11 +9,6 @@ TIMESPEC "TSSYSACE" = PERIOD "sysace_clk_in" 29 ns;
 #TIMESPEC "TS_sysace_clk_in_clkm" = FROM "sysace_clk_in" TO "clkm" TIG;
 #OFFSET = OUT : 8.000 AFTER sysace_clk_in;
 #OFFSET = IN : 7.000 BEFORE sysace_clk_in;
-
-NET phy_tx_data(*) TNM = gtxphypads;
-TIMESPEC "TSGTXOUT" = FROM "egtx_clk" TO "gtxphypads" 4.8 ns;
-NET phy_gtx_clk TNM = phy_gtx_clkpad;
-TIMESPEC "TSGTXOUT2" = FROM "egtx_clk" TO "phy_gtx_clkpad" 4.8 ns;
 
 NET "phy_rx_clk" PERIOD = 8.000 ;
 OFFSET = IN : 5.000 : BEFORE phy_rx_clk ;
@@ -33,33 +19,7 @@ OFFSET = IN : 8.000 : BEFORE phy_tx_clk ;
 
 NET "phy_tx_clk" MAXSKEW= 1.0 ns;
 NET "phy_rx_clk" MAXSKEW= 1.0 ns;
-NET "egtx_clk" MAXSKEW= 1.0 ns;
 
-
-#TIMESPEC "TSGRXIN" = FROM "gtxphypads" TO "eth1_e1_m1000_u0_rxclk" 10 ns;
-
-////////////////////////////////////////////////////////////////////////////
-// VGA clocks
-////////////////////////////////////////////////////////////////////////////
-NET "clkvga" TNM_NET = "clkvga" | PERIOD = 15.385;
-NET "clk25" TNM_NET = "clk25" | PERIOD = 40.000;
-NET "clk40" TNM_NET = "clk40" | PERIOD = 25.000;
-NET "clk65" TNM_NET = "clk65" | PERIOD = 15.385;
-#TIMESPEC "TSPLB_TFT" = FROM "clkm" TO "clkvga" TIG;
-TIMESPEC "TSPLB_TFT25" = FROM "clkm" TO "clk25" TIG;
-TIMESPEC "TSPLB_TFT40" = FROM "clkm" TO "clk40" TIG;
-TIMESPEC "TSPLB_TFT65" = FROM "clkm" TO "clk65" TIG;
-#TIMESPEC "TSTFT_PLB" = FROM "clkvgap" TO "clkm" TIG;
-TIMESPEC "TSTFT25_PLB" = FROM "clk25" TO "clkm" TIG;
-TIMESPEC "TSTFT25_TFT40" = FROM "clk25" TO "clk40" TIG;
-TIMESPEC "TSTFT25_TFT65" = FROM "clk25" TO "clk65" TIG;
-TIMESPEC "TSTFT40_PLB" = FROM "clk40" TO "clkm" TIG;
-TIMESPEC "TSTFT40_TFT25" = FROM "clk40" TO "clk25" TIG;
-TIMESPEC "TSTFT40_TFT65" = FROM "clk40" TO "clk65" TIG;
-TIMESPEC "TSTFT65_PLB" = FROM "clk65" TO "clkm" TIG;
-TIMESPEC "TSTFT65_TFT25" = FROM "clk65" TO "clk25" TIG;
-TIMESPEC "TSTFT65_TFT40" = FROM "clk65" TO "clk40" TIG;
-////////////////////////////////////////////////////////////////////////////
 
 #NET "ddrsp0.ddrc0/nftphy.ddr_phy0/ddr_phy0/xc4v.ddr_phy0/dqsclk(*)" TNM_NET = "dqsclk"; 
 #TIMEGRP "dqsclk_rise" = FALLING "dqsclk";
@@ -429,6 +389,7 @@ NET ddr2_a(12) LOC = AC3; # DDR_A12
 NET ddr2_a(13) LOC = AD5; # DDR_A13
 NET ddr2_ba(0)  LOC = AB5; # DDR_BA0
 NET ddr2_ba(1)  LOC = AB6; # DDR_BA1
+NET ddr2_ba(2)  LOC = AC4; # DDR_BA2
 NET ddr2_cas_n   LOC = AE3; # DDR_CAS_N
 NET ddr2_cke(0) LOC = AA3; # DDR_CKE
 NET ddr2_cke(1) LOC = AB4; # DDR_CKE

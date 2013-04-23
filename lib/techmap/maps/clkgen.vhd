@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -86,6 +86,11 @@ begin
     v : clkgen_virtex5
     generic map (clk_mul, clk_div, sdramen, noclkfb, pcien, pcidll, pcisysclk, freq, clk2xen, clksel)
     port map (clkin, pciclkin, clk, clkn, clk2x, sdclk, pciclk, cgi, cgo, clk1xu, clk2xu);
+  end generate;
+  xc7l : if (tech =virtex7) or (tech =kintex7) or (tech =artix7) or (tech =zynq7000) generate
+    v : clkgen_virtex7
+    generic map (clk_mul, clk_div, freq)
+    port map (clkin, clk, cgi, cgo);
   end generate;
   xc3s : if (tech = spartan3) or (tech = spartan3e) or (tech = spartan6) generate
     v : clkgen_spartan3

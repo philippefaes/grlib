@@ -19,11 +19,15 @@ CONFIG_SYN_INFERRED
   - Lattice : EC/ECP/XP FPGAs
   - Quicklogic : Eclipse/E/II FPGAs
   - UMC-0.18 : UMC 0.18 um CMOS with Virtual Silicon libraries
-  - Xilinx-Spartan/2/3: Xilinx Spartan/2/3 libraries
+  - Xilinx-Spartan/2/3/6: Xilinx Spartan/2/3/6 libraries
   - Xilinx-Spartan3E: Xilinx Spartan3E libraries
   - Xilinx-Virtex/E: Xilinx Virtex/E libraries
-  - Xilinx-Virtex2/4/5: Xilinx Virtex2/4/5 libraries
+  - Xilinx-Virtex2/4/5/6/7: Xilinx Virtex2/4/5/6/7 libraries
 
+  Note: Level of technology support depends on type of GRLIB
+  distribution. A technology may be present in this list while the
+  tech support files are missing from the GRLIB distribution.
+  Actel support is only available in commercial and FT distributions.
 
 Ram library
 CONFIG_MEM_VIRAGE
@@ -59,31 +63,33 @@ CONFIG_CLK_INFERRED
   phase-adjust the system and SDRAM clocks. This is currently supported
   for Xilinx, Altera and Proasic3 FPGAs. Depending on technology, you
   can select to use the Xilinx CKLDLL macro (Virtex, VirtexE, Spartan1/2),
-  the Xilinx DCM (Virtex-2, Spartan3, Virtex-4), the Altera ALTDLL
-  (Stratix, Cyclone), or the Proasic3 PLL. Choose the 'inferred' 
-  option to skip a clock generator.
+  the Xilinx DCM (Virtex-2, Spartan3, Virtex-4), the Xilinx PLLE2 (Virtex-7,
+  Kintex-7, Artix-4), the Altera ALTDLL (Stratix, Cyclone), or the 
+  Proasic3 PLL. Choose the 'inferred' option to skip a clock generator.
 
 Clock multiplier
 CONFIG_CLK_MUL
-  When using the Xilinx DCM or Altera ALTPLL, the system clock can
-  be multiplied with a factor of 2 - 32, and divided by a factor of
-  1 - 32. This makes it possible to generate almost any desired 
-  processor frequency. When using the Xilinx CLKDLL generator,
-  the resulting frequency scale factor (mul/div) must be one of
-  1/2, 1 or 2. On Proasic3, the factor can be 1 - 128.
-
+  When using the Xilinx DCM, Xilinx PLLE2 or Altera ALTPLL, 
+  the system clock can be multiplied with a factor of 2 - 32, 
+  and divided by a factor of 1 - 32. This makes it possible to 
+  generate almost any desired processor frequency. When using 
+  the Xilinx CLKDLL generator, the resulting frequency scale f
+  actor (mul/div) must be one of 1/2, 1 or 2. On Proasic3, 
+  the factor can be 1 - 128. 
+  
   WARNING: The resulting clock must be within the limits specified
   by the target FPGA family.
 
 Clock divider
 CONFIG_CLK_DIV
-  When using the Xilinx DCM or Altera ALTPLL, the system clock can
-  be multiplied with a factor of 2 - 32, and divided by a factor of
-  1 - 32. This makes it possible to generate almost any desired 
-  processor frequency. When using the Xilinx CLKDLL generator,
-  the resulting frequency scale factor (mul/div) must be one of
-  1/2, 1 or 2. On Proasic3, the factor can be 1 - 128.
-
+  When using the Xilinx DCM, Xilinx PLLE2 or Altera ALTPLL, 
+  the system clock can be multiplied with a factor of 2 - 32, 
+  and divided by a factor of 1 - 32. This makes it possible to 
+  generate almost any desired processor frequency. When using 
+  the Xilinx CLKDLL generator, the resulting frequency scale f
+  actor (mul/div) must be one of 1/2, 1 or 2. On Proasic3, 
+  the factor can be 1 - 128. 
+  
   WARNING: The resulting clock must be within the limits specified
   by the target FPGA family.
 
@@ -148,6 +154,34 @@ CONFIG_PROC_NUM
   The number of processor cores. The LEON3MP design can accomodate
   up to 4 LEON3 processor cores. Use 1 unless you know what you are
   doing ...
+
+Force values from example configuration
+CONFIG_LEON3_MIN
+  If you select any other value than Custom-configuration then the
+  configuration choices will be forced to settings corresponding to
+  the selected example configuration. The example configurations are
+  described in the document LEON/GRLIB Design and Configuration Guide
+  located at doc/guide.pdf.
+
+  Due to limitations in the configuration tool it is not possible to
+  update all choices without first saving the configuration and
+  restarting the tool. Perform the steps below to set the processor
+  configuration to example configuration values: 
+
+  1. Select example configuration (MIN, GP, HP). This will result
+     in most processor configuration menus being disabled.
+  2. Go back to the main menu and select Save and Exit
+  3. Start the xconfig tool again
+  4. Go into processor configuration and select Custom-configuration.
+     All configuration values can now be changed again and have been
+     initialized to example configuration that was selected earlier.
+  5. Make any changes and then quit xconfig via Save and Exit
+
+  Some options set from the example configuration may need to be changed.
+  One such setting is the FPU multiplier, if the FPU is enabled, where
+  timing is improved for several FPGA technologies by selecting the
+  technology specific multiplier and where the DW multiplier is generally
+  a good choice for ASIC.
 
 Number of SPARC register windows
 CONFIG_IU_NWINDOWS
@@ -551,11 +585,10 @@ CONFIG_IUFT_NONE
   sparing, 7-bit BCH and TMR.
 
 FPU Register file protection
-CONFIG_FPUFT_EN
+CONFIG_FPUFT_NONE
   Say Y to enable SEU protection of the FPU register file.
-  The GRFPU will be protected using 8-bit parity without restart, while
-  the GRFPU-Lite will be protected with 4-bit parity with restart. If
-  disabled the FPU register file will be implemented using flip-flops.
+  The GRFPU-Lite will be protected with parity, PDMR and TMR.
+  The GRFPU can use PDMR or TMR only.
 
 Cache memory error injection
 CONFIG_RF_ERRINJ
@@ -995,6 +1028,111 @@ CONFIG_PCI_FIFO8
   core. The master interface uses four 33-bit wide FIFOs, while the
   target interface uses two. 
 
+PCI interface type
+CONFIG_GRPCI2_MASTER
+  Enable the PCI initiator.
+
+PCI interface type
+CONFIG_GRPCI2_TARGET
+  Enable the PCI target.
+
+PCI DMA controller
+CONFIG_GRPCI2_DMA
+  Enable the PCI DMA controller.
+
+PCI device-id
+CONFIG_GRPCI2_DEVICEID
+  Sets the PCI device ID in the PCI configuration area.
+
+PCI vendor-id
+CONFIG_GRPCI2_VENDORID
+  Sets the PCI vendor ID in the PCI configuration area.
+
+PCI class-code
+CONFIG_GRPCI2_CLASS
+  Sets the PCI class-code in the PCI configuration area.
+
+PCI revision-id
+CONFIG_GRPCI2_REVID
+  Sets the PCI revision ID in the PCI configuration area.
+
+PCI Capability pointer
+CONFIG_GRPCI2_CAPPOINT
+  Sets the PCI capability pointer in the PCI configuration area. 
+  Sets the offset for the extended PCI Configuration Space.
+
+PCI Next Capability pointer
+CONFIG_GRPCI2_NEXTCAPPOINT
+  Sets the PCI capability pointer of second item in the extended 
+  capability list (in the PCI configuration) If no user defined 
+  extended capability item is implemented this should be set to 0.
+
+PCI BAR size
+CONFIG_GRPCI2_BAR0
+  Set the size of BAR 0. 26 => bit[31:26] in the BAR register is 
+  implemented. BAR size = 64 MiB.
+
+PCI BAR size
+CONFIG_GRPCI2_BAR1
+  see help for BAR0.
+
+PCI BAR size
+CONFIG_GRPCI2_BAR2
+  see help for BAR0.
+
+PCI BAR size
+CONFIG_GRPCI2_BAR3
+  see help for BAR0.
+
+PCI BAR size
+CONFIG_GRPCI2_BAR4
+  see help for BAR0.
+
+PCI BAR size
+CONFIG_GRPCI2_BAR5
+  see help for BAR0.
+
+FIFO depth
+CONFIG_GRPCI2_FIFO8
+  The number words in each PCI FIFO buffer.
+
+FIFO count
+CONFIG_GRPCI2_FIFOCNT1
+  The number buffer implemented in each FIFO.
+
+GRPCI2 PCI little-endian
+CONFIG_GRPCI2_ENDIAN
+  Set the default PCI bus endianes.
+
+GRPCI2 Device Interrupt
+CONFIG_GRPCI2_DINT
+  Enable the device to assert the PCI int signal.
+
+GRPCI2 Device Interrupt mask
+CONFIG_GRPCI2_DINTMASK
+  The default mask. '1' = enable.
+
+GRPCI2 Host Interrupt
+CONFIG_GRPCI2_HINT
+  Enable the device to sample the PCI int signal.
+
+GRPCI2 Host Interrupt mask
+CONFIG_GRPCI2_HINTMASK
+  The default mask. '1' = enable.
+
+GRPCI2 PCI trace buffer
+CONFIG_GRPCI2_TRACE0
+  Set the depth of the PCI trace buffer.
+
+GRPCI2 Input pad bypass
+CONFIG_GRPCI2_BYPASS
+  If the PADs do not implements output-to-input bypass, this option 
+  implements the bypass in the core.
+
+Extended Configuration Space mappit
+CONFIG_GRPCI2_EXTCFG
+  The mapping of the user defined Extended PCI Configuration Space 
+  to AMBA.
 
 PCI arbiter enable
 CONFIG_PCI_ARBITER

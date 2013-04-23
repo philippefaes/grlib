@@ -1,2 +1,0 @@
-bool 'OpenCores SPI Controller' CONFIG_SPI_OC_ENABLE
-

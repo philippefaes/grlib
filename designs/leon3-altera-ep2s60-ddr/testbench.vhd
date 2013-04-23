@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -130,27 +130,6 @@ constant lresp : boolean := false;
 signal sa      	: std_logic_vector(14 downto 0);
 signal sd   	: std_logic_vector(31 downto 0);
 
--- ATA signals
-signal ata_rst   : std_logic;   
-signal ata_data  : std_logic_vector(15 downto 0);
-signal ata_da    : std_logic_vector(2 downto 0);
-signal ata_cs0   : std_logic;
-signal ata_cs1   : std_logic;
-signal ata_dior  : std_logic;
-signal ata_diow  : std_logic;
-signal ata_iordy : std_logic;
-signal ata_intrq : std_logic;
-signal ata_dmarq : std_logic; 
-signal ata_dmack : std_logic;
-signal cf_gnd_da : std_logic_vector(10 downto 3); 
-signal cf_atasel : std_logic; 
-signal cf_we     : std_logic; 
-signal cf_power  : std_logic;
-signal cf_csel   : std_logic;
-
-signal from_ata : ata_out_type := ATAO_RESET_VECTOR;
-signal to_ata : ata_in_type := ATAI_RESET_VECTOR;
-
 begin
 
 -- clock and reset
@@ -177,11 +156,8 @@ begin
 	ssram_clk, ssram_adscn, ssram_adsp_n, ssram_adv_n,  iosn,
 	ddr_clkin, ddr_clk, ddr_clkb, ddr_cke, ddr_csb, ddr_web, ddr_rasb, 
 	ddr_casb, ddr_dm, ddr_dqs2, ddr_ad, ddr_ba, ddr_dq2, 
-	dsubren, dsuact, rxd1, txd1, 
-	ata_data, ata_da, ata_cs0, ata_cs1, 
-	ata_dior, ata_diow, ata_iordy, ata_intrq, ata_dmarq, ata_dmack, cf_power, 
-	cf_gnd_da, cf_atasel, cf_we, eth_aen, eth_readn, 
-	eth_writen, eth_nbe); 
+	dsubren, dsuact, rxd1, txd1,
+	eth_aen, eth_readn, eth_writen, eth_nbe); 
 
   ddr0 : mt46v16m16 
     generic map (index => -1, fname => sdramfile)
@@ -209,30 +185,6 @@ begin
   prom0 : sram generic map (index => 6, abits => romdepth, fname => promfile)
 	port map (address(romdepth-1 downto 0), data(31 downto 24), 
 		  romsn, writen, oen);
-
---  to_ata.csel<=ata_csel;
-  to_ata.cs(0)<=ata_cs0;
-  to_ata.cs(1)<=ata_cs1;
-  --??to_ata.dasp<=
-  to_ata.da<=ata_da;
-  to_ata.dmack<=ata_dmack;
-  to_ata.dior<=ata_dior;
-  to_ata.diow<=ata_diow;
-  to_ata.reset<=rst;
-
-  ata_dmarq<=from_ata.dmarq;
-  ata_intrq<=from_ata.intrq;
-  ata_iordy<=from_ata.iordy;
-
-  disk: ata_device
-    generic map(sector_length=>512,log2_size=>14)
-    port map(
-      clk => clk,
-      rst => rst,
-      d => ata_data,
-      atai => to_ata,
-      atao => from_ata
-    );
 
   error <= 'H';			  -- ERROR pull-up
 

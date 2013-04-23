@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@ use grlib.amba.all;
 use grlib.stdlib.all;
 use grlib.devices.all;
 library gaisler;
-use gaisler.misc.all;
 use gaisler.pci.all;
 
 entity dmactrl is
@@ -483,7 +482,6 @@ begin
    ahbsi1.hirq <= (others => '0');
    ahbsi1.hprot <= (others => '0');
    ahbsi1.hmastlock <= '0';
-   ahbsi1.hcache <= '0';
    ahbsi1.testen <= '0';
    ahbsi1.testrst <= '0';
    ahbsi1.scanen <= '0';

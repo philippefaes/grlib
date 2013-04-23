@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,8 @@ entity odpad is
   generic (tech : integer := 0; level : integer := 0; slew : integer := 0;
 	   voltage : integer := x33v; strength : integer := 12;
 	   oepol : integer := 0);
-  port (pad : out std_ulogic; i : in std_ulogic);
+  port (pad : out std_ulogic; i : in std_ulogic;
+        cfgi: in std_logic_vector(19 downto 0) := "00000000000000000000");
 end;
 
 architecture rtl of odpad is
@@ -124,7 +125,13 @@ begin
     x0 : nextreme_toutpad generic map (level, slew, voltage, strength)
 	 port map (pad, gnd, oen);
   end generate;
-
+  n2x : if (tech = easic45) generate
+    x0 : n2x_toutpad generic map (level, slew, voltage, strength)
+      port map (pad, gnd, oen,cfgi(0), cfgi(1),
+                cfgi(19 downto 15), cfgi(14 downto 10),
+                cfgi(9 downto 6), cfgi(5 downto 2));
+  end generate;
+  
 end;
 
 library techmap;
@@ -138,12 +145,13 @@ entity odpadv is
 	oepol : integer := 0);
   port (
     pad : out std_logic_vector(width-1 downto 0);
-    i   : in  std_logic_vector(width-1 downto 0));
+    i   : in  std_logic_vector(width-1 downto 0);
+    cfgi: in std_logic_vector(19 downto 0) := "00000000000000000000");
 end;
 architecture rtl of odpadv is
 begin
   v : for j in width-1 downto 0 generate
     x0 : odpad generic map (tech, level, slew, voltage, strength, oepol)
-	 port map (pad(j), i(j));
+	 port map (pad(j), i(j), cfgi);
   end generate;
 end;

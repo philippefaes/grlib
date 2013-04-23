@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -164,7 +164,7 @@ signal lspw_ten  : std_logic_vector(0 to CFG_SPW_NUM-1);
 
 signal llock, lroen, lroout : std_ulogic;
 
-signal ltrst,ltck,ltms,ltdi,ltdo: std_ulogic;
+signal ltrst,ltck,ltms,ltdi,ltdo,ltdoen: std_ulogic;
 
 signal ltest, gnd : std_ulogic;
 signal lclk2x, lclk4x, lclkdis, lclklock : std_ulogic;
@@ -192,7 +192,7 @@ begin
       lromsn, lbrdyn, lbexcn, lwdogn, gpioin, gpioout, gpioen, lprom32, lpromedac,
       lspw_clksel, lspw_clk, lspw_rxd, lspw_rxs, lspw_txd, lspw_txs, lspw_ten,
       lclk2x, lclk4x, lclkdis, lclklock, llock, lroen, lroout, ltest, gnd,
-      ltrst, ltck, ltms, ltdi, ltdo);
+      ltrst, ltck, ltms, ltdi, ltdo, ltdoen);
 
   core0 : entity work.core
     generic map (fabtech, memtech, padtech, clktech, disas, dbguart, pclow, scantest)
@@ -205,6 +205,6 @@ begin
       lromsn, lbrdyn, lbexcn, lwdogn, gpioin, gpioout, gpioen, lprom32, lpromedac,
       lspw_clksel, lspw_clk, lspw_rxd, lspw_rxs, lspw_txd, lspw_txs, lspw_ten,
       lclk2x, lclk4x, lclkdis, lclklock, llock, lroen, lroout, ltest, gnd,
-      ltrst, ltck, ltms, ltdi, ltdo);
+      ltrst, ltck, ltms, ltdi, ltdo, ltdoen);
 
 end;

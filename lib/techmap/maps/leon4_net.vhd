@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -80,6 +80,7 @@ entity leon4_net is
    port (
       clk     : in  std_ulogic;
       gclk    : in  std_ulogic;
+      hclken  : in  std_ulogic;
       rstn    : in  std_ulogic;
       ahbix   : in  ahb_mst_in_type;
       ahbox   : out ahb_mst_out_type;
@@ -96,6 +97,7 @@ entity leon4_net is
       irqo_irl:         out   std_logic_vector(3 downto 0);
       irqo_pwd:         out   std_ulogic;
       irqo_fpen:        out   std_ulogic;
+      irqo_idle:        out   std_ulogic;
 
       dbgi_dsuen:       in    std_ulogic;                               -- DSU enable
       dbgi_denable:     in    std_ulogic;                               -- diagnostic register access enable
@@ -198,13 +200,13 @@ signal disasen : std_ulogic;
    port (
       clk:              in    std_ulogic;
       gclk:             in    std_ulogic;
+      hclken:           in    std_ulogic;
       rstn:             in    std_ulogic;
 
       ahbi_hgrant:      in    std_logic_vector(0 to NAHBMST-1);         -- bus grant
       ahbi_hready:      in    std_ulogic;                               -- transfer done
       ahbi_hresp:       in    std_logic_vector(1 downto 0);             -- response type
       ahbi_hrdata:      in    std_logic_vector(127 downto 0);            -- read data bus
-      ahbi_hcache:      in    std_ulogic;                               -- cacheable
       ahbi_hirq:        in    std_logic_vector(NAHBIRQ-1 downto 0);     -- interrupt result bus
       ahbi_testen:      in    std_ulogic;
       ahbi_testrst:     in    std_ulogic;
@@ -234,7 +236,6 @@ signal disasen : std_ulogic;
       ahbsi_hmaster:    in    std_logic_vector(3 downto 0);             -- current master
       ahbsi_hmastlock:  in    std_ulogic;                               -- locked access
       ahbsi_hmbsel:     in    std_logic_vector(0 to NAHBAMR-1);         -- memory bank select
-      ahbsi_hcache:     in    std_ulogic;                               -- cacheable
       ahbsi_hirq:       in    std_logic_vector(NAHBIRQ-1 downto 0);     -- interrupt result bus
 
       irqi_irl:         in    std_logic_vector(3 downto 0);
@@ -248,7 +249,8 @@ signal disasen : std_ulogic;
       irqo_irl:         out   std_logic_vector(3 downto 0);
       irqo_pwd:         out   std_ulogic;
       irqo_fpen:        out   std_ulogic;
-
+      irqo_idle:        out   std_ulogic;
+      
       dbgi_dsuen:       in    std_ulogic;                               -- DSU enable
       dbgi_denable:     in    std_ulogic;                               -- diagnostic register access enable
       dbgi_dbreak:      in    std_ulogic;                               -- debug break-in
@@ -296,7 +298,6 @@ signal disasen : std_ulogic;
    signal   ahbi_hready:      std_ulogic;
    signal   ahbi_hresp:       std_logic_vector(1 downto 0);
    signal   ahbi_hrdata:      std_logic_vector(127 downto 0);
-   signal   ahbi_hcache:      std_ulogic;
    signal   ahbi_hirq:        std_logic_vector(NAHBIRQ-1 downto 0);
    signal   ahbi_testen:      std_ulogic;
    signal   ahbi_testrst:     std_ulogic;
@@ -326,15 +327,14 @@ signal disasen : std_ulogic;
    signal   ahbsi_hmaster:    std_logic_vector(3 downto 0);
    signal   ahbsi_hmastlock:  std_ulogic;
    signal   ahbsi_hmbsel:     std_logic_vector(0 to NAHBAMR-1);
-   signal   ahbsi_hcache:     std_ulogic;
    signal   ahbsi_hirq:       std_logic_vector(NAHBIRQ-1 downto 0);
 
    constant hconfig: ahb_config_type := (
-      0      => ahb_device_reg ( VENDOR_GAISLER, GAISLER_LEON3FT, 0, 0, 0),
+      0      => ahb_device_reg ( VENDOR_GAISLER, GAISLER_LEON4, 0, 0, 0),
       others => zero32);
 
 begin
-
+  
    disasen <= '1' when disas /= 0 else '0';
 
    -- Plug&Play information
@@ -347,12 +347,12 @@ begin
       port map(
          clk               => clk,
          gclk              => gclk,
+         hclken            => hclken,
          rstn              => rstn,
          ahbi_hgrant       => ahbi_hgrant,
          ahbi_hready       => ahbi_hready,
          ahbi_hresp        => ahbi_hresp,
          ahbi_hrdata       => ahbi_hrdata,
-         ahbi_hcache       => ahbi_hcache,
          ahbi_hirq         => ahbi_hirq,
          ahbi_testen       => ahbi_testen,
          ahbi_testrst      => ahbi_testrst,
@@ -380,7 +380,6 @@ begin
          ahbsi_hmaster     => ahbsi_hmaster,
          ahbsi_hmastlock   => ahbsi_hmastlock,
          ahbsi_hmbsel      => ahbsi_hmbsel,
-         ahbsi_hcache      => ahbsi_hcache,
          ahbsi_hirq        => ahbsi_hirq,
          irqi_irl          => irqi_irl,
          irqi_rst          => irqi_rst,
@@ -392,6 +391,7 @@ begin
          irqo_irl          => irqo_irl,
          irqo_pwd          => irqo_pwd,
          irqo_fpen         => irqo_fpen,
+         irqo_idle         => irqo_idle,
          dbgi_dsuen        => dbgi_dsuen,
          dbgi_denable      => dbgi_denable,
          dbgi_dbreak       => dbgi_dbreak,
@@ -441,7 +441,6 @@ begin
       ahbi_hready       <= ahbix.hready;
       ahbi_hresp        <= ahbix.hresp;
       ahbi_hrdata(127 mod AHBDW downto 0) <= ahbix.hrdata(127 mod AHBDW downto 0);
-      ahbi_hcache       <= ahbix.hcache;
       ahbi_hirq         <= ahbix.hirq;
       ahbi_testen       <= ahbix.testen;
       ahbi_testrst      <= ahbix.testrst;
@@ -453,7 +452,7 @@ begin
       ahbox.htrans       <= ahbo_htrans;
       ahbox.haddr        <= ahbo_haddr;
       ahbox.hwrite       <= ahbo_hwrite;
-      ahbox.hsize        <= '0' & ahbo_hsize(1 downto 0);
+      ahbox.hsize        <= ahbo_hsize(2 downto 0);
       ahbox.hburst       <= "00" & ahbo_hburst(0);
       ahbox.hprot        <= ahbo_hprot;
       ahbox.hwdata(127 mod AHBDW downto 0)       <= ahbo_hwdata(127 mod AHBDW downto 0);
@@ -471,7 +470,6 @@ begin
       ahbsi_hmaster     <= ahbsix.hmaster;
       ahbsi_hmastlock   <= ahbsix.hmastlock;
       ahbsi_hmbsel      <= ahbsix.hmbsel;
-      ahbsi_hcache      <= ahbsix.hcache;
       ahbsi_hirq        <= ahbsix.hirq;
 
 

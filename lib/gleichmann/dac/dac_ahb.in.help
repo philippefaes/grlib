@@ -1,3 +1,0 @@
-Digital-to-Analog-Converter
-CONFIG_DAC_AHB_ENABLE
-  Say Y here to enable the Digital-to-Analog-Converter.

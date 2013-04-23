@@ -10,6 +10,9 @@ NOTE1: With revision 1 of the DDR2SPA controller, the controller can
 NOTE2: The ML510 has a bug that prevents the use of 64 bit unbuffered DDR2. 
        See description of the DDR2 interface below.
 
+NOTE3: To intialize the correct DDR2 delay values, issue the GRMON command:
+       ddr2delay scan (see GRMON example below)
+
 Design specifics:
 
 * System reset is mapped to the CPU RESET button
@@ -112,250 +115,281 @@ Design specifics:
 
 * Sample output from GRMON is:
 
-grmon -eth -ip 192.168.0.52
+bash-3.2$ grmon2cli -xilusb -regmem -u
 
- GRMON LEON debug monitor v1.1.32
+  GRMON2 LEON debug monitor v2.0.30-194-g937ff0a internal version
 
- Copyright (C) 2004-2008 Gaisler Research - all rights reserved.
- For latest updates, go to http://www.gaisler.com/
- Comments or bug-reports to support@gaisler.com
+  Copyright (C) 2012 Aeroflex Gaisler - All rights reserved.
+  For latest updates, go to http://www.gaisler.com/
+  Comments or bug-reports to support@gaisler.com
+
+Xilusb: Cable type/rev : 0x3
+ JTAG chain (2): xc5vfx130t xccace
+
+  Device ID:           0x510
+  GRLIB build version: 4120
+  Detected frequency:  80 MHz
+
+  Component                            Vendor
+  LEON3 SPARC V8 Processor             Aeroflex Gaisler
+  LEON3 SPARC V8 Processor             Aeroflex Gaisler
+  AHB Debug UART                       Aeroflex Gaisler
+  JTAG Debug Link                      Aeroflex Gaisler
+  SVGA frame buffer                    Aeroflex Gaisler
+  GR Ethernet MAC                      Aeroflex Gaisler
+  Fast 32-bit PCI Bridge               Aeroflex Gaisler
+  PCI/AHB DMA controller               Aeroflex Gaisler
+  Single-port DDR2 controller          Aeroflex Gaisler
+  Single-port DDR2 controller          Aeroflex Gaisler
+  LEON3 Debug Support Unit             Aeroflex Gaisler
+  LEON2 Memory Controller              European Space Agency
+  AHB/APB Bridge                       Aeroflex Gaisler
+  System ACE I/F Controller            Aeroflex Gaisler
+  Generic UART                         Aeroflex Gaisler
+  Multi-processor Interrupt Ctrl.      Aeroflex Gaisler
+  Modular Timer Unit                   Aeroflex Gaisler
+  AMBA Wrapper for OC I2C-master       Aeroflex Gaisler
+  General Purpose I/O port             Aeroflex Gaisler
+  AMBA Wrapper for OC I2C-master       Aeroflex Gaisler
+  SPI Controller                       Aeroflex Gaisler
+  32-bit PCI Trace Buffer              Aeroflex Gaisler
+  PCI Arbiter                          European Space Agency
+  AHB Status Register                  Aeroflex Gaisler
+
+  Use command 'info sys' to print a detailed report of attached cores
+
+grmon2> ddr2delay scan
+  DDR2 Delay calibration routine
+  - Resetting delays
+  - Trying read-delay 0 cycles
+  Bits  63-56: ---------------------------------------------------------------- -1
+  Bits  55-48: ---------------------------------------------------------------- -1
+  Bits  47-40: ---------------------------------------------------------------- -1
+  Bits  39-32: ---------------------------------------------------------------- -1
+  Bits  31-24: ---------------------------------------------------------------- -1
+  Bits  23-16: ---------------------------------------------------------------- -1
+  Bits  15- 8: ---------------------------------------------------------------- -1
+  Bits   7- 0: ---------------------------------------------------------------- -1
+  - Trying read-delay 1 cycles
+  Bits  63-56: OOOOOOOOOOOOOOOO-O-O------------------------------------OOOOOOOO 4
+  Bits  55-48: OOOOOOOOOOOOOOOOOOOO-O----------------------------------OOOOOOOO 6
+  Bits  47-40: OOOOOOOOOOOOOOOOOOOOOO----------------------------------OOOOOOOO 7
+  Bits  39-32: OOOOOOOOOOOOOOOOOOO-------------------------------------OOOOOOOO 5
+  Bits  31-24: OOOOOOOOOOOOOOOOOOOO------------------------------------OOOOOOOO 6
+  Bits  23-16: OOOOOOOOOOOOOOOOOOOOOO----------------------------------OOOOOOOO 7
+  Bits  15- 8: OOOOOOOOOOOOOOOOOOOOOOO---------------------------------OOOOOOOO 7
+  Bits   7- 0: OOOOOOOOOOOOOOOOOOOOO-O---------------------------------OOOOOOOO 6
+  - Verifying
+  - Calibration done
+
+grmon2> info sys
+  cpu0      Aeroflex Gaisler  LEON3 SPARC V8 Processor
+            AHB Master 0
+  cpu1      Aeroflex Gaisler  LEON3 SPARC V8 Processor
+            AHB Master 1
+  ahbuart0  Aeroflex Gaisler  AHB Debug UART
+            AHB Master 2
+            APB: C0000700 - C0000800
+            Baudrate 115200, AHB frequency 80.00 MHz
+  ahbjtag0  Aeroflex Gaisler  JTAG Debug Link
+            AHB Master 3
+  svga0     Aeroflex Gaisler  SVGA frame buffer
+            AHB Master 4
+            APB: C0000E00 - C0000F00
+            clk0: 25.00 MHz  clk1: 25.00 MHz  clk2: 40.00 MHz  clk3: 65.00 MHz
+  greth0    Aeroflex Gaisler  GR Ethernet MAC
+            AHB Master 5
+            APB: C0000B00 - C0000C00
+            IRQ: 4
+            edcl ip 192.168.0.52, buffer 2 kbyte
+  pci0      Aeroflex Gaisler  Fast 32-bit PCI Bridge
+            AHB Master 6
+            AHB: 80000000 - C0000000
+            AHB: FFF40000 - FFF60000
+            APB: C0000400 - C0000500
+            IRQ: 5
+  adev7     Aeroflex Gaisler  PCI/AHB DMA controller
+            AHB Master 7
+            APB: C0000500 - C0000600
+  ddr2spa0  Aeroflex Gaisler  Single-port DDR2 controller
+            AHB: 40000000 - 60000000
+            AHB: FFF00100 - FFF00200
+            64-bit DDR2 : 1 * 256 MB @ 0x40000000, 4 internal banks
+            160 MHz, col 10, ref 7.8 us, trfc 131 ns
+  ddr2spa1  Aeroflex Gaisler  Single-port DDR2 controller
+            AHB: 60000000 - 80000000
+            AHB: FFF00200 - FFF00300
+            No SDRAM found
+  dsu0      Aeroflex Gaisler  LEON3 Debug Support Unit
+            AHB: D0000000 - E0000000
+            AHB trace: 128 lines, 32-bit bus
+            CPU0:  win 8, hwbp 2, V8 mul/div, srmmu, lddel 1
+                   stack pointer 0x4ffffff0
+                   icache 4 * 8 kB, 32 B/line lru
+                   dcache 4 * 4 kB, 16 B/line lru
+            CPU1:  win 8, hwbp 2, V8 mul/div, srmmu, lddel 1
+                   stack pointer 0x4ffffff0
+                   icache 4 * 8 kB, 32 B/line lru
+                   dcache 4 * 4 kB, 16 B/line lru
+  mctrl0    European Space Agency  LEON2 Memory Controller
+            AHB: 00000000 - 20000000
+            AHB: 20000000 - 40000000
+            APB: C0000000 - C0000100
+            16-bit prom @ 0x00000000
+  apbmst0   Aeroflex Gaisler  AHB/APB Bridge
+            AHB: C0000000 - C0100000
+  adev13    Aeroflex Gaisler  System ACE I/F Controller
+            AHB: FFF00000 - FFF00100
+            IRQ: 13
+  uart0     Aeroflex Gaisler  Generic UART
+            APB: C0000100 - C0000200
+            IRQ: 2
+            Baudrate 38461
+  irqmp0    Aeroflex Gaisler  Multi-processor Interrupt Ctrl.
+            APB: C0000200 - C0000300
+  gptimer0  Aeroflex Gaisler  Modular Timer Unit
+            APB: C0000300 - C0000400
+            IRQ: 8
+            8-bit scalar, 2 * 32-bit timers, divisor 80
+  i2cmst0   Aeroflex Gaisler  AMBA Wrapper for OC I2C-master
+            APB: C0000600 - C0000700
+            IRQ: 14
+            Index for use in GRMON: 0
+  gpio0     Aeroflex Gaisler  General Purpose I/O port
+            APB: C0000800 - C0000900
+  i2cmst1   Aeroflex Gaisler  AMBA Wrapper for OC I2C-master
+            APB: C0000900 - C0000A00
+            IRQ: 3
+            Index for use in GRMON: 1
+  spi0      Aeroflex Gaisler  SPI Controller
+            APB: C0000A00 - C0000B00
+            IRQ: 12
+            FIFO depth: 4, 1 slave select signals
+            Maximum word length: 32 bits
+            Supports 3-wire mode
+            Controller index for use in GRMON: 0
+  pcitrace0 Aeroflex Gaisler  32-bit PCI Trace Buffer
+            APB: C0010000 - C0020000
+            Trace buffer size: 1024 lines
+  adev22    European Space Agency  PCI Arbiter
+            APB: C0000D00 - C0000E00
+  ahbstat0  Aeroflex Gaisler  AHB Status Register
+            APB: C0000F00 - C0001000
+            IRQ: 15
+
+grmon2> fla
+
+  Intel-style 16-bit flash on D[31:16]
+
+  Manuf.        : Intel
+  Device        : Strataflash P30
+  Device ID     : 01c94716c26cffff
+  User ID       : ffffffffffffffff
+
+  1 x 32 Mbytes = 32 Mbytes total @ 0x00000000
+
+  CFI information
+  Flash family  : 1
+  Flash size    : 256 Mbit
+  Erase regions : 2
+  Erase blocks  : 259
+  Write buffer  : 64 bytes
+  Lock-down     : Not supported
+  Region  0     : 255 blocks of 128 kbytes
+  Region  1     : 4 blocks of 32 kbytes
+
+grmon2> load /usr/local32/apps/bench/leon3/dhry.leon3
+  40000000 .text                     54.7kB /  54.7kB   [===============>] 100%
+  4000DAF0 .data                      2.7kB /   2.7kB   [===============>] 100%
+  Total size: 57.44kB (1.15Mbit/s)
+  Entry point 0x40000000
+  Image /usr/local32/apps/bench/leon3/dhry.leon3 loaded
+
+grmon2>  verify /usr/local32/apps/bench/leon3/dhry.leon3
+  40000000 .text                     54.7kB /  54.7kB   [===============>] 100%
+  4000DAF0 .data                      2.7kB /   2.7kB   [===============>] 100%
+  Total size: 57.44kB (85.12kbit/s)
+  Entry point 0x40000000
+  Image of /usr/local32/apps/bench/leon3/dhry.leon3 verified without errors
+
+grmon2> run
+Execution starts, 1000000 runs through Dhrystone
+Total execution time:                          5.2 s
+Microseconds for one run through Dhrystone:    5.2
+Dhrystones per Second:                      191785.4
+
+Dhrystones MIPS      :                       109.2
 
 
- ethernet startup.
- Device ID: : 0x510
- GRLIB build version: 3293
+  CPU 0:  Program exited normally.
+  CPU 1:  Power down mode
 
- initialising ........................
- detected frequency:  80 MHz
+grmon2> i2c 0 scan
+  Scanning 7-bit address space on I2C bus:
+  Detected I2C device at address 0x76
 
- Component                            Vendor
- LEON3 SPARC V8 Processor             Gaisler Research
- AHB Debug UART                       Gaisler Research
- AHB Debug JTAG TAP                   Gaisler Research
- SVGA frame buffer                    Gaisler Research
- GR Ethernet MAC                      Gaisler Research
- Fast 32-bit PCI Bridge               Gaisler Research
- PCI/AHB DMA controller               Gaisler Research
- DDR2 Controller                      Gaisler Research
- DDR2 Controller                      Gaisler Research
- LEON3 Debug Support Unit             Gaisler Research
- LEON2 Memory Controller              European Space Agency
- AHB/APB Bridge                       Gaisler Research
- System ACE I/F Controller            Gaisler Research
- AMBA Wrapper for System Monitor      Gaisler Research
- Generic APB UART                     Gaisler Research
- Multi-processor Interrupt Ctrl       Gaisler Research
- Modular Timer Unit                   Gaisler Research
- AMBA Wrapper for OC I2C-master       Gaisler Research
- General purpose I/O port             Gaisler Research
- AMBA Wrapper for OC I2C-master       Gaisler Research
- SPI Controller                       Gaisler Research
- PCI trace buffer                     Gaisler Research
- PCI Arbiter                          European Space Agency
- AHB status register                  Gaisler Research
+  Scan of I2C bus completed. 1 device found
 
- Use command 'info sys' to print a detailed report of attached cores
+grmon2> i2c 1 scan
+  Scanning 7-bit address space on I2C bus:
+  Detected I2C device at address 0x2e
+  Detected I2C device at address 0x47
+  Detected I2C device at address 0x50
+  Detected I2C device at address 0x51
+  Detected I2C device at address 0x54
 
-grlib> inf sys
-00.01:003   Gaisler Research  LEON3 SPARC V8 Processor (ver 0x0)
-             ahb master 0
-01.01:007   Gaisler Research  AHB Debug UART (ver 0x0)
-             ahb master 1
-             apb: c0000700 - c0000800
-             baud rate 115200, ahb frequency 80.00
-02.01:01c   Gaisler Research  AHB Debug JTAG TAP (ver 0x0)
-             ahb master 2
-03.01:063   Gaisler Research  SVGA frame buffer (ver 0x0)
-             ahb master 3
-             apb: c0000e00 - c0000f00
-             clk0: 25.00 MHz  clk1: 25.00 MHz  clk2: 40.00 MHz  clk3: 65.00 MHz
-04.01:01d   Gaisler Research  GR Ethernet MAC (ver 0x0)
-             ahb master 4, irq 4
-             apb: c0000b00 - c0000c00
-             edcl ip 192.168.0.52, buffer 2 kbyte
-05.01:014   Gaisler Research  Fast 32-bit PCI Bridge (ver 0x0)
-             ahb master 5, irq 5
-             ahb: 80000000 - c0000000
-             ahb: fff40000 - fff60000
-             apb: c0000400 - c0000500
-06.01:016   Gaisler Research  PCI/AHB DMA controller (ver 0x0)
-             ahb master 6
-             apb: c0000500 - c0000600
-00.01:02e   Gaisler Research  DDR2 Controller (ver 0x0)
-             ahb: 40000000 - 60000000
-             ahb: fff00100 - fff00200
-             32-bit DDR2 : 2 * 256 Mbyte @ 0x40000000
-                          160 MHz, col 10, ref 7.8 us, trfc 131 ns
-01.01:02e   Gaisler Research  DDR2 Controller (ver 0x0)
-             ahb: 60000000 - 80000000
-             ahb: fff00200 - fff00300
-             32-bit DDR2 : 2 * 256 Mbyte @ 0x60000000
-                          160 MHz, col 10, ref 7.8 us, trfc 131 ns
-02.01:004   Gaisler Research  LEON3 Debug Support Unit (ver 0x1)
-             ahb: d0000000 - e0000000
-             AHB trace 128 lines, stack pointer 0x5ffffff0
-             CPU#0 win 8, hwbp 2, itrace 128, V8 mul/div, srmmu, lddel 1, GRFPU
-                   icache 4 * 8 kbyte, 32 byte/line lru
-                   dcache 4 * 4 kbyte, 16 byte/line lru
-03.04:00f   European Space Agency  LEON2 Memory Controller (ver 0x1)
-             ahb: 00000000 - 20000000
-             ahb: 20000000 - 40000000
-             apb: c0000000 - c0000100
-             16-bit prom @ 0x00000000
-04.01:006   Gaisler Research  AHB/APB Bridge (ver 0x0)
-             ahb: c0000000 - c0100000
-05.01:067   Gaisler Research  System ACE I/F Controller (ver 0x0)
-             irq 13
-             ahb: fff00000 - fff00100
-08.01:066   Gaisler Research  AMBA Wrapper for System Monitor (ver 0x0)
-             irq 1
-             ahb: fff00300 - fff00400
-             ahb: fff00400 - fff00600
-             SYSMON registers are on word boundaries
-01.01:00c   Gaisler Research  Generic APB UART (ver 0x1)
-             irq 2
-             apb: c0000100 - c0000200
-             baud rate 38461
-02.01:00d   Gaisler Research  Multi-processor Interrupt Ctrl (ver 0x3)
-             apb: c0000200 - c0000300
-03.01:011   Gaisler Research  Modular Timer Unit (ver 0x0)
-             irq 8
-             apb: c0000300 - c0000400
-             8-bit scaler, 2 * 32-bit timers, divisor 80
-06.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x0)
-             irq 14
-             apb: c0000600 - c0000700
-             Controller index for use in GRMON: 1
-08.01:01a   Gaisler Research  General purpose I/O port (ver 0x0)
-             apb: c0000800 - c0000900
-09.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x0)
-             irq 3
-             apb: c0000900 - c0000a00
-             Controller index for use in GRMON: 2
-0a.01:02d   Gaisler Research  SPI Controller (ver 0x1)
-             irq 12
-             apb: c0000a00 - c0000b00
-             FIFO depth: 4, 1 slave select signals
-0c.01:015   Gaisler Research  PCI trace buffer (ver 0x0)
-             apb: c0010000 - c0020000
-             1024 line trace buffer
-0d.04:010   European Space Agency  PCI Arbiter (ver 0x0)
-             apb: c0000d00 - c0000e00
-0f.01:052   Gaisler Research  AHB status register (ver 0x0)
-             irq 15
-             apb: c0000f00 - c0001000
-grlib> fla
+  Scan of I2C bus completed. 5 devices found
 
- Intel-style 16-bit flash on D[31:16]
+grmon2> i2c 0 dvi init_ml50x_dvi
+Transmitter was not set to Chrontel CH7301C (AS=0), changing...
+  Initialized CH7301 DVI output for LEON/GRLIB design.
 
- Manuf.    Intel
- Device    Strataflash P30
+grmon2>  i2c 0 dvi showreg
+  Registers for Chrontel CH7301C (AS=0) DVI transmitter:
 
- Device ID c26cffff01c94716
- User   ID ffffffffffffffff
+  0x1c:  04
+  0x1d:  45
+  0x1e:  f0
+  0x1f:  8a
+  0x20:  0e
+  0x21:  00
+  0x23:  00
+  0x31:  80
+  0x33:  08
+  0x34:  16
+  0x35:  30
+  0x36:  60
+  0x37:  00
+  0x48:  18
+  0x49:  c0
+  0x4a:  95
+  0x4b:  17
+  0x56:  00
+
+grmon2> spi selftest
+  Self test PASSED
+
+grmon2> pci info
+
+  GRPCI initiator/target (in system slot):
+
+    Bus master:    yes
+    Mem. space en: no
+    Latency timer: 0x0
+    Byte twisting: disabled
+
+    MMAP:          0x0
+    IOMAP:         0x0000
+
+    BAR0:          0x00000000
+    PAGE0:         0x40000001
+    BAR1:          0x00000000
+    PAGE1:         0x00000000
 
 
- 1 x 32 Mbyte = 32 Mbyte total @ 0x00000000
+grmon2>
 
 
- CFI info
- flash family  : 1
- flash size    : 256 Mbit
- erase regions : 2
- erase blocks  : 259
- write buffer  : 64 bytes
- lock-down     : yes
- region  0     : 255 blocks of 128 Kbytes
- region  1     : 4 blocks of 32 Kbytes
-
-grlib> i2c 1 scan
-
-Scanning 7-bit address space on I2C bus:
- Detected I2C device at address 0x50
- Detected I2C device at address 0x76
-Scan of I2C bus completed. 2 devices found
-
-grlib> i2c 2 scan
-
-Scanning 7-bit address space on I2C bus:
- Detected I2C device at address 0x2e
- Detected I2C device at address 0x33
- Detected I2C device at address 0x34
- Detected I2C device at address 0x47
- Detected I2C device at address 0x50
- Detected I2C device at address 0x51
- Detected I2C device at address 0x53
- Detected I2C device at address 0x54
-Scan of I2C bus completed. 8 devices found
-
-grlib> i2c 1 dvi init_ml50x_dvi
-
- Transmitter was not set to Chrontel CH7301C (AS=0), changing..
-
- DVI transmitter set to Chrontel CH7301C (AS=0)
-
- Initializing CH7301 for ML50x Leon3/GRLIB template design..
- Initialization done..
-
-grlib> i2c 1 dvi showreg
-
- Registers for Chrontel CH7301C (AS=0) DVI transmitter:
-
-        0x1c:   04
-        0x1d:   45
-        0x1e:   f0
-        0x1f:   9a
-        0x20:   2e
-        0x21:   00
-        0x23:   00
-        0x31:   80
-        0x33:   08
-        0x34:   16
-        0x35:   30
-        0x36:   60
-        0x37:   00
-        0x48:   18
-        0x49:   c0
-        0x4a:   95
-        0x4b:   17
-        0x56:   00
-
-grlib> spi selftest
-
- Starting SPI controller self test..............................
- Self test PASSED
-
-grlib> grpci info
-
-GRPCI initiator/target (in system slot):
-
-  BAR0:          0x00000000
-  PAGE0:         0x40000001
-  BAR1:          0x00000000
-  PAGE1:         0x00000000
-  Bus master:    yes
-  Mem. space en: no
-  Latency timer: 0x0
-  MMAP:          0x0
-  IOMAP:         0x0000
-
-grlib> grpci init
-grlib> grpci scan
-
-Found PCI device in slot 7, function 0, (0xfff53800) - vendor: 0x10b9, device: 0x5451
-        BAR1 size:       4 kbyte        (Memory space)
-
-Found PCI device in slot 8, function 0, (0xfff54000) - vendor: 0x10b9, device: 0x1533
-
-Found PCI device in slot 9, function 0, (0xfff54800) - vendor: 0x10b9, device: 0x5457
-        BAR0 size:       4 kbyte        (Memory space)
-
-Found PCI device in slot 18, function 0, (0xfff59000) - vendor: 0x10b9, device: 0x7101
-
-Found PCI device in slot 21, function 0, (0xfff5a800) - vendor: 0x10b9, device: 0x5237
-        BAR0 size:       4 kbyte        (Memory space)
-grlib>
-grlib> 
 
 * Example MKPROM2 command line, creating bootable image from the application
   "hello":

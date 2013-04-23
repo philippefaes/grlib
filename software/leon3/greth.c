@@ -1,5 +1,6 @@
 #include "testmod.h"
 #include "../greth/greth_api.h"
+#include <stdlib.h>
 
 #define SRC_MAC0  0xDE
 #define SRC_MAC1  0xAD

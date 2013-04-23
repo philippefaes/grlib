@@ -24,8 +24,6 @@ grfifo.vhd
 gradcdac.vhd
 spictrlx.vhd
 spictrl.vhd
-wild.vhd
-wild2ahb.vhd
 grsysmon.vhd
 gracectrl.vhd
 grgpreg.vhd
@@ -36,3 +34,8 @@ grgprbank.vhd
 spi2ahbx.vhd
 spi2ahb.vhd
 spi2ahb_apb.vhd
+grclkgate.vhd
+grclkgate2x.vhd
+grtimer.vhd
+grpulse.vhd
+grversion.vhd

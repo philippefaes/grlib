@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -521,7 +521,7 @@ begin
 
 
   ethpads : if (CFG_GRETH = 0) generate -- no eth 
-      etho <= ('0', "00000000", '0', '0', '0', '0', '1');
+      etho <= eth_out_none;
   end generate;
 
   emdio_pad : iopad generic map (tech => padtech, level => padlevel) 

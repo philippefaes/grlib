@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -34,7 +34,6 @@ use gaisler.memctrl.all;
 use gaisler.leon3.all;
 use gaisler.uart.all;
 use gaisler.misc.all;
-use gaisler.ata.all;
 use gaisler.jtag.all;
 library esa;
 use esa.memoryctrl.all;
@@ -96,25 +95,6 @@ entity leon3mp is
     -- console UART
     rxd1 : in  std_ulogic;
     txd1 : out std_ulogic;
-
-    -- ATA signals
-    ata_rst   : out std_logic; 
-    ata_data  : inout std_logic_vector(15 downto 0);
-    ata_da    : out std_logic_vector(2 downto 0);  
-    ata_cs0   : out std_logic;
-    ata_cs1   : out std_logic;
-    ata_dior  : out std_logic;
-    ata_diow  : out std_logic;
-    ata_iordy : in std_logic;
-    ata_intrq : in std_logic;
-    ata_dmack : out std_logic;
-    
-    -- Signals nedded to use CompactFlash with ATA controller
-    cf_power   : out std_logic; -- To turn on power to the CompactFlash 
-    cf_gnd_da  : out std_logic_vector(10 downto 3); -- grounded address lines
-    cf_atasel  : out std_logic; -- grounded to select true IDE mode
-    cf_we      : out std_logic; -- should be connected to VCC in true IDE mode
-    cf_csel    : out std_logic;
     
     -- for smsc lan chip
     eth_aen   : out std_logic; 
@@ -139,7 +119,7 @@ architecture rtl of leon3mp is
   constant blength   : integer := 12;
   constant fifodepth : integer := 8;
 
-  constant maxahbm : integer := NCPU+CFG_AHB_UART+CFG_AHB_JTAG+CFG_ATA*CFG_ATADMA;
+  constant maxahbm : integer := NCPU+CFG_AHB_UART+CFG_AHB_JTAG;
 
   signal vcc, gnd   : std_logic_vector(7 downto 0);
   signal memi       : memory_in_type;
@@ -176,10 +156,6 @@ architecture rtl of leon3mp is
 
   signal dsui : dsu_in_type;
   signal dsuo : dsu_out_type;
-
-  signal idei : ata_in_type;
-  signal ideo : ata_out_type;
-  signal cf  : cf_out_type;
 
   signal gpti : gptimer_in_type;
   signal gpioi : gpio_in_type;
@@ -488,64 +464,6 @@ begin
     end generate;
   end generate;
 
-  
------------------------------------------------------------------------
----  ATA Controller ---------------------------------------------------
------------------------------------------------------------------------
-
-  ata0 : if CFG_ATA = 1 generate
-
-    atac0 : atactrl
-    generic map(tech => 0, fdepth => CFG_ATAFIFO, mhindex => CFG_NCPU+CFG_AHB_UART+ CFG_AHB_JTAG,
-	shindex => 5, haddr => 16#A00#, hmask => 16#fff#, pirq  => CFG_ATAIRQ,
-        mwdma => CFG_ATADMA, TWIDTH   => 8,
-      -- PIO mode 0 settings (@100MHz clock)
-      PIO_mode0_T1   => 6,   -- 70ns
-      PIO_mode0_T2   => 28,  -- 290ns
-      PIO_mode0_T4   => 2,   -- 30ns
-      PIO_mode0_Teoc => 23   -- 240ns ==> T0 - T1 - T2 = 600 - 70 - 290 = 240
-    )
-    port map( rst => rstn, arst => vcc(0), clk => clkm, ahbmi => ahbmi,
-        ahbmo => ahbmo(CFG_NCPU+CFG_AHB_UART+CFG_AHB_JTAG), cfo => cf,
-	ahbsi => ahbsi, ahbso => ahbso(5), atai => idei, atao => ideo);
-
-    ata_rst_pad : outpad generic map (tech => padtech)
-      port map (ata_rst, ideo.rstn);
-    ata_data_pad : iopadv generic map (tech => padtech, width => 16, oepol => 1)
-        port map (ata_data, ideo.ddo, ideo.oen, idei.ddi);
-    ata_da_pad : outpadv generic map (tech => padtech, width => 3)
-        port map (ata_da, ideo.da);
-    ata_cs0_pad : outpad generic map (tech => padtech)
-        port map (ata_cs0, ideo.cs0);
-    ata_cs1_pad : outpad generic map (tech => padtech)
-        port map (ata_cs1, ideo.cs1);
-    ata_dior_pad : outpad generic map (tech => padtech)
-        port map (ata_dior, ideo.dior);
-    ata_diow_pad : outpad generic map (tech => padtech)
-        port map (ata_diow, ideo.diow);
-    iordy_pad : inpad generic map (tech => padtech)
-        port map (ata_iordy, idei.iordy);
-    intrq_pad : inpad generic map (tech => padtech)
-        port map (ata_intrq, idei.intrq);
---    dmarq_pad : inpad generic map (tech => padtech)
---        port map (ata_dmarq, idei.dmarq);
-    dmack_pad : outpad generic map (tech => padtech)
-        port map (ata_dmack, ideo.dmack);
-
-       -- for CompactFlach mode selection
-       cf_gnd_da_pad : outpadv generic map (tech => padtech, width => 8)
-         port map (cf_gnd_da, cf.da);
-       cf_atasel_pad : outpad generic map (tech => padtech)
-         port map (cf_atasel, cf.atasel);
-       cf_we_pad : outpad generic map (tech => padtech)
-         port map (cf_we, cf.we);
-       cf_power_pad : outpad generic map (tech => padtech)
-         port map (cf_power, cf.power);
-       cf_csel_pad : outpad generic map (tech => padtech)
-         port map (cf_csel, cf.csel);
-    
-    end generate;
-
 -----------------------------------------------------------------------
 ---  AHB ROM ----------------------------------------------------------
 -----------------------------------------------------------------------
@@ -574,7 +492,7 @@ begin
 ---  Drive unused bus elements  ---------------------------------------
 -----------------------------------------------------------------------
 
-  nam1 : for i in (NCPU+CFG_AHB_UART+CFG_AHB_JTAG+CFG_ATA) to NAHBMST-1 generate
+  nam1 : for i in (NCPU+CFG_AHB_UART+CFG_AHB_JTAG) to NAHBMST-1 generate
     ahbmo(i) <= ahbm_none;
   end generate;
   nap0 : for i in 6 to NAPBSLV-1 generate apbo(i) <= apb_none; end generate;

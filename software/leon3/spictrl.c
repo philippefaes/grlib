@@ -33,6 +33,7 @@
  */
 
 #include "testmod.h"
+#include "irqmp.h"
 
 /* Register offsets */
 #define SPIC_CAP_OFF    0x00
@@ -218,6 +219,76 @@ int spictrl_extdev_test(int addr)
 
    /* Clear status bits */
    regs->event = ~0;
+
+   return 0;
+}
+
+static volatile int spictrl_irq = 0;
+
+static spictrl_irqhandler(int irq)
+{
+    spictrl_irq += 1;
+}
+
+
+/*
+ * spictrl_irqtest(int addr, int irq)
+ *
+ * Checks SPICTRL interrupt line by asserting NE interrupt
+ *
+ * (currently not called as part of spictrl_test, should be
+ *  called directly after in case this test is used since
+ *  "report_subtest" is called without other initialisation).
+ */
+int spictrl_irqtest(int addr, int irq)
+{
+   volatile unsigned int *capreg;
+   struct spictrlregs *regs;
+   volatile unsigned int tmp;
+
+   capreg = (int*)addr;
+   regs = (struct spictrlregs*)(addr + SPIC_MODE_OFF);
+
+   report_subtest(5);
+   
+   if (irqmp_base) {
+      init_irqmp(irqmp_base);
+      irqmp_base->irqmask = 1 << irq;	  /* unmask interrupt */
+   } else {
+      fail(1);
+   }
+
+   catch_interrupt(spictrl_irqhandler, irq);
+
+   if (regs->event != EVENT_RESVAL)
+      fail(2);
+
+   regs->mode = (SPIC_LOOP | SPIC_MS | SPIC_EN | (3 << SPIC_LEN));
+
+   regs->mask = SPIC_NE;
+   
+   if (spictrl_irq)
+      fail(3);
+
+   regs->td = 0;
+
+   while(regs->event & SPIC_TIP)
+      ;
+
+   if (!(regs->event & SPIC_NE))
+      fail(4);
+
+   tmp = regs->rd;
+
+   if (regs->event & SPIC_NE)
+      fail(5);
+
+   if (spictrl_irq != 1)
+      fail(6);
+   
+   regs->mask = 0;
+
+   regs->mode = 0;
 
    return 0;
 }

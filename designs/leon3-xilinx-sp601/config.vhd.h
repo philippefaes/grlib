@@ -127,6 +127,15 @@
   constant CFG_DDR2SP_DELAY7 	   : integer := CONFIG_DDR2SP_DELAY7;
   constant CFG_DDR2SP_NOSYNC       : integer := CONFIG_DDR2SP_NOSYNC;
 
+-- Xilinx MIG
+  constant CFG_MIG_DDR2    : integer := CONFIG_MIG_DDR2;
+  constant CFG_MIG_RANKS   : integer := CONFIG_MIG_RANKS;
+  constant CFG_MIG_COLBITS : integer := CONFIG_MIG_COLBITS;
+  constant CFG_MIG_ROWBITS : integer := CONFIG_MIG_ROWBITS;
+  constant CFG_MIG_BANKBITS: integer := CONFIG_MIG_BANKBITS;
+  constant CFG_MIG_HMASK   : integer := 16#CONFIG_MIG_HMASK#;
+
+
 -- AHB ROM
   constant CFG_AHBROMEN	: integer := CONFIG_AHBROM_ENABLE;
   constant CFG_AHBROPIP	: integer := CONFIG_AHBROM_PIPE;
@@ -176,6 +185,7 @@
   constant CFG_SPIMCTRL_SCALER     : integer := CONFIG_SPIMCTRL_SCALER;
   constant CFG_SPIMCTRL_ASCALER    : integer := CONFIG_SPIMCTRL_ASCALER;
   constant CFG_SPIMCTRL_PWRUPCNT   : integer := CONFIG_SPIMCTRL_PWRUPCNT;
+  constant CFG_SPIMCTRL_OFFSET     : integer := 16#CONFIG_SPIMCTRL_OFFSET#;
 
 -- SPI controller
   constant CFG_SPICTRL_ENABLE  : integer := CONFIG_SPICTRL_ENABLE;

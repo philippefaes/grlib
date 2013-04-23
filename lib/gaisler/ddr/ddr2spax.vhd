@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -33,8 +33,10 @@ use grlib.amba.all;
 use grlib.devices.all;
 library gaisler;
 use gaisler.memctrl.all;
+use gaisler.ddrpkg.all;
 library techmap;
 use techmap.gencomp.ddr2phy_has_datavalid;
+use techmap.gencomp.ddr2phy_ptctrl;
 
 entity ddr2spax is
    generic (
@@ -51,7 +53,6 @@ entity ddr2spax is
       TRFC       : integer := 130;
       col        : integer := 9;
       Mbyte      : integer := 8;
-      fastahb    : integer := 0;
       pwron      : integer := 0;
       oepol      : integer := 0;
       readdly    : integer := 1;
@@ -67,7 +68,9 @@ entity ddr2spax is
       ft         : integer range 0 to 1 := 0;
       bigmem     : integer range 0 to 1 := 0;
       raspipe    : integer range 0 to 1 := 0;
-      hwidthen   : integer range 0 to 1 := 0
+      hwidthen   : integer range 0 to 1 := 0;
+      rstdel     : integer := 200;
+      scantest   : integer := 0
    );
    port (
       ddr_rst : in  std_ulogic;
@@ -99,8 +102,6 @@ architecture rtl of ddr2spax is
   constant xahbw: integer := pick(ft/=0 and ahbbits<64, 64, ahbbits);
   constant l2ahbw: integer := log2(xahbw);
   
-  constant xfastahb: integer := pick(ahbbits>2*ddrbits, 1, fastahb);
-  
   -- For non-FT, write buffer has room for two write bursts and is addressable
   -- down to 32-bit level on write (AHB) side.
   -- For FT, the write buffer has room for one write burst and is addressable
@@ -120,7 +121,7 @@ architecture rtl of ddr2spax is
 
   signal request   : ddr_request_type;
   signal start_tog : std_logic;
-  signal done_tog  : std_logic;
+  signal response  : ddr_response_type;
 
   signal wbwaddr: std_logic_vector(wbuf_wabits-1 downto 0);
   signal wbwdata: std_logic_vector(wbuf_wdbits-1 downto 0);
@@ -152,8 +153,9 @@ begin
   gft0: if ft=0 generate
     ahbc : ddr2spax_ahb
       generic map (hindex => hindex, haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask,
-                   nosync => nosync, burstlen => burstlen, ahbbits => xahbw, revision => revision)
-      port map (ahb_rst, clk_ahb, ahbsi, ahbso, request, start_tog, done_tog,
+                   nosync => nosync, burstlen => burstlen, ahbbits => xahbw, revision => revision,
+                   ddrbits => ddrbits)
+      port map (ahb_rst, clk_ahb, ahbsi, ahbso, request, start_tog, response,
                 wbwaddr, wbwdata, wbwrite, wbwritebig, rbraddr, rbrdata);
     ce <= '0';
   end generate;
@@ -162,21 +164,23 @@ begin
     ftc: ft_ddr2spax_ahb
       generic map (hindex => hindex, haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask,
                    nosync => nosync, burstlen => burstlen, ahbbits => xahbw, bufbits => xahbw+xahbw/2,
-                   ddrbits => ddrbits, hwidthen => hwidthen, revision => revision)
-      port map (ahb_rst, clk_ahb, ahbsi, ahbso, ce, request, start_tog, done_tog,
-                wbwaddr, wbwdata, wbwrite, wbwritebig, rbraddr, rbrdata, hwidth, '0', open, open);
+                   ddrbits => ddrbits, hwidthen => hwidthen, devid => GAISLER_DDR2SP, revision => revision)
+      port map (ahb_rst, clk_ahb, ahbsi, ahbso, ce, request, start_tog, response,
+                wbwaddr, wbwdata, wbwrite, wbwritebig, rbraddr, rbrdata, hwidth, '0', open, open, FTFE_BEID_DDR2);
   end generate;
   
   ddrc : ddr2spax_ddr
     generic map (ddrbits => ddrbits,
                  pwron => pwron, MHz => MHz, TRFC => TRFC, col => col, Mbyte => Mbyte,
-                 fastahb => xfastahb, readdly => readdly, odten => odten, octen => octen, dqsgating => dqsgating,
+                 readdly => readdly, odten => odten, octen => octen, dqsgating => dqsgating,
                  nosync => nosync, eightbanks => eightbanks, dqsse => dqsse, burstlen => burstlen,
                  chkbits => ft*ddrbits/2, bigmem => bigmem, raspipe => raspipe,
-                 hwidthen => hwidthen, phytech => phytech, hasdqvalid => ddr2phy_has_datavalid(phytech))
-    port map (ddr_rst, clk_ddr, request, start_tog, done_tog, sdi, sdox,
+                 hwidthen => hwidthen, phytech => phytech, hasdqvalid => ddr2phy_has_datavalid(phytech),
+                 rstdel => rstdel, phyptctrl => ddr2phy_ptctrl(phytech), scantest => scantest,
+                 ddr_syncrst => ddr_syncrst)
+    port map (ddr_rst, clk_ddr, request, start_tog, response, sdi, sdox,
               wbraddr, wbrdata, rbwaddr, rbwdata, rbwrite, hwidth,
-              '0', ddr_request_none, open);
+              '0', ddr_request_none, open, ahbsi.testen, ahbsi.testrst, ahbsi.testoen);
 
 
   sdoproc: process(sdox,ce)

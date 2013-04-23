@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ use ieee.numeric_std.all;
 use std.textio.all;
 -- pragma translate_on
 library grlib;
+use grlib.config_types.all;
 use grlib.config.all;
 use grlib.stdlib.all;
 
@@ -75,6 +76,9 @@ constant NAPBAMR   : integer := 1;  -- maximum APB configuration words
 constant NAPBCFG   : integer := NAPBIR + NAPBAMR;  -- words in APB config block
 constant NBUS      : integer := 4;
 
+-- Number of test vector bits
+constant NTESTINBITS : integer := 4+GRLIB_CONFIG_ARRAY(grlib_techmap_testin_extra);
+
 -------------------------------------------------------------------------------
 -- AMBA interface type declarations and constant
 -------------------------------------------------------------------------------
@@ -89,12 +93,12 @@ type apb_config_type is array (0 to NAPBCFG-1) of amba_config_word;
     hready	: std_ulogic;                         	-- transfer done
     hresp	: std_logic_vector(1 downto 0); 	-- response type
     hrdata	: std_logic_vector(AHBDW-1 downto 0); 	-- read data bus
-    hcache	: std_ulogic;                         	-- cacheable
     hirq  	: std_logic_vector(NAHBIRQ-1 downto 0);	-- interrupt result bus
     testen	: std_ulogic;                         	-- scan test enable
     testrst	: std_ulogic;                         	-- scan test reset
     scanen 	: std_ulogic;                         	-- scan enable
-    testoen 	: std_ulogic;                         	-- test output enable 
+    testoen 	: std_ulogic;                         	-- test output enable
+    testin      : std_logic_vector(NTESTINBITS-1 downto 0);         -- test vector for syncrams
   end record;
 
 -- AHB master outputs
@@ -127,12 +131,12 @@ type apb_config_type is array (0 to NAPBCFG-1) of amba_config_word;
     hmaster	: std_logic_vector(3 downto 0); 	-- current master
     hmastlock	: std_ulogic;                         	-- locked access
     hmbsel 	: std_logic_vector(0 to NAHBAMR-1);	-- memory bank select
-    hcache	: std_ulogic;                         	-- cacheable
     hirq  	: std_logic_vector(NAHBIRQ-1 downto 0);	-- interrupt result bus
     testen	: std_ulogic;                         	-- scan test enable
     testrst	: std_ulogic;                         	-- scan test reset
     scanen  	: std_ulogic;                         	-- scan enable
     testoen 	: std_ulogic;                         	-- test output enable 
+    testin      : std_logic_vector(NTESTINBITS-1 downto 0);         -- test vector for syncrams
   end record;
 
 -- AHB slave outputs
@@ -141,7 +145,6 @@ type apb_config_type is array (0 to NAPBCFG-1) of amba_config_word;
     hresp	: std_logic_vector(1 downto 0); 	-- response type
     hrdata	: std_logic_vector(AHBDW-1 downto 0); 	-- read data bus
     hsplit	: std_logic_vector(15 downto 0); 	-- split completion
-    hcache	: std_ulogic;                         	-- cacheable
     hirq   	: std_logic_vector(NAHBIRQ-1 downto 0); -- interrupt bus
     hconfig 	: ahb_config_type;	 		-- memory access reg.
     hindex  	: integer range 0 to NAHBSLV-1;	 	-- diagnostic use only
@@ -199,6 +202,7 @@ type apb_config_type is array (0 to NAPBCFG-1) of amba_config_word;
     testrst	: std_ulogic;                         	-- scan test reset
     scanen 	: std_ulogic;                         	-- scan enable
     testoen	: std_ulogic;                         	-- test output enable
+    testin      : std_logic_vector(NTESTINBITS-1 downto 0);         -- test vector for syncrams
   end record;
 
 -- APB slave outputs
@@ -226,25 +230,26 @@ type apb_config_type is array (0 to NAPBCFG-1) of amba_config_word;
   constant zahbdw : std_logic_vector(AHBDW-1 downto 0) := (others => '0');
   constant zxirq : std_logic_vector(NAHBIRQ-1 downto 0) := (others => '0');
   constant zy : std_logic_vector(0 to 31) := (others => '0');
+  constant ztestin : std_logic_vector(NTESTINBITS-1 downto 0) := (others => '0');
 
   constant apb_none : apb_slv_out_type :=
     (zx, zxirq(NAHBIRQ-1 downto 0), (others => zx), 0);
   constant ahbm_none : ahb_mst_out_type := ( '0', '0', "00", zx,
    '0', "000", "000", "0000", zahbdw, zxirq(NAHBIRQ-1 downto 0), (others => zx), 0);
   constant ahbm_in_none : ahb_mst_in_type := ((others => '0'), '0', (others => '0'),
-   zahbdw, '0', zxirq(NAHBIRQ-1 downto 0), '0', '0', '0', '0');
+   zahbdw, zxirq(NAHBIRQ-1 downto 0), '0', '0', '0', '0', ztestin);
   constant ahbs_none : ahb_slv_out_type := (
-   '1', "00", zahbdw, zx(15 downto 0), '0', zxirq(NAHBIRQ-1 downto 0), (others => zx), 0);
+   '1', "00", zahbdw, zx(15 downto 0), zxirq(NAHBIRQ-1 downto 0), (others => zx), 0);
   constant ahbs_in_none : ahb_slv_in_type := (
    zy(0 to NAHBSLV-1), zx, '0', "00", "000", "000", zahbdw,
-   "0000", '1', "0000", '0', zy(0 to NAHBAMR-1), '0', zxirq(NAHBIRQ-1 downto 0),
-   '0', '0', '0', '0');
+   "0000", '1', "0000", '0', zy(0 to NAHBAMR-1), zxirq(NAHBIRQ-1 downto 0),
+   '0', '0', '0', '0', ztestin);
 
   constant ahbsv_none : ahb_slv_out_vector := (others => ahbs_none);
 
   constant apb_slv_in_none : apb_slv_in_type := ((others => '0'), '0', (others => '0'),
                                                  '0', (others => '0'), (others => '0'),
-                                                 '0', '0', '0', '0');
+                                                 '0', '0', '0', '0', ztestin);
 
 -------------------------------------------------------------------------------
 -- Subprograms
@@ -433,7 +438,8 @@ type apb_config_type is array (0 to NAPBCFG-1) of amba_config_word;
     testen  : in  std_ulogic := '0';
     testrst : in  std_ulogic := '1';
     scanen  : in  std_ulogic := '0';
-    testoen : in  std_ulogic := '1'
+    testoen : in  std_ulogic := '1';
+    testsig : in  std_logic_vector(1+GRLIB_CONFIG_ARRAY(grlib_techmap_testin_extra) downto 0) := (others => '0')
   );
   end component;
 
@@ -780,6 +786,7 @@ package body amba is
     return std_logic_vector is
     variable ret   : std_logic_vector(AHBDW-1 downto 0);
   begin  -- ahbselectdata
+    ret := hdata;
     case hsize is
     when HSIZE_8WORD =>
       if AHBDW = 256 then ret := hdata; end if;
@@ -787,8 +794,6 @@ package body amba is
       if AHBDW = 256 then
         if haddr(4) = '0' then ret := ahbdrivedata(hdata(AHBDW-1 downto AHBDW/2));
         else ret := ahbdrivedata(hdata(AHBDW/2-1 downto 0)); end if;
-      elsif AHBDW = 128 then
-        ret := hdata;
       end if;
     when HSIZE_DWORD =>
       if AHBDW = 256 then
@@ -801,8 +806,6 @@ package body amba is
       elsif AHBDW = 128 then
         if haddr(3) = '0' then ret := ahbdrivedata(hdata(AHBDW-1 downto AHBDW/2));
         else ret := ahbdrivedata(hdata(AHBDW/2-1 downto 0)); end if;
-      elsif AHBDW = 64 then
-        ret := hdata;
       end if;
     when others =>
       if AHBDW = 256 then
@@ -826,8 +829,6 @@ package body amba is
       elsif AHBDW = 64 then
         if haddr(2) = '0' then ret := ahbdrivedata(hdata(AHBDW-1 downto AHBDW/2));
         else ret := ahbdrivedata(hdata(AHBDW/2-1 downto 0)); end if;
-      else
-        ret := hdata;
       end if;
     end case;
     return ret;
@@ -1119,6 +1120,11 @@ package body amba is
   begin
     if en = '1' then ao <= ai;
     else ao <= ahbm_none; end if;
+    ao.haddr   <= ai.haddr;
+    ao.hwrite  <= ai.hwrite;
+    ao.hsize   <= ai.hsize;
+    ao.hprot   <= ai.hprot;
+    ao.hwdata  <= ai.hwdata;
     ao.hconfig <= ai.hconfig;
     ao.hindex  <= ai.hindex;
   end ahbmomux;
@@ -1130,6 +1136,7 @@ package body amba is
   begin
     if en = '1' then ao <= ai;
     else ao <= ahbs_none; end if;
+    ao.hrdata  <= ai.hrdata;
     ao.hconfig <= ai.hconfig;
     ao.hindex  <= ai.hindex;
   end ahbsomux;
@@ -1141,6 +1148,7 @@ package body amba is
   begin
     if en = '1' then ao <= ai;
     else ao <= apb_none; end if;
+    ao.prdata  <= ai.prdata;
     ao.pconfig <= ai.pconfig;
     ao.pindex  <= ai.pindex;
   end apbsomux;

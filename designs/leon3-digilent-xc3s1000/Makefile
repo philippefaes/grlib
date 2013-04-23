@@ -7,7 +7,7 @@ DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 UCF=leon3mp.ucf
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=high
-XSTOPT=""
+XSTOPT=
 SYNPOPT="set_option -pipe 0; set_option -retiming 0; set_option -write_apr_constraint 0"
 VHDLSYNFILES=config.vhd ahbrom.vhd vga_clkgen.vhd leon3mp.vhd
 VHDLSIMFILES=testbench.vhd
@@ -19,10 +19,10 @@ CLEAN=soft-clean
 
 TECHLIBS = unisim
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF usbhc \
-	tmtc openchip micron hynix cypress ihp gleichmann opencores spw
+	tmtc openchip micron hynix cypress ihp opencores spw
 DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest \
-	spacewire ddr can usb ata grusbhc haps coremp7 hcan \
-	leon4 leon4b64 l2cache slink ascs pwm gr1553b iommu
+	spacewire ddr can usb grusbhc hcan \
+	leon4 leon4v0 l2cache slink ascs pwm gr1553b iommu
 FILESKIP = grcan.vhd i2cmst.vhd
 
 include $(GRLIB)/bin/Makefile

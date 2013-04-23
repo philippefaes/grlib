@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,9 @@ use unisim.RAMB4_S8;
 use unisim.RAMB4_S16;
 use unisim.RAMB4_S16_S16;
 --pragma translate_on
+library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 library techmap;
 use techmap.gencomp.all;
 
@@ -124,18 +127,20 @@ begin
   xa(abits-1 downto 0) <= address; xa(19 downto abits) <= (others => '0');
   ya(abits-1 downto 0) <= address; ya(19 downto abits) <= (others => '1');
 
-  a0 : if (abits <= 5) generate
+  a0 : if (abits <= 5) and (GRLIB_CONFIG_ARRAY(grlib_techmap_strict_ram) = 0) generate
     r0 : generic_syncram generic map (abits, dbits)
          port map (clk, address, datain, do(dbits-1 downto 0), write);
     do(dbits+32 downto dbits) <= (others => '0');
   end generate;
-  a7 : if (abits > 5) and (abits <= 7) and (dbits <= 32) generate
+  a7 : if ((abits > 5 or GRLIB_CONFIG_ARRAY(grlib_techmap_strict_ram) /= 0) and
+           (abits <= 7) and (dbits <= 32)) generate
     r0 : RAMB4_S16_S16 port map ( do(31 downto 16), do(15 downto 0),
 	xa(7 downto 0), ya(7 downto 0), clk, clk, di(31 downto 16),
 	di(15 downto 0), enable, enable, gnd, gnd, write, write);
     do(dbits+32 downto 32) <= (others => '0');
   end generate;
-  a8 : if ((abits > 5) and (abits <= 7) and (dbits > 32)) or (abits = 8) generate
+  a8 : if (((abits > 5 or GRLIB_CONFIG_ARRAY(grlib_techmap_strict_ram) /= 0) and
+            (abits <= 7) and (dbits > 32)) or (abits = 8)) generate
     x : for i in 0 to ((dbits-1)/16) generate
       r : RAMB4_S16 port map ( do (((i+1)*16)-1 downto i*16), xa(7 downto 0),
 	clk, di (((i+1)*16)-1 downto i*16), enable, gnd, write );
@@ -380,6 +385,9 @@ end;
 
 library ieee;
 use ieee.std_logic_1164.all;
+library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 --pragma translate_off
 library unisim;
 use unisim.RAMB16_S36_S36;
@@ -523,13 +531,14 @@ begin
   xa(19 downto abits) <= (others => '0'); ya(abits-1 downto 0) <= address;
   ya(19 downto abits) <= (others => '1');
 
-  a0 : if (abits <= 5) generate
+  a0 : if (abits <= 5) and (GRLIB_CONFIG_ARRAY(grlib_techmap_strict_ram) = 0) generate
     r0 : generic_syncram generic map (abits, dbits)
          port map (clk, address, datain, do(dbits-1 downto 0), write);
     do(dbits+72 downto dbits) <= (others => '0');
   end generate;
 
-  a8 : if (abits > 5) and (abits <= 8) generate
+  a8 : if ((abits > 5 or GRLIB_CONFIG_ARRAY(grlib_techmap_strict_ram) /= 0) and
+           (abits <= 8)) generate
     x : for i in 0 to ((dbits-1)/72) generate
       r0 : RAMB16_S36_S36 port map (
 	do(i*72+36+31 downto i*72+36), do(i*72+31 downto i*72),
@@ -878,6 +887,9 @@ end;
 
 library ieee;
 use ieee.std_logic_1164.all;
+library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 
 entity unisim_syncram_2p is
   generic (abits : integer := 6; dbits : integer := 8; sepclk : integer := 0;
@@ -939,12 +951,12 @@ begin
 --      renable2 <= renable or write2; datain2 <= datain;
 --    end generate;
 
-    a0 : if abits <= 5 generate
+    a0 : if abits <= 5 and GRLIB_CONFIG_ARRAY(grlib_techmap_strict_ram) = 0 generate
       x0 :  generic_syncram_2p generic map (abits, dbits, sepclk)
   	port map (rclk, wclk, raddress, waddress, datain, write, dataout);
     end generate;
 
-    a6 : if abits > 5 generate
+    a6 : if abits > 5 or GRLIB_CONFIG_ARRAY(grlib_techmap_strict_ram) /= 0 generate
       x0 : unisim_syncram_dp generic map (abits, dbits)
          port map (wclk, waddress, datain, open, write, write, 
                    rclk, raddress, datain2, dataout, renable2, write2);

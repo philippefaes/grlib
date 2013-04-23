@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -108,22 +108,6 @@ component leon3mp
     rxd1   	: in  std_ulogic;  			-- UART1 rx data
     txd1   	: out std_ulogic; 			-- UART1 tx data    
    
-    ata_rst   : out std_logic; 
-    ata_data  : inout std_logic_vector(15 downto 0);
-    ata_da    : out std_logic_vector(2 downto 0);  
-    ata_cs0   : out std_logic;
-    ata_cs1   : out std_logic;
-    ata_dior  : out std_logic;
-    ata_diow  : out std_logic;
-    ata_iordy : in std_logic;
-    ata_intrq : in std_logic;
-    ata_dmack : out std_logic;
-    cf_power  : out std_logic;  
-    cf_gnd_da : out std_logic_vector(10 downto 3); -- grounded address lines
-    cf_atasel : out std_logic; -- grounded to select true IDE mode
-    cf_we     : out std_logic; -- should be connected to VCC in true IDE mode
-    cf_csel   : out std_logic;
-
     -- for smc lan chip
     eth_aen    : out std_ulogic; 
     eth_readn  : out std_ulogic; 
@@ -196,26 +180,6 @@ constant lresp : boolean := false;
 signal sa      	: std_logic_vector(14 downto 0);
 signal sd   	: std_logic_vector(31 downto 0);
 
--- ATA signals
-signal ata_rst   : std_logic;   
-signal ata_data  : std_logic_vector(15 downto 0);
-signal ata_da    : std_logic_vector(2 downto 0);
-signal ata_cs0   : std_logic;
-signal ata_cs1   : std_logic;
-signal ata_dior  : std_logic;
-signal ata_diow  : std_logic;
-signal ata_iordy : std_logic;
-signal ata_intrq : std_logic;
-signal ata_dmack : std_logic;
-signal cf_gnd_da : std_logic_vector(10 downto 3); 
-signal cf_atasel : std_logic; 
-signal cf_we     : std_logic; 
-signal cf_power  : std_logic;
-signal cf_csel   : std_logic;
-
-signal from_ata : ata_out_type := ATAO_RESET_VECTOR;
-signal to_ata : ata_in_type := ATAI_RESET_VECTOR;
-
 begin
 
 -- clock and reset
@@ -232,10 +196,7 @@ begin
                   romsn, oen, writen,
                   sa(11 downto 0), sd, sdclk, sdcke, sdcsn, sdwen, sdrasn, sdcasn, sddqm, sdba,
                   dsutx, dsurx, dsubren, dsuact,
-                  rxd1, txd1, 
-                  ata_rst, ata_data, ata_da, ata_cs0, ata_cs1, ata_dior, ata_diow, 
-                  ata_iordy, ata_intrq, ata_dmack, 
-                  cf_power, cf_gnd_da, cf_atasel, cf_we, cf_csel,
+                  rxd1, txd1,
                   eth_aen, eth_readn, eth_writen, eth_nbe); 
 
 -- optional sdram
@@ -266,16 +227,6 @@ begin
 		  rwen, ramoen);
   end generate;
   
-  disk: ata_device
-    generic map( sector_length => 512, log2_size => 14)
-    port map( clk => clk, rst => rst, d => ata_data, atai => to_ata,
-      atao => from_ata
-    );
-  to_ata.cs(0)<=ata_cs0; to_ata.cs(1)<=ata_cs1;
-  to_ata.da<=ata_da; to_ata.dmack<=ata_dmack;
-  to_ata.dior<=ata_dior; to_ata.diow<=ata_diow; to_ata.reset<=ata_rst;
-  ata_intrq<=from_ata.intrq; ata_iordy<=from_ata.iordy;
-
   error <= 'H';			  -- ERROR pull-up
 
    iuerr : process

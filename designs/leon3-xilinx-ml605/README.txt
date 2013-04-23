@@ -2,8 +2,8 @@ This leon3 design is tailored to the Xilinx Virtex-6 ML605 board
 
 http://www.xilinx.com/ml605
 
-Simulation and synthesis
-------------------------
+Simulation and synthesis for ISE-13
+-----------------------------------
 
 The design uses the Xilinx MIG memory interface with an AHB-2.0
 interface. The MIG source code cannot be distributed due to the
@@ -27,10 +27,42 @@ and then
 
 to program the FPGA.
 
+Simulation and synthesis for ISE-14
+-----------------------------------
+
+The design uses the Xilinx MIG memory interface with an AHB-2.0
+interface. The MIG source code cannot be distributed due to the
+prohibitive Xilinx license, so the MIG must be re-generated with 
+coregen before simulation and synthesis can be done.
+
+To generate the MIG and install the Xilinx unisim simulation
+library, do as follows:
+
+  make mig39
+  make compile_xilinx_verilog_lib
+  make map_xilinx_verilog_lib
+
+To simulate and run systest.c on the Leon design using the memory 
+controller from Xilinx use the make targets:
+
+  make soft
+  make vsim-launch
+  
+This will ONLY work with ISE-14 installed, and the XILINX variable
+properly set in the shell. To build the design, do
+
+  make planAhead
+
+and then
+
+  make ise-prog-fpga
+
+to program the FPGA.
+
 Design specifics
 ----------------
 
-* Synthesis shold be done using ISE-13
+* Synthesis should be done using ISE-13 or ISE-14
 
 * The DDR3 controller is implemented with Xilinx MIG-3.7 and 
   runs of the 200 MHz clock. The DDR3 memory runs at 400 MHz
@@ -50,7 +82,7 @@ Design specifics
 
 * LED 2 indicates processor in debug mode
 
-* LED 3 indicates DDR3 PHY initialization done
+* LED 7 indicates processor in error mode
 
 * The GRETH core is enabled and runs without problems at both
   100 and 1000 Mbit. The 1000 Mbit operation requires the commercial
@@ -60,7 +92,7 @@ Design specifics
 * 16-bit flash prom can be read at address 0. It can be programmed
   with GRMON version 1.1.16 or later.
 
-* The system can be simulated if the secure IP models are installed:
+* When using ISE-13 the system can be simulated if the secure IP models are installed:
 
   make install-secureip
 
@@ -70,17 +102,29 @@ Design specifics
 
   Modelsim v6.5e or newer is required to build the secure IP models.
 
-  The normal leon3 test bench cannot be executed as the DDR3 model
-  does not support pre-loading.
+* When using ISE-14 the system can be simulated if xilinx core libs are installed:
+
+  make compile_xilinx_verilog_lib
+  make map_xilinx_verilog_lib
+
+  Then rebuild the scripts and simulation model:
+
+  make distclean vsim-launch
+
+  Modelsim v10.1a has been used to run systest.c.
 
 * The application UART1 is connected to the USB/RS232 connector
 
 * The JTAG DSU interface is enabled and accesible via the USB/JTAG port.
   Start grmon with -xilusb to connect.
 
+* The GRACECTRL core is instantiated and connected to the System ACE
+  device. GRACECTRL is configured to fake a 16-bit System ACE i/f
+  while the boards actual interface is 8-bit wide.
+
 * Output from GRMON is:
 
-grmon -eth -ip 192.168.0.52 -u -nb
+grmon -eth -ip 192.168.0.51 -u -nb
 
  GRMON LEON debug monitor v1.1.47 professional version
 
@@ -89,23 +133,28 @@ grmon -eth -ip 192.168.0.52 -u -nb
  Comments or bug-reports to support@gaisler.com
 
  ethernet startup.
- GRLIB build version: 4107
+ GRLIB build version: 4113
 
- initialising ...........
- detected frequency: 100 MHz
+ initialising ...............
+ detected frequency:  75 MHz
+ SRAM waitstates: 1
 
  Component                            Vendor
  LEON3 SPARC V8 Processor             Gaisler Research
  AHB Debug JTAG TAP                   Gaisler Research
+ SVGA Controller                      Gaisler Research
  GR Ethernet MAC                      Gaisler Research
  Xilinx MIG DDR2 controller           Gaisler Research
  AHB/APB Bridge                       Gaisler Research
  LEON3 Debug Support Unit             Gaisler Research
  LEON2 Memory Controller              European Space Agency
+ System ACE I/F Controller            Gaisler Research
  Generic APB UART                     Gaisler Research
  Multi-processor Interrupt Ctrl       Gaisler Research
  Modular Timer Unit                   Gaisler Research
+ AMBA Wrapper for OC I2C-master       Gaisler Research
  General purpose I/O port             Gaisler Research
+ AMBA Wrapper for OC I2C-master       Gaisler Research
 
  Use command 'info sys' to print a detailed report of attached cores
 
@@ -114,12 +163,15 @@ grlib> inf sys
              ahb master 0
 01.01:01c   Gaisler Research  AHB Debug JTAG TAP (ver 0x1)
              ahb master 1
-02.01:01d   Gaisler Research  GR Ethernet MAC (ver 0x0)
-             ahb master 2, irq 12
+02.01:063   Gaisler Research  SVGA Controller (ver 0x0)
+             ahb master 2
+             apb: 80000600 - 80000700
+             clk0: 25.00 MHz  clk1: 41.67 MHz  clk2: 50.00 MHz  clk3: 62.50 MHz
+03.01:01d   Gaisler Research  GR Ethernet MAC (ver 0x0)
+             ahb master 3, irq 12
              apb: 80000f00 - 80001000
              Device index: dev0
-             1000 Mbit capable
-             edcl ip 192.168.0.52, buffer 2 kbyte
+             edcl ip 192.168.0.51, buffer 16 kbyte
 00.01:06b   Gaisler Research  Xilinx MIG DDR2 controller (ver 0x0)
              ahb: 40000000 - 60000000
              DDR2: 512 Mbyte
@@ -128,25 +180,36 @@ grlib> inf sys
 02.01:004   Gaisler Research  LEON3 Debug Support Unit (ver 0x1)
              ahb: 90000000 - a0000000
              AHB trace 256 lines, 32-bit bus, stack pointer 0x5ffffff0
-             CPU#0 win 8, hwbp 2, itrace 256, V8 mul/div, srmmu, lddel 1, GRFPU
-                   icache 4 * 4 kbyte, 32 byte/line lru
-                   dcache 4 * 4 kbyte, 16 byte/line lru
+             CPU#0 win 8, hwbp 2, itrace 256, V8 mul/div, srmmu, lddel 1
+                   icache 2 * 8 kbyte, 32 byte/line lru
+                   dcache 2 * 4 kbyte, 16 byte/line lru
 05.04:00f   European Space Agency  LEON2 Memory Controller (ver 0x1)
              ahb: 00000000 - 20000000
              apb: 80000000 - 80000100
              16-bit prom @ 0x00000000
+07.01:067   Gaisler Research  System ACE I/F Controller (ver 0x0)
+             irq 10
+             ahb: fff00200 - fff00300
 01.01:00c   Gaisler Research  Generic APB UART (ver 0x1)
              irq 2
              apb: 80000100 - 80000200
-             baud rate 38343, DSU mode (FIFO debug)
+             baud rate 38422, DSU mode (FIFO debug)
 02.01:00d   Gaisler Research  Multi-processor Interrupt Ctrl (ver 0x3)
              apb: 80000200 - 80000300
 03.01:011   Gaisler Research  Modular Timer Unit (ver 0x0)
              irq 8
              apb: 80000300 - 80000400
-             8-bit scaler, 2 * 32-bit timers, divisor 100
+             16-bit scaler, 2 * 32-bit timers, divisor 75
+09.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x3)
+             irq 14
+             apb: 80000900 - 80000a00
+             Controller index for use in GRMON: 1
 0b.01:01a   Gaisler Research  General purpose I/O port (ver 0x1)
              apb: 80000b00 - 80000c00
+0c.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x3)
+             irq 11
+             apb: 80000c00 - 80000d00
+             Controller index for use in GRMON: 2
 grlib> fla
 
  Intel-style 16-bit flash on D[31:16]

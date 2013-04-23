@@ -52,11 +52,6 @@ comment 'Peripherals             '
     source lib/gaisler/misc/gptimer.in
     source lib/gaisler/misc/grgpio.in
   endmenu
-  
-  mainmenu_option next_comment
-  comment 'ATA Controller'
-    source lib/gaisler/ata/ata.in
-  endmenu
 
 endmenu
 

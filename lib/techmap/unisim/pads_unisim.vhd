@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -137,13 +137,33 @@ begin
           port map (O => o, IO => pad, I => i, T => en);
       end generate;
     end generate;
-    cmos_25 : if voltage /= x33v generate
+    cmos_25 : if voltage = x25v generate
       slow0 : if slew = 0 generate
         op : IOBUF generic map (drive => strength, IOSTANDARD => "LVCMOS25")
           port map (O => o, IO => pad, I => i, T => en);
       end generate;
       fast0 : if slew /= 0 generate
         op : IOBUF generic map (drive => strength, IOSTANDARD => "LVCMOS25", SLEW => "FAST")
+          port map (O => o, IO => pad, I => i, T => en);
+      end generate;
+    end generate;
+    cmos_18 : if voltage = x18v generate
+      slow0 : if slew = 0 generate
+        op : IOBUF generic map (drive => strength, IOSTANDARD => "LVCMOS18")
+          port map (O => o, IO => pad, I => i, T => en);
+      end generate;
+      fast0 : if slew /= 0 generate
+        op : IOBUF generic map (drive => strength, IOSTANDARD => "LVCMOS18", SLEW => "FAST")
+          port map (O => o, IO => pad, I => i, T => en);
+      end generate;
+    end generate;
+    cmos_15 : if voltage = x15v generate
+      slow0 : if slew = 0 generate
+        op : IOBUF generic map (drive => strength, IOSTANDARD => "LVCMOS15")
+          port map (O => o, IO => pad, I => i, T => en);
+      end generate;
+      fast0 : if slew /= 0 generate
+        op : IOBUF generic map (drive => strength, IOSTANDARD => "LVCMOS15", SLEW => "FAST")
           port map (O => o, IO => pad, I => i, T => en);
       end generate;
     end generate;
@@ -225,13 +245,33 @@ begin
           port map (O => pad, I => i);
       end generate;
     end generate;
-    cmos_25: if voltage /= x33v generate
+    cmos_25: if voltage = x25v generate
       slow0 : if slew = 0 generate
         op : OBUF generic map (drive => strength, IOSTANDARD => "LVCMOS25")
           port map (O => pad, I => i);
       end generate;
       fast0 : if slew /= 0 generate
         op : OBUF generic map (drive => strength, IOSTANDARD => "LVCMOS25", SLEW => "FAST")
+          port map (O => pad, I => i);
+      end generate;
+    end generate;
+    cmos_18: if voltage = x18v generate
+      slow0 : if slew = 0 generate
+        op : OBUF generic map (drive => strength, IOSTANDARD => "LVCMOS18")
+          port map (O => pad, I => i);
+      end generate;
+      fast0 : if slew /= 0 generate
+        op : OBUF generic map (drive => strength, IOSTANDARD => "LVCMOS18", SLEW => "FAST")
+          port map (O => pad, I => i);
+      end generate;
+    end generate;
+    cmos_15: if voltage = x15v generate
+      slow0 : if slew = 0 generate
+        op : OBUF generic map (drive => strength, IOSTANDARD => "LVCMOS15")
+          port map (O => pad, I => i);
+      end generate;
+      fast0 : if slew /= 0 generate
+        op : OBUF generic map (drive => strength, IOSTANDARD => "LVCMOS15", SLEW => "FAST")
           port map (O => pad, I => i);
       end generate;
     end generate;
@@ -477,7 +517,8 @@ use unisim.BUFG;
 -- pragma translate_on
 
 entity unisim_clkpad is
-  generic (level : integer := 0; voltage : integer := x33v; arch : integer := 0; hf : integer := 0);
+  generic (level : integer := 0; voltage : integer := x33v; arch : integer := 0; hf : integer := 0;
+           tech : integer := 0);
   port (pad : in std_ulogic; o : out std_ulogic; rstn : in std_ulogic := '1'; lock : out std_ulogic);
 end; 
 architecture rtl of unisim_clkpad is
@@ -497,6 +538,46 @@ architecture rtl of unisim_clkpad is
   component CLKDLLHF port ( CLK0   : out std_ulogic; CLK180 : out std_ulogic; CLKDV  : out std_ulogic;
       LOCKED : out std_ulogic; CLKFB  : in std_ulogic; CLKIN  : in std_ulogic; RST   : in std_ulogic);
   end component;
+  component DCM_SP
+    generic (
+      CLKDV_DIVIDE : real := 2.0;
+      CLKFX_DIVIDE : integer := 1;
+      CLKFX_MULTIPLY : integer := 4;
+      CLKIN_DIVIDE_BY_2 : boolean := false;
+      CLKIN_PERIOD : real := 10.0;
+      CLKOUT_PHASE_SHIFT : string := "NONE";
+      CLK_FEEDBACK : string := "1X";
+      DESKEW_ADJUST : string := "SYSTEM_SYNCHRONOUS";
+      DFS_FREQUENCY_MODE : string := "LOW";
+      DLL_FREQUENCY_MODE : string := "LOW";
+      DSS_MODE : string := "NONE";
+      DUTY_CYCLE_CORRECTION : boolean := true;
+      FACTORY_JF : bit_vector := X"C080";
+      PHASE_SHIFT : integer := 0;
+      STARTUP_WAIT : boolean := false
+      );
+    port (
+      CLK0 : out std_ulogic := '0';
+      CLK180 : out std_ulogic := '0';
+      CLK270 : out std_ulogic := '0';
+      CLK2X : out std_ulogic := '0';
+      CLK2X180 : out std_ulogic := '0';
+      CLK90 : out std_ulogic := '0';
+      CLKDV : out std_ulogic := '0';
+      CLKFX : out std_ulogic := '0';
+      CLKFX180 : out std_ulogic := '0';
+      LOCKED : out std_ulogic := '0';
+      PSDONE : out std_ulogic := '0';
+      STATUS : out std_logic_vector(7 downto 0) := "00000000";
+      CLKFB : in std_ulogic := '0';
+      CLKIN : in std_ulogic := '0';
+      DSSEN : in std_ulogic := '0';
+      PSCLK : in std_ulogic := '0';
+      PSEN : in std_ulogic := '0';
+      PSINCDEC : in std_ulogic := '0';
+      RST : in std_ulogic := '0');
+    end component;
+  
   signal gnd, ol, ol2, ol3 : std_ulogic;
   signal rst : std_ulogic;
 
@@ -592,30 +673,56 @@ begin
   end generate;
   g3 : if arch = 3 generate
     ip : IBUFG port map (O => ol, I => pad);
-    hf0 : if hf = 0 generate
-      dll: CLKDLL port map(
-        CLK0 => ol2,
-        CLK180 => open,
-        CLK270 => open,
-        CLK2X  => open,
-        CLK90  => open,
-        CLKDV  => open,
-        LOCKED => lock,
-        CLKFB  => ol3,
-        CLKIN  => ol,
-        RST    => rst);
+    sp6 : if tech = spartan6 generate
+      dll: DCM_SP
+        generic map (CLK_FEEDBACK => "1X")
+        port map (
+          CLK0     => ol2,
+          CLK180   => open,
+          CLK270   => open,
+          CLK2X    => open,
+          CLK2X180 => open,
+          CLK90    => open,
+          CLKDV    => open,
+          CLKFX    => open,
+          CLKFX180 => open,
+          LOCKED   => lock,
+          PSDONE   => open,
+          STATUS   => open,
+          CLKFB    => ol3,
+          CLKIN    => ol,
+          DSSEN    => gnd,
+          PSCLK    => gnd,
+          PSEN     => gnd,
+          PSINCDEC => gnd,
+          RST      => rst);
     end generate;
-    hf1 : if hf = 1 generate
-      dll : CLKDLLHF
-        port map(
-          CLK0 => ol2,   
+    nsp6 : if tech /= spartan6 generate
+      hf0 : if hf = 0 generate
+        dll: CLKDLL port map(
+          CLK0 => ol2,
           CLK180 => open,
-          CLKDV => open,
+          CLK270 => open,
+          CLK2X  => open,
+          CLK90  => open,
+          CLKDV  => open,
           LOCKED => lock,
           CLKFB  => ol3,
           CLKIN  => ol,
           RST    => rst);
-    end generate;
+      end generate;
+      hf1 : if hf = 1 generate
+        dll : CLKDLLHF
+          port map(
+            CLK0 => ol2,   
+            CLK180 => open,
+            CLKDV => open,
+            LOCKED => lock,
+            CLKFB  => ol3,
+            CLKIN  => ol,
+            RST    => rst);
+      end generate;
+    end generate;    
     bf : BUFG port map (O => ol3, I => ol2);
     o <= ol3;    
   end generate g3;
@@ -663,6 +770,7 @@ library techmap;
 use techmap.gencomp.all;
 -- pragma translate_off
 library unisim;
+use unisim.IBUFGDS;
 use unisim.IBUFGDS_LVDS_25;
 use unisim.IBUFGDS_LVDS_33;
 -- pragma translate_on
@@ -673,6 +781,12 @@ entity unisim_clkpad_ds is
 end; 
 
 architecture rtl of unisim_clkpad_ds is
+  component IBUFGDS
+  generic ( CAPACITANCE : string := "DONT_CARE";
+	DIFF_TERM : boolean := FALSE; IBUF_DELAY_VALUE : string := "0";
+	IOSTANDARD : string := "DEFAULT");
+     port ( O : out std_ulogic; I : in std_ulogic; IB : in std_ulogic);
+  end component;
   component IBUFGDS_LVDS_25
      port ( O : out std_ulogic; I : in std_ulogic; IB : in std_ulogic);
   end component;
@@ -689,11 +803,21 @@ begin
     lvds_33 : if voltage = x33v generate
       ip : IBUFGDS_LVDS_33 port map (O => o, I => padp, IB => padn);
     end generate;
-    lvds_25 : if voltage /= x33v generate
+    lvds_25 : if voltage = x25v generate
       ip : IBUFGDS_LVDS_25 port map (O => o, I => padp, IB => padn);
     end generate;
   end generate;
-  beh : if level /= lvds generate
+  xsstl : if level = sstl generate
+    sstl_18 : if voltage = x18v generate
+      ip : IBUFGDS generic map (DIFF_TERM => true, IOSTANDARD =>"DIFF_SSTL18")
+	    port map (O => o, I => padp, IB => padn);      
+    end generate;
+    sstl_15 : if voltage = x15v generate
+      ip : IBUFGDS generic map (DIFF_TERM => true, IOSTANDARD =>"DIFF_SSTL15")
+	    port map (O => o, I => padp, IB => padn);      
+    end generate;
+  end generate;
+  beh : if ((level /= lvds) and (level /= sstl)) generate
     o <= padp after 1 ns;
   end generate;
 end;
@@ -770,7 +894,7 @@ begin
       ip : IBUFGDS generic map (DIFF_TERM => true, IOSTANDARD =>"LVDS_33")
 	   port map (O => o, I => padp, IB => padn);
     end generate;
-    lvds_25 : if voltage /= x33v generate
+    lvds_25 : if voltage = x25v generate
       ip : IBUFGDS generic map (DIFF_TERM => true, IOSTANDARD =>"LVDS_25")
 	   port map (O => o, I => padp, IB => padn);
     end generate;

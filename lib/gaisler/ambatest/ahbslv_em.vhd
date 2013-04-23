@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -126,7 +126,7 @@ begin
     v.di := ahbsi.hwdata;
     vahbso.hready := '1'; vahbso.hresp := HRESP_OKAY;
     vahbso.hrdata := do; vahbso.hsplit := (others => '0');
-    vahbso.hcache := '0'; vahbso.hirq := (others => '0');
+    vahbso.hirq := (others => '0');
     vahbso.hconfig := hconfig;
 
     if ahbsi.hready = '1' then v.ad := ahbsi.haddr(abits-1 downto 0); end if;

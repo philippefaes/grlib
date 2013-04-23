@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -46,6 +46,15 @@ end;
 
 architecture rtl of mul_dw is
   
+component DW02_mult
+   generic( A_width: NATURAL;		-- multiplier wordlength
+            B_width: NATURAL);		-- multiplicand wordlength
+   port(A : in std_logic_vector(A_width-1 downto 0);  
+        B : in std_logic_vector(B_width-1 downto 0);
+        TC : in std_logic;		-- signed -> '1', unsigned -> '0'
+        PRODUCT : out std_logic_vector(A_width+B_width-1 downto 0));
+end component;
+
   signal gnd       : std_ulogic;
   
 begin
@@ -108,4 +117,3 @@ begin
   PRODUCT <= p;
   
 end;
-

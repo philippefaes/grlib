@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -138,6 +138,13 @@ signal tft_lcd_reset_b : std_ulogic;
   signal spi_clk   : std_ulogic;
   signal spi_mosi  : std_ulogic;
 
+signal sysace_mpa     : std_logic_vector(6 downto 0);
+signal sysace_mpce    : std_ulogic;
+signal sysace_mpirq   : std_ulogic;
+signal sysace_mpoe    : std_ulogic;
+signal sysace_mpwe    : std_ulogic;
+signal sysace_d       : std_logic_vector(7 downto 0);
+
   signal dsurst  : std_ulogic;
   signal errorn  : std_logic;
 
@@ -175,7 +182,9 @@ begin
 	dvi_iic_scl, dvi_iic_sda,
 	tft_lcd_data, tft_lcd_clk_p, tft_lcd_clk_n, tft_lcd_hsync,
 	tft_lcd_vsync, tft_lcd_de, tft_lcd_reset_b,
-	spi_sel_n, spi_clk, spi_mosi
+	spi_sel_n, spi_clk, spi_mosi,
+        sysace_mpa, sysace_mpce, sysace_mpirq, sysace_mpoe,
+        sysace_mpwe, sysace_d
       );
 
 --  prom0 : sram generic map (index => 6, abits => romdepth, fname => promfile)
@@ -210,6 +219,9 @@ begin
                phy_tx_er, phy_mii_clk, phy_gtx_clk);
   end generate;
 
+  sysace_mpirq <= '0';
+  sysace_d <= (others => 'Z');
+  
    iuerr : process
    begin
      wait for 5000 ns;

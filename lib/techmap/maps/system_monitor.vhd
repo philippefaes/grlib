@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -199,7 +199,7 @@ architecture struct of system_monitor is
 
 begin  -- struct
 
-  gen: if not ((tech = virtex5) or (tech = virtex6)) generate
+  gen: if not ((tech = virtex5) or (tech = virtex6) or (tech = virtex7) or (tech = kintex7)) generate
     alm          <= (others => '0');
     busy         <= '0';
     channel      <= (others => '0');
@@ -287,5 +287,81 @@ begin  -- struct
               dwe => dwe, reset => reset, vauxn => vauxn, vauxp => vauxp,
               vn => vn, vp => vp);
   end generate v6;
+
+  v7: if tech = virtex7 generate
+    v70 : sysmon
+      generic map (
+        INIT_40 => INIT_40,
+        INIT_41 => INIT_41,
+        INIT_42 => INIT_42,
+        INIT_43 => INIT_43,
+        INIT_44 => INIT_44,
+        INIT_45 => INIT_45,
+        INIT_46 => INIT_46,
+        INIT_47 => INIT_47,
+        INIT_48 => INIT_48,
+        INIT_49 => INIT_49,
+        INIT_4A => INIT_4A,
+        INIT_4B => INIT_4B,
+        INIT_4C => INIT_4C,
+        INIT_4D => INIT_4D,
+        INIT_4E => INIT_4E,
+        INIT_4F => INIT_4F,
+        INIT_50 => INIT_50,
+        INIT_51 => INIT_51,
+        INIT_52 => INIT_52,
+        INIT_53 => INIT_53,
+        INIT_54 => INIT_54,
+        INIT_55 => INIT_55,
+        INIT_56 => INIT_56,
+        INIT_57 => INIT_57,
+        SIM_DEVICE => "VIRTEX7",
+        SIM_MONITOR_FILE => SIM_MONITOR_FILE)
+    port map (alm => alm, busy => busy, channel => channel, do => do,
+              drdy => drdy, eoc => eoc, eos => eos, jtagbusy => jtagbusy,
+              jtaglocked => jtaglocked, jtagmodified => jtagmodified,
+              ot => ot, convst => convst, convstclk => convstclk,
+              daddr => daddr, dclk => dclk, den => den, di => di, 
+              dwe => dwe, reset => reset, vauxn => vauxn, vauxp => vauxp,
+              vn => vn, vp => vp);
+  end generate v7;
+
+  k7: if tech = kintex7 generate
+    k70 : sysmon
+      generic map (
+        INIT_40 => INIT_40,
+        INIT_41 => INIT_41,
+        INIT_42 => INIT_42,
+        INIT_43 => INIT_43,
+        INIT_44 => INIT_44,
+        INIT_45 => INIT_45,
+        INIT_46 => INIT_46,
+        INIT_47 => INIT_47,
+        INIT_48 => INIT_48,
+        INIT_49 => INIT_49,
+        INIT_4A => INIT_4A,
+        INIT_4B => INIT_4B,
+        INIT_4C => INIT_4C,
+        INIT_4D => INIT_4D,
+        INIT_4E => INIT_4E,
+        INIT_4F => INIT_4F,
+        INIT_50 => INIT_50,
+        INIT_51 => INIT_51,
+        INIT_52 => INIT_52,
+        INIT_53 => INIT_53,
+        INIT_54 => INIT_54,
+        INIT_55 => INIT_55,
+        INIT_56 => INIT_56,
+        INIT_57 => INIT_57,
+        SIM_DEVICE => "KINTEX7",
+        SIM_MONITOR_FILE => SIM_MONITOR_FILE)
+    port map (alm => alm, busy => busy, channel => channel, do => do,
+              drdy => drdy, eoc => eoc, eos => eos, jtagbusy => jtagbusy,
+              jtaglocked => jtaglocked, jtagmodified => jtagmodified,
+              ot => ot, convst => convst, convstclk => convstclk,
+              daddr => daddr, dclk => dclk, den => den, di => di, 
+              dwe => dwe, reset => reset, vauxn => vauxn, vauxp => vauxp,
+              vn => vn, vp => vp);
+  end generate k7;
 
 end struct;

@@ -6,11 +6,11 @@ include $(GRLIB)/boards/$(BOARD)/Makefile.inc
 DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 #UCF=$(GRLIB)/boards/$(BOARD)/$(TOP).ucf
 UCF=leon3mp.ucf
-XSTOPT="-uc leon3mp.xcf"
+XSTOPT=-uc leon3mp.xcf
 SYNPOPT="set_option -pipe 1; set_option -retiming 1; set_option -write_apr_constraint 0"
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=high
-ISEMAPOPT="-m -timing"
+ISEMAPOPT=-m -timing
 VHDLSYNFILES=config.vhd ahbrom.vhd leon3mp.vhd
 VHDLSIMFILES=testbench.vhd
 SIMTOP=testbench
@@ -22,11 +22,11 @@ CLEAN=soft-clean
 TECHLIBS = unisim
 
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	tmtc openchip hynix ihp gleichmann fmf gsi spansion
+	tmtc openchip hynix ihp fmf gsi spansion
 DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can usb \
-	hcan leon4 leon4b64 l2cache slink ascs pwm haps coremp7 gr1553b iommu
+	hcan leon4 leon4v0 l2cache slink ascs pwm gr1553b iommu
 
-FILESKIP = grcan.vhd simple_spi_top.v
+FILESKIP = grcan.vhd
 
 include $(GRLIB)/software/leon3/Makefile
 XLDFLAGS=-L./ lib3tests.a -Ttext=0x40000000

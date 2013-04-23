@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,8 @@ use techmap.gencomp.all;
 entity virtex4_ddr_phy is
   generic (MHz : integer := 100; rstdelay : integer := 200;
 	dbits : integer := 16; clk_mul : integer := 2 ;
-	clk_div : integer := 2; rskew : integer := 0);
+	clk_div : integer := 2; rskew : integer := 0;
+        phyiconf : integer := 0);
 
   port (
     rst       : in  std_ulogic;
@@ -305,16 +306,26 @@ begin
   fbclk_pad : outpad generic map (tech => virtex4, level => sstl2_i) 
 	port map (ddr_clk_fb_out, ddr_clk_fb_outr);
 
-  ddrclocks : for i in 0 to 2 generate
-    dclk0r : ODDR port map ( Q => ddr_clkl(i), C => clk90r, CE => vcc,
-		D1 => vcc, D2 => gnd, R => gnd, S => gnd);
-    ddrclk_pad : outpad_ds generic map (tech => virtex4, level => sstl2_ii) 
-	port map (ddr_clk(i), ddr_clkb(i), ddr_clkl(i), '1');
+  ddrclkdiffio : if phyiconf = 0 generate
+    ddrclocks0 : for i in 0 to 2 generate
+      dclk0r : ODDR port map ( Q => ddr_clkl(i), C => clk90r, CE => vcc,
+                               D1 => vcc, D2 => gnd, R => gnd, S => gnd);
+      ddrclk_pad : outpad_ds generic map (tech => virtex4, level => sstl2_ii) 
+        port map (ddr_clk(i), ddr_clkb(i), ddr_clkl(i), '1');
+    end generate;    
+  end generate;
+  ddrclknodiffio : if phyiconf = 1 generate
+    ddrclocks1 : for i in 0 to 2 generate
+      dclk0r : ODDR port map ( Q => ddr_clkl(i), C => clk90r, CE => vcc,
+                               D1 => vcc, D2 => gnd, R => gnd, S => gnd);
+      ddrclk1_pad : outpad generic map (tech => virtex4, level => sstl2_ii) 
+	port map (ddr_clk(i), ddr_clkl(i));
 
---    dclk0rb : ODDR port map ( Q => ddr_clkbl(i), C => clk90r, CE => vcc,
---		D1 => gnd, D2 => vcc, R => gnd, S => gnd);
---    ddrclkb_pad : outpad generic map (tech => virtex4, level => sstl2_i) 
---	port map (ddr_clkb(i), ddr_clkbl(i));
+      dclk0rb : ODDR port map ( Q => ddr_clkbl(i), C => clk90r, CE => vcc,
+                                D1 => gnd, D2 => vcc, R => gnd, S => gnd);
+      ddrclk1b_pad : outpad generic map (tech => virtex4, level => sstl2_i) 
+	port map (ddr_clkb(i), ddr_clkbl(i));
+    end generate;
   end generate;
 
   ddrbanks : for i in 0 to 1 generate

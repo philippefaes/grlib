@@ -23,7 +23,7 @@ router_test_18x: rmapapi.h spwapi.h spwapi.c rmapapi.c router_test_18x.c
 	$(CC) $(CCOPT) -o router_test_18x router_test_18x.c spwapi.c rmapapi.c
 
 router_test_ngmp: rmapapi.h spwapi.h spwapi.c rmapapi.c router_test_ngmp.c
-	$(CC) $(CCOPT) -qambapp -o router_test_ngmp router_test_ngmp.c spwapi.c rmapapi.c
+	$(CC) $(CCOPT) -qambapp -Wl,-msparcleon0 -o router_test_ngmp router_test_ngmp.c spwapi.c rmapapi.c
 
 router_dual_single: rmapapi.h spwapi.h spwapi.c rmapapi.c router_test_dual_single_link.c
 	$(CC) $(CCOPT) -o router_test_dual_single router_test_dual_single_link.c spwapi.c rmapapi.c

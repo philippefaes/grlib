@@ -237,6 +237,57 @@ package components is
         ----Dm    : IN    STD_LOGIC_VECTOR (data_bits/8 - 1 DOWNTO 0)
     );
   END component;
+
+  component mobile_ddr_fe
+    port (
+        Dq    : INOUT STD_LOGIC_VECTOR (15 DOWNTO 0) := (OTHERS => 'Z');
+        Dqs   : INOUT STD_LOGIC_VECTOR (1 DOWNTO 0) := (OTHERS => 'Z');
+        Addr  : IN    STD_LOGIC_VECTOR (12 DOWNTO 0);
+        Ba    : IN    STD_LOGIC_VECTOR (1 DOWNTO 0);
+        Clk   : IN    STD_LOGIC;
+        Clk_n : IN    STD_LOGIC;
+        Cke   : IN    STD_LOGIC;
+        Cs_n  : IN    STD_LOGIC;
+        Ras_n : IN    STD_LOGIC;
+        Cas_n : IN    STD_LOGIC;
+        We_n  : IN    STD_LOGIC;
+        Dm    : IN    STD_LOGIC_VECTOR (1 DOWNTO 0);
+        BEaddr: out   std_logic_vector (24 downto 0);
+        BEwr  : out   std_logic_vector(1 downto 0);
+        BEdin : out   std_logic_vector(15 downto 0);
+        BEdout: in    std_logic_vector(15 downto 0);
+        BEclear: out  std_logic;
+        BEclrpart: out std_logic;
+        BEsynco: out std_logic;
+        BEsynci: in std_logic
+      );
+  end component;
+
+  component mobile_ddr_febe
+    generic (
+      dbits: integer := 32;
+      rampad: integer := 0;
+      fname: string := "dummy";
+      autoload: integer := 1;
+      rstmode: integer := 0;
+      rstdatah: integer := 16#DEAD#;
+      rstdatal: integer := 16#BEEF#
+      );
+    port (
+        Dq    : INOUT STD_LOGIC_VECTOR (dbits-1 DOWNTO 0) := (OTHERS => 'Z');
+        Dqs   : INOUT STD_LOGIC_VECTOR (dbits/8-1 DOWNTO 0) := (OTHERS => 'Z');
+        Addr  : IN    STD_LOGIC_VECTOR (12 DOWNTO 0);
+        Ba    : IN    STD_LOGIC_VECTOR (1 DOWNTO 0);
+        Clk   : IN    STD_LOGIC;
+        Clk_n : IN    STD_LOGIC;
+        Cke   : IN    STD_LOGIC;
+        Cs_n  : IN    STD_LOGIC;
+        Ras_n : IN    STD_LOGIC;
+        Cas_n : IN    STD_LOGIC;
+        We_n  : IN    STD_LOGIC;
+        Dm    : IN    STD_LOGIC_VECTOR (dbits/8-1 DOWNTO 0)
+      );
+  end component;
   
   component mobile_sdr
     --GENERIC (

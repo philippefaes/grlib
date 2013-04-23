@@ -200,8 +200,7 @@ LIBRARY WORK;
 
 library grlib;
 use grlib.stdlib.all;
-library gaisler;
-use gaisler.sim.all;
+use grlib.stdio.all;
 
 ENTITY mt48lc16m16a2 IS
     GENERIC (
@@ -1206,23 +1205,23 @@ BEGIN
                 readline(file_load, l);
                 read(l, ch);
                 if (ch /= 'S') or (ch /= 's') then
-                  hexread(l, rectype);
-                  hexread(l, reclen);
+                  hread(l, rectype);
+                  hread(l, reclen);
 		  recaddr := (others => '0');
 		  case rectype is 
 		  when "0001" =>
-                    hexread(l, recaddr(15 downto 0));
+                    hread(l, recaddr(15 downto 0));
 		  when "0010" =>
-                    hexread(l, recaddr(23 downto 0));
+                    hread(l, recaddr(23 downto 0));
 		  when "0011" =>
-                    hexread(l, recaddr);
+                    hread(l, recaddr);
 		    recaddr(31 downto 24) := (others => '0');
 		  when others => next;
 		  end case;
                   if L.all'length*4 < recdata'length then
-                    hexread(l, recdata(0 to L.all'length*4-1));
+                    hread(l, recdata(0 to L.all'length*4-1));
                   else
-                    hexread(l, recdata);
+                    hread(l, recdata);
                   end if;
 
 	 	  if index < 32 then

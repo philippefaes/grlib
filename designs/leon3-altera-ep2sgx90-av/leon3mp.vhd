@@ -25,6 +25,7 @@ use grlib.stdlib.all;
 use techmap.gencomp.all;
 library gaisler;
 use gaisler.memctrl.all;
+use gaisler.ddrpkg.all;
 use gaisler.leon3.all;
 use gaisler.uart.all;
 use gaisler.misc.all;
@@ -135,9 +136,6 @@ architecture rtl of leon3mp is
   signal memo, smemo : memory_out_type;
   signal wpo         : wprot_out_type;
   
-  signal ddsi  : ddrmem_in_type;
-  signal ddso  : ddrmem_out_type;
-
   signal ddrclkfb, ssrclkfb, ddr_clkl, ddr_clk90l, ddr_clknl, ddr_clk270l : std_ulogic;
   signal ddr_clkv 	: std_logic_vector(2 downto 0);
   signal ddr_clkbv	: std_logic_vector(2 downto 0);

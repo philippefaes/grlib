@@ -5,31 +5,33 @@ CONFIG_CLK_INFERRED
   phase-adjust the system and SDRAM clocks. This is currently supported
   for Xilinx, Altera and Proasic3 FPGAs. Depending on technology, you
   can select to use the Xilinx CKLDLL macro (Virtex, VirtexE, Spartan1/2),
-  the Xilinx DCM (Virtex-2, Spartan3, Virtex-4), the Altera ALTDLL
-  (Stratix, Cyclone), or the Proasic3 PLL. Choose the 'inferred' 
-  option to skip a clock generator.
+  the Xilinx DCM (Virtex-2, Spartan3, Virtex-4), the Xilinx PLLE2 (Virtex-7,
+  Kintex-7, Artix-4), the Altera ALTDLL (Stratix, Cyclone), or the 
+  Proasic3 PLL. Choose the 'inferred' option to skip a clock generator.
 
 Clock multiplier
 CONFIG_CLK_MUL
-  When using the Xilinx DCM or Altera ALTPLL, the system clock can
-  be multiplied with a factor of 2 - 32, and divided by a factor of
-  1 - 32. This makes it possible to generate almost any desired 
-  processor frequency. When using the Xilinx CLKDLL generator,
-  the resulting frequency scale factor (mul/div) must be one of
-  1/2, 1 or 2. On Proasic3, the factor can be 1 - 128.
-
+  When using the Xilinx DCM, Xilinx PLLE2 or Altera ALTPLL, 
+  the system clock can be multiplied with a factor of 2 - 32, 
+  and divided by a factor of 1 - 32. This makes it possible to 
+  generate almost any desired processor frequency. When using 
+  the Xilinx CLKDLL generator, the resulting frequency scale f
+  actor (mul/div) must be one of 1/2, 1 or 2. On Proasic3, 
+  the factor can be 1 - 128. 
+  
   WARNING: The resulting clock must be within the limits specified
   by the target FPGA family.
 
 Clock divider
 CONFIG_CLK_DIV
-  When using the Xilinx DCM or Altera ALTPLL, the system clock can
-  be multiplied with a factor of 2 - 32, and divided by a factor of
-  1 - 32. This makes it possible to generate almost any desired 
-  processor frequency. When using the Xilinx CLKDLL generator,
-  the resulting frequency scale factor (mul/div) must be one of
-  1/2, 1 or 2. On Proasic3, the factor can be 1 - 128.
-
+  When using the Xilinx DCM, Xilinx PLLE2 or Altera ALTPLL, 
+  the system clock can be multiplied with a factor of 2 - 32, 
+  and divided by a factor of 1 - 32. This makes it possible to 
+  generate almost any desired processor frequency. When using 
+  the Xilinx CLKDLL generator, the resulting frequency scale f
+  actor (mul/div) must be one of 1/2, 1 or 2. On Proasic3, 
+  the factor can be 1 - 128. 
+  
   WARNING: The resulting clock must be within the limits specified
   by the target FPGA family.
 

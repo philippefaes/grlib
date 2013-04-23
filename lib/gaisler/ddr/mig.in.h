@@ -1,4 +1,8 @@
 
+#ifndef CONFIG_MIG_DDR3
+#define CONFIG_MIG_DDR3 0
+#endif
+
 #ifndef CONFIG_MIG_DDR2
 #define CONFIG_MIG_DDR2 0
 #endif

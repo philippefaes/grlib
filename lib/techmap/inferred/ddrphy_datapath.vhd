@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ entity ddrphy_datapath is
     ncs: integer;
     nclk: integer;
     -- Enable extra resync stage clocked by clkresync
-    resync: integer range 0 to 1 := 0
+    resync: integer range 0 to 2 := 0
     );
   port (
     clk0: in std_ulogic;
@@ -207,7 +207,7 @@ begin
                 q1 => dqcaptf(x), q2 => dqcaptr(x));
     
     -- optional extra resync stage
-    ifresync: if resync/=0 generate
+    ifresync: if resync=1 generate
       genresync: for x in 0 to dbits-1 generate
         dqsyncrreg: grdff generic map (tech => regtech)
           port map (clk => clkresync, d => dqcaptr(x), q => dqsyncr(x));
@@ -215,16 +215,21 @@ begin
           port map (clk => clkresync, d => dqcaptf(x), q => dqsyncf(x));
       end generate;
     end generate;    
-    noresync: if resync=0 generate
+    noresync: if resync/=1 generate
       dqsyncr <= dqcaptr;
       dqsyncf <= dqcaptf;
     end generate;
     -- sample in clk0 domain
-    dqinregr: grdff generic map (tech => regtech)
-      port map (clk => clk0, d => dqsyncr(x), q => dqin(x+dbits));
-    dqinregf: grdff generic map (tech => regtech)
-      port map (clk => clk0, d => dqsyncf(x), q => dqin(x));
-    
+    gensamp: if resync/=2 generate
+      dqinregr: grdff generic map (tech => regtech)
+        port map (clk => clk0, d => dqsyncr(x), q => dqin(x+dbits));
+      dqinregf: grdff generic map (tech => regtech)
+        port map (clk => clk0, d => dqsyncf(x), q => dqin(x));
+    end generate;
+    nosamp: if resync=2 generate
+      dqin(x+dbits) <= dqsyncr(x);
+      dqin(x) <= dqsyncf(x);
+    end generate;
   end generate;
 
 

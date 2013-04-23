@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -70,7 +70,9 @@ entity greth_mb is
     enable_mdint   : integer range 0 to 1  := 0;
     multicast      : integer range 0 to 1  := 0;
     edclsepahb     : integer range 0 to 1  := 0;
-    ramdebug       : integer range 0 to 2  := 0);
+    ramdebug       : integer range 0 to 2  := 0;
+    mdiohold       : integer := 1;
+    maxsize        : integer);
   port(
     rst            : in  std_ulogic;
     clk            : in  std_ulogic;
@@ -175,7 +177,9 @@ begin
       enable_mdint   => enable_mdint,
       multicast      => multicast,
       edclsepahbg    => edclsepahb,
-      ramdebug       => ramdebug)
+      ramdebug       => ramdebug,
+      mdiohold       => mdiohold,
+      maxsize        => maxsize)
     port map(
       rst            => rst,
       clk            => clk,
@@ -265,6 +269,7 @@ begin
       --scantest     
       testrst        => ahbmi.testrst,
       testen         => ahbmi.testen,
+      testoen        => ahbmi.testoen,
       edcladdr       => ethi.edcladdr,
       edclsepahb     => ethi.edclsepahb,
       edcldisable    => ethi.edcldisable);

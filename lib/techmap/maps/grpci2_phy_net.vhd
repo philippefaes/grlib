@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -56,7 +56,8 @@ entity grpci2_phy_net is
     --phyi                      : in  grpci2_phy_in_type; 
     phyi_pcirstout            : in  std_logic;
     phyi_pciasyncrst          : in  std_logic;
-    phyi_pciinten             : in  std_logic;
+    phyi_pcisoftrst           : in  std_logic_vector(2 downto 0);
+    phyi_pciinten             : in  std_logic_vector(3 downto 0);
     phyi_m_request            : in  std_logic;
     phyi_m_mabort             : in  std_logic;
     phyi_pr_m_fstate          : in  std_logic_vector(1 downto 0); --pci_master_fifo_state_type;
@@ -164,6 +165,7 @@ entity grpci2_phy_net is
     pcio_locken               : out std_ulogic;
     pcio_serren               : out std_ulogic;
     pcio_inten                : out std_ulogic;
+    pcio_vinten               : out std_logic_vector(3 downto 0);
     pcio_req                  : out std_ulogic;
     pcio_ad                   : out std_logic_vector(31 downto 0);
     pcio_cbe                  : out std_logic_vector(3 downto 0);
@@ -555,6 +557,8 @@ component grpci2_phy_rtax_bypass is
   );
 end component;
 
+signal tmp_pcio_inten : std_logic; -- FIXME: support for INTA..D
+
 begin
 
   ax : if ((tech = axcel) or (tech = axdsp)) and (bypass = 1) generate
@@ -585,7 +589,8 @@ begin
         --phyi                    : in  grpci2_phy_in_type, 
         phyi_pcirstout            => phyi_pcirstout,
         phyi_pciasyncrst          => phyi_pciasyncrst,
-        phyi_pciinten             => phyi_pciinten,
+        --phyi_pcisoftrst           => phyi_pcisoftrst,  -- FIXME: support for soft reset
+        phyi_pciinten             => phyi_pciinten(0), -- FIXME: support for INTA..D
         phyi_m_request            => phyi_m_request,
         phyi_m_mabort             => phyi_m_mabort,
         phyi_pr_m_fstate          => phyi_pr_m_fstate,
@@ -684,7 +689,7 @@ begin
         pcio_reqen                => pcio_reqen,
         pcio_locken               => pcio_locken,
         pcio_serren               => pcio_serren,
-        pcio_inten                => pcio_inten,
+        pcio_inten                => tmp_pcio_inten, -- FIXME: support for INTA..D
         pcio_req                  => pcio_req,
         pcio_ad                   => pcio_ad,
         pcio_cbe                  => pcio_cbe,
@@ -799,6 +804,11 @@ begin
         phyo_poo_serren           => phyo_poo_serren,
         phyo_poo_inten            => phyo_poo_inten
       );
+      -- FIXME: support for INTA..D
+      pcio_inten <= tmp_pcio_inten;
+      pcio_vinten(0) <= tmp_pcio_inten;
+      pcio_vinten(3 downto 1) <= "000";
+
   end generate;
 
 -- pragma translate_off

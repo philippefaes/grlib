@@ -5,3 +5,5 @@ i2cslv.vhd
 i2c2ahbx.vhd
 i2c2ahb.vhd
 i2c2ahb_apb.vhd
+i2c2ahb_gen.vhd
+i2c2ahb_apb_gen.vhd

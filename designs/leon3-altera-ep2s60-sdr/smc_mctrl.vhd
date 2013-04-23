@@ -895,7 +895,6 @@ begin
     ribdrive <= vbdrive;
     risbdrive <= vsbdrive; 
     
-    ahbso.hcache <= not r.area(io);
     memo.address <= r.address;
     memo.sa <= r.sa;
     memo.ramsn          <= "111" & r.ramsn;

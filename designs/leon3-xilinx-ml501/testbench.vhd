@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ signal ddr_dqsp  	: std_logic_vector (7 downto 0);    -- ddr dqs
 signal ddr_dqsn  	: std_logic_vector (7 downto 0);    -- ddr dqs
 signal ddr_rdqs  	: std_logic_vector (7 downto 0);    -- ddr dqs
 signal ddr_ad      : std_logic_vector (13 downto 0);   -- ddr address
-signal ddr_ba      : std_logic_vector (1 downto 0);    -- ddr bank address
+signal ddr_ba      : std_logic_vector (1+CFG_DDR2SP downto 0);    -- ddr bank address
 signal ddr_dq  	: std_logic_vector (63 downto 0); -- ddr data
 signal ddr_dq2 	: std_logic_vector (63 downto 0); -- ddr data
 
@@ -121,6 +121,7 @@ signal phy_tx_er 	: std_ulogic;
 signal phy_mii_clk	: std_ulogic;
 signal phy_rst_n	: std_ulogic;
 signal phy_gtx_clk	: std_ulogic;
+signal phy_int	: std_ulogic := '1';
 signal ps2_keyb_clk: std_logic;
 signal ps2_keyb_data: std_logic;
 signal ps2_mouse_clk: std_logic;
@@ -179,7 +180,7 @@ begin
 	txd1, rxd1, gpio, led, bus_error,
 	phy_gtx_clk, phy_mii_data, phy_tx_clk, phy_rx_clk, 
 	phy_rx_data, phy_dv, phy_rx_er,	phy_col, phy_crs, 
-	phy_tx_data, phy_tx_en, phy_tx_er, phy_mii_clk,	phy_rst_n, 
+	phy_tx_data, phy_tx_en, phy_tx_er, phy_mii_clk,	phy_rst_n, phy_int, 
 	ps2_keyb_clk, ps2_keyb_data, ps2_mouse_clk, ps2_mouse_data,
 	usb_csn, usb_rstn,
         iic_scl_main, iic_sda_main,
@@ -210,7 +211,7 @@ begin
                 LDQSB => ddr_dqsn(i*2), UDQS => ddr_dqsp(i*2+1),
                 UDQSB => ddr_dqsn(i*2+1), LDM => ddr_dm(i*2),
                 WEB => ddr_web, CASB => ddr_casb, RASB  => ddr_rasb, CSB => ddr_csb(j),
-                BA => ddr_ba, ADDR => ddr_ad(12 downto 0), CKE => ddr_cke(j),
+                BA => ddr_ba(1 downto 0), ADDR => ddr_ad(12 downto 0), CKE => ddr_cke(j),
                 CLK => ddr_clk(j), CLKB => ddr_clkb(j), UDM => ddr_dm(i*2+1));
     end generate;
   end generate;

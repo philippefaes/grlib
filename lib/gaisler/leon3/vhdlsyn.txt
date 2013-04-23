@@ -1,31 +1,10 @@
 leon3.vhd
-mmuconfig.vhd
-mmuiface.vhd
-libmmu.vhd
 libiu.vhd
 libcache.vhd
-libproc3.vhd
-cachemem.vhd
-mmu_icache.vhd mmu_dcache.vhd mmu_acache.vhd
-mmutlbcam.vhd mmulrue.vhd mmulru.vhd mmutlb.vhd mmutw.vhd mmu.vhd
-mmu_cache.vhd
-cpu_disasx.vhd
-iu3.vhd
-libfpu.vhd grfpc.vhd grfpw.vhd grfpwsh.vhd
-libgrlfpc.vhd grlfpc.vhd grlfpc2.vhd grlfpw.vhd
-grfpwx.vhd mfpwx.vhd grlfpwx.vhd
 tbufmem.vhd
 dsu3x.vhd
 dsu3.vhd
 dsu3_2x.vhd
-proc3.vhd
-leon3s2x.vhd
-leon3s.vhd
-leon3cg.vhd
-irqmp2x.vhd
-irqmp.vhd
 clk2xsync.vhd
-grfpwxsh.vhd
+clk2xqual.vhd
 grfpushwx.vhd
-leon3sh.vhd
-irqamp.vhd

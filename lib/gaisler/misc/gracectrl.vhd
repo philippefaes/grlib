@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,9 @@
 -- Entity:      gracectrl
 -- File:        gracectrl.vhd
 -- Author:      Jan Andersson - Gaisler Research AB
+-- Contact:     support@gaisler.com
 -- Description: Provides a GRLIB AMBA AHB slave interface to Xilinx System ACE
+-------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -39,7 +41,10 @@ entity gracectrl is
     hmask   : integer := 16#fff#;         -- Area mask
     split   : integer range 0 to 1 := 0;  -- Enable AMBA SPLIT support
     swap    : integer range 0 to 1 := 0;
-    oepol   : integer range 0 to 1 := 0   -- Output enable polarity
+    oepol   : integer range 0 to 1 := 0;  -- Output enable polarity
+    mode    : integer range 0 to 2 := 0   -- 0: 16-bit mode only
+                                          -- 1: 8-bit mode only
+                                          -- 2: 8-bit, emulate 16-bit 
     );
   port (
     rstn    : in  std_ulogic;
@@ -61,23 +66,28 @@ architecture rtl of gracectrl is
 
   constant HCONFIG : ahb_config_type := (
     0 => ahb_device_reg(VENDOR_GAISLER, GAISLER_GRACECTRL, 0, REVISION, hirq),
+--    1 => conv_std_logic_vector(swap*4 + mode, 32),
     4 => ahb_iobar(haddr, hmask), others => zero32);
 
   constant OUTPUT : std_ulogic := conv_std_logic(oepol = 1);
   constant INPUT  : std_ulogic := not conv_std_logic(oepol = 1);
 
+  constant ACEDW : integer := 16-8*(mode mod 2);
+  
   -----------------------------------------------------------------------------
   -- Functions
   -----------------------------------------------------------------------------
-  -- purpose: swaps a hword if 'swap' is non-zero
-  function condhswap (
-    d : std_logic_vector(15 downto 0))
+  -- purpose: swaps a hword if 'swap' is non-zero and mode is zero,
+  --          otherwise just propagate data
+  function condhswap (d : std_logic_vector)
     return std_logic_vector is
+    variable dx : std_logic_vector(15 downto 0);
   begin  -- hswap
-    if swap /= 0 then
-      return d(7 downto 0) & d(15 downto 8);
+    dx(ACEDW-1 downto 0) := d;
+    if swap /= 0 and mode = 0 then
+      return dx(7 downto 0) & dx(15 downto 8);
     end if;
-    return d;
+    return dx;
   end condhswap;
 
   -----------------------------------------------------------------------------
@@ -102,7 +112,7 @@ architecture rtl of gracectrl is
      hmbsel    : std_logic_vector(0 to 1);
      haddr     : std_logic_vector(6 downto 0);
      hready    : std_ulogic;
-     wdata     : std_logic_vector(15 downto 0);
+     wdata     : std_logic_vector(ACEDW-1 downto 0);
      hresp     : std_logic_vector(1 downto 0);
      splmst    : std_logic_vector(3 downto 0);   -- SPLIT:ed master
      hsplit    : std_logic_vector(15 downto 0);  -- Other SPLIT:ed masters
@@ -114,15 +124,18 @@ architecture rtl of gracectrl is
   type ace_state_type is (idle, en, rd, done);
 
   type ace_sync_type is record
-     acc   : std_logic_vector(1 downto 0);
-     rstn  : std_logic_vector(1 downto 0);
+     acc     : std_logic_vector(1 downto 0);
+     rstn    : std_logic_vector(1 downto 0);
+     hwrite  : std_logic_vector(1 downto 0);
+     dummy   : std_logic_vector(1 downto 0);
   end record;
   
   type ace_reg_type is record
      state     : ace_state_type;
      sync      : ace_sync_type;
      accdone   : std_ulogic;
-     rdata     : std_logic_vector(15 downto 0);
+     rdata     : std_logic_vector(ACEDW-1 downto 0);
+     edone     : std_ulogic;
      aceo      : gracectrl_out_type;
   end record;
     
@@ -194,8 +207,23 @@ begin  -- rtl
     if r.acc = '1' then
       -- Propagate data
       if r.active = '0' then
-        if r.haddr(1) = '0' then v.wdata := hwdata(31 downto 16);
-        else v.wdata := hwdata(15 downto 0); end if;
+        if mode /= 1 then
+          if r.haddr(1) = '0' then v.wdata := hwdata(ACEDW+15 downto 16);
+          else v.wdata := hwdata(ACEDW-1 downto 0); end if;
+        else
+          case r.haddr(1 downto 0) is
+            when "00" => v.wdata(7 downto 0) := hwdata(31 downto 24);
+            when "01" => v.wdata(7 downto 0) := hwdata(23 downto 16);
+            when "10" => v.wdata(7 downto 0) := hwdata(15 downto 8);
+            when others => v.wdata(7 downto 0) := hwdata(7 downto 0);
+          end case;
+        end if;
+        if mode = 2 then
+          -- Override writes to busmode register
+          if r.haddr(6 downto 1) = zero32(6 downto 1) then
+            v.wdata := (others => '0');  -- Byte
+          end if;
+        end if;
       end if;
       -- Remove access signal when access is done
       if r.sync.accdone(1) = '1' then
@@ -204,7 +232,7 @@ begin  -- rtl
       v.active := '1';
     end if;
 
-    -- AMBA response when access is complete and 
+    -- AMBA response when access is complete
     if r.acc = '0' and r.sync.accdone(1) = '0' and r.active = '1' then
       if split /= 0 and r.unsplit = '1' then
         hsplit(conv_integer(r.splmst)) := '1';
@@ -260,9 +288,8 @@ begin  -- rtl
     -- AHB slave output
     ahbso.hready  <= r.hready;
     ahbso.hresp   <= r.hresp;
-    ahbso.hrdata  <= ahbdrivedata(s.rdata);
+    ahbso.hrdata  <= ahbdrivedata(s.rdata); -- Bad, but does not toggle much
     ahbso.hconfig <= HCONFIG;
-    ahbso.hcache  <= '0';
     ahbso.hirq    <= irq;
     ahbso.hindex  <= hindex;
     ahbso.hsplit  <= hsplit;
@@ -287,20 +314,29 @@ begin  -- rtl
     -- Synchronize inputs
     v.sync.acc := s.sync.acc(0) & r.acc;
     v.sync.rstn := s.sync.rstn(0) & rstn;
+    v.sync.hwrite := s.sync.hwrite(0) & r.hwrite;
+    if mode = 2 then
+      -- Fake reads from BUSMODE register?
+      v.sync.dummy := s.sync.dummy(0) & not orv(r.haddr(6 downto 1));
+    else
+      v.sync.dummy := (others => '0');
+    end if;
     
     case s.state is
       when idle =>
         v.aceo.addr := r.haddr(6 downto 0);
-        v.aceo.do := condhswap(r.wdata);
+        if mode = 2 then v.aceo.do(7 downto 0) := r.wdata(7 downto 0);
+        else v.aceo.do(r.wdata'range) := condhswap(r.wdata); end if;
         if s.sync.acc(1) = '1' then
           v.aceo.cen := '0';
           v.aceo.doen := INPUT xor r.hwrite;
           v.state := en;
         end if;
-
+        if mode = 2 then v.edone := '0'; end if;
+        
       when en =>
         v.aceo.wen := not r.hwrite;
-        if r.hwrite = '1' then
+        if s.sync.hwrite(1) = '1' then
           v.state := done;
         else
           v.state := rd;
@@ -313,17 +349,33 @@ begin  -- rtl
       when done =>
         v.aceo.oen := '1';
         v.aceo.wen := '1';
-        v.aceo.cen := '1';
-        if s.accdone = '0' then
-          v.rdata := condhswap(acei.di);
-          v.accdone := '1';
+        if mode = 2 and s.edone = '0' then
+          -- Keep 16-bit address map
+          v.aceo.addr(0) := '1';
+          v.aceo.do(7 downto 0) := r.wdata(ACEDW-1 downto ACEDW-8);
+          v.rdata(7 downto 0) := acei.di(7 downto 0);
+          v.edone := '1';
+          v.state := en;
         else
-          v.aceo.doen := INPUT;
+          v.aceo.cen := '1';
+          if s.accdone = '0' then
+            if mode = 2 then
+              v.rdata(ACEDW-1 downto ACEDW-8) := acei.di(7 downto 0);
+              if s.sync.dummy(1) = '1' then -- Fake read
+                v.rdata := (others => '0'); v.rdata(0) := '1';
+              end if;
+            else
+              v.rdata := condhswap(acei.di)(s.rdata'range);
+            end if;
+            v.accdone := '1';
+          else
+            v.aceo.doen := INPUT;
+          end if;
+          if s.sync.acc(1) = '0' then
+            v.state := idle;
+            v.accdone := '0';
+          end if;
         end if;
-        if s.sync.acc(1) = '0' then
-          v.state := idle;
-          v.accdone := '0';
-        end if;        
     end case;
 
     -- Reset
@@ -335,6 +387,8 @@ begin  -- rtl
       v.aceo.oen  := '1';
       v.aceo.doen := INPUT;
     end if;
+    if mode = 1 then v.aceo.do(15 downto 8) := (others => '0'); end if;
+    if mode /= 2 then v.edone := '0'; end if;
     
     -- Update registers
     sin <= v;

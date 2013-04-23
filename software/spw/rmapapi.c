@@ -44,9 +44,6 @@ int build_rmap_hdr(struct rmap_pkt *pkt, char *hdr, int *size)
         if( (pkt->destaddr < 0) || (pkt->destaddr > 255) ) {
                 return 7;
         }
-        if( (pkt->destkey < 0) || (pkt->destkey > 255) ) {
-                return 8;
-        }
         if( (pkt->srcaddr < 0) || (pkt->srcaddr > 255) ) {
                 return 9;
         }

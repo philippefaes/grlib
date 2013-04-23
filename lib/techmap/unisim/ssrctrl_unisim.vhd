@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -44,13 +44,11 @@ port(
   n_ahbsi_hmaster : in std_logic_vector (3 downto 0);
   n_ahbsi_hmastlock :  in std_logic;
   n_ahbsi_hmbsel : in std_logic_vector (0 to 3);
-  n_ahbsi_hcache :  in std_logic;
   n_ahbsi_hirq : in std_logic_vector (31 downto 0);
   n_ahbso_hready :  out std_logic;
   n_ahbso_hresp : out std_logic_vector (1 downto 0);
   n_ahbso_hrdata : out std_logic_vector (31 downto 0);
   n_ahbso_hsplit : out std_logic_vector (15 downto 0);
-  n_ahbso_hcache :  out std_logic;
   n_ahbso_hirq : out std_logic_vector (31 downto 0);
   n_apbi_psel : in std_logic_vector (0 to 15);
   n_apbi_penable :  in std_logic;
@@ -6489,7 +6487,6 @@ begin
   n_ahbso_hsplit(13) <= NN_2;
   n_ahbso_hsplit(14) <= NN_2;
   n_ahbso_hsplit(15) <= NN_2;
-  n_ahbso_hcache <= NN_1;
   n_ahbso_hirq(0) <= NN_2;
   n_ahbso_hirq(1) <= NN_2;
   n_ahbso_hirq(2) <= NN_2;

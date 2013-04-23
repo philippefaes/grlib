@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ library techmap;
 use techmap.gencomp.all;
 library gaisler;
 use gaisler.memctrl.all;
+use gaisler.ddrpkg.all;
 use gaisler.leon3.all;
 use gaisler.uart.all;
 use gaisler.misc.all;
@@ -219,9 +220,6 @@ architecture rtl of leon3mp is
   signal memo, smemo : memory_out_type;
   signal wpo         : wprot_out_type;
   
-  signal ddsi  : ddrmem_in_type;
-  signal ddso  : ddrmem_out_type;
-
   signal ddrclkfb, ssrclkfb, ddr_clkl, ddr_clk90l, ddr_clknl, ddr_clk270l : std_ulogic;
   signal ddr_clkv 	: std_logic_vector(2 downto 0);
   signal ddr_clkbv	: std_logic_vector(2 downto 0);

@@ -37,12 +37,14 @@ multest()
 	    i++;
 	}
 	if (!mulpipe()) fail(3);
+	if (!mulpipe()) fail(3); // run twice, second time with cache hit
 #ifdef LEON2
 	if (!((lr->leonconf >> MAC_CONF_BIT) & 1)) return(0);	
 #else
 	if (!((get_asr17() >> 9) & 1)) return(0);	
 #endif
 	if (!macpipe()) fail(4);
+	if (!macpipe()) fail(4); // run twice, second time with cache hit
 	return(0);
 }
 

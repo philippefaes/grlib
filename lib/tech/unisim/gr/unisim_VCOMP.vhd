@@ -2,7 +2,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,51 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 package vcomponents is
+
+-- synopsys translate_off
+
+-----------------------------------------
+-----------   FPGA Globals --------------
+-----------------------------------------
+signal GSR : std_logic := '0';
+signal GTS : std_logic := '0';
+signal GWE : std_logic := '0';
+signal PLL_LOCKG : std_logic := 'H';
+signal PROGB_GLBL : std_logic := '0';
+signal CCLKO_GLBL  : std_logic := 'H';
+
+-----------------------------------------
+-----------   CPLD Globals --------------
+-----------------------------------------
+signal PRLD : std_logic := '0';
+
+-----------------------------------------
+-----------   JTAG Globals --------------
+-----------------------------------------
+signal JTAG_TDO_GLBL  : std_logic;
+signal JTAG_TDI_GLBL  : std_logic := '0';
+signal JTAG_TMS_GLBL  : std_logic := '0';
+signal JTAG_TCK_GLBL  : std_logic := '0';
+signal JTAG_TRST_GLBL : std_logic := '0';
+
+signal JTAG_CAPTURE_GLBL : std_logic := '0';
+signal JTAG_RESET_GLBL : std_logic   := '1';
+signal JTAG_SHIFT_GLBL : std_logic   := '1';
+signal JTAG_UPDATE_GLBL : std_logic  := '0';
+signal JTAG_RUNTEST_GLBL : std_logic  := '0';
+
+signal JTAG_SEL1_GLBL : std_logic := '0';
+signal JTAG_SEL2_GLBL : std_logic := '0';
+signal JTAG_SEL3_GLBL : std_logic := '0';
+signal JTAG_SEL4_GLBL : std_logic := '0';
+
+signal JTAG_USER_TDO1_GLBL : std_logic := 'Z';
+signal JTAG_USER_TDO2_GLBL : std_logic := 'Z';
+signal JTAG_USER_TDO3_GLBL : std_logic := 'Z';
+signal JTAG_USER_TDO4_GLBL : std_logic := 'Z';
+
+-- synopsys translate_on
+
   component ramb4_s16 port (
     do   : out std_logic_vector (15 downto 0);
     addr : in  std_logic_vector (7 downto 0);
@@ -1379,6 +1424,63 @@ end component;
     );
   end component;
 
+  ----- component PLLE2_ADV -----
+  component PLLE2_ADV
+    generic (
+       BANDWIDTH : string := "OPTIMIZED";
+       CLKFBOUT_MULT : integer := 5;
+       CLKFBOUT_PHASE : real := 0.0;
+       CLKIN1_PERIOD : real := 0.0;
+       CLKIN2_PERIOD : real := 0.0;
+       CLKOUT0_DIVIDE : integer := 1;
+       CLKOUT0_DUTY_CYCLE : real := 0.5;
+       CLKOUT0_PHASE : real := 0.0;
+       CLKOUT1_DIVIDE : integer := 1;
+       CLKOUT1_DUTY_CYCLE : real := 0.5;
+       CLKOUT1_PHASE : real := 0.0;
+       CLKOUT2_DIVIDE : integer := 1;
+       CLKOUT2_DUTY_CYCLE : real := 0.5;
+       CLKOUT2_PHASE : real := 0.0;
+       CLKOUT3_DIVIDE : integer := 1;
+       CLKOUT3_DUTY_CYCLE : real := 0.5;
+       CLKOUT3_PHASE : real := 0.0;
+       CLKOUT4_DIVIDE : integer := 1;
+       CLKOUT4_DUTY_CYCLE : real := 0.5;
+       CLKOUT4_PHASE : real := 0.0;
+       CLKOUT5_DIVIDE : integer := 1;
+       CLKOUT5_DUTY_CYCLE : real := 0.5;
+       CLKOUT5_PHASE : real := 0.0;
+       COMPENSATION : string := "ZHOLD";
+       DIVCLK_DIVIDE : integer := 1;
+       REF_JITTER1 : real := 0.0;
+       REF_JITTER2 : real := 0.0;
+       STARTUP_WAIT : string := "FALSE"
+    );
+    port (
+       CLKFBOUT : out std_ulogic := '0';
+       CLKOUT0 : out std_ulogic := '0';
+       CLKOUT1 : out std_ulogic := '0';
+       CLKOUT2 : out std_ulogic := '0';
+       CLKOUT3 : out std_ulogic := '0';
+       CLKOUT4 : out std_ulogic := '0';
+       CLKOUT5 : out std_ulogic := '0';
+       DO : out std_logic_vector (15 downto 0);
+       DRDY : out std_ulogic := '0';
+       LOCKED : out std_ulogic := '0';
+       CLKFBIN : in std_ulogic;
+       CLKIN1 : in std_ulogic;
+       CLKIN2 : in std_ulogic;
+       CLKINSEL : in std_ulogic;
+       DADDR : in std_logic_vector(6 downto 0);
+       DCLK : in std_ulogic;
+       DEN : in std_ulogic;
+       DI : in std_logic_vector(15 downto 0);
+       DWE : in std_ulogic;
+       PWRDWN : in std_ulogic;
+       RST : in std_ulogic
+    );
+  end component;
+  
   component BUFGMUX port (O : out std_logic; I0, I1, S : in std_logic); end component;
   component BUFG port (O : out std_logic; I : in std_logic); end component;
   component BUFGP port (O : out std_logic; I : in std_logic); end component;
@@ -1509,6 +1611,7 @@ end component;
 	  IB : in std_ulogic
 	);
   end component;
+
 
   component IBUFDS_LVDS_25
      port ( O : out std_ulogic;
@@ -2782,6 +2885,26 @@ component XOR2
     I0 : in std_ulogic;
     I1 : in std_ulogic
     );
+end component;
+
+component BSCANE2
+  generic (
+     DISABLE_JTAG : string := "FALSE";
+     JTAG_CHAIN : integer := 1
+  );
+  port (
+     CAPTURE : out std_ulogic := 'H';
+     DRCK : out std_ulogic := 'H';
+     RESET : out std_ulogic := 'H';
+     RUNTEST : out std_ulogic := 'L';
+     SEL : out std_ulogic := 'L';
+     SHIFT : out std_ulogic := 'L';
+     TCK : out std_ulogic := 'L';
+     TDI : out std_ulogic := 'L';
+     TMS : out std_ulogic := 'L';
+     UPDATE : out std_ulogic := 'L';
+     TDO : in std_ulogic := 'X'
+  );
 end component;
 
 component BSCAN_SPARTAN6

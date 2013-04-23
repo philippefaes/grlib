@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -343,21 +343,29 @@ begin
 	end if;
       end if;
     end process;
-
+    mreg(49 downto 34) <= (others => '0');
+    prod(65 downto 34) <= (others => '0');
   end generate;
   xm3208 : if MULTIPLIER = m32x8 generate
     m3208 : techmult generic map (tech, arch, 33, 8, 2, 1)
       port map (ma(32 downto 0), mb(8 downto 0), clk, holdn, vcc,  mreg(41 downto 0));
+    mm <= ('0', '0', '0', '0');
+    mreg(49 downto 42) <= (others => '0');
+    prod <= (others => '0');
   end generate;
 
   xm3216 : if MULTIPLIER = m32x16 generate
     m3216 : techmult generic map (tech, arch, 33, 17, 2, 1)
       port map (ma(32 downto 0), mb(16 downto 0), clk, holdn, vcc,  mreg(49 downto 0));
+    mm <= ('0', '0', '0', '0');
+    prod <= (others => '0');
   end generate;
 
   xm3232 : if MULTIPLIER = m32x32 generate
     m3232 : techmult generic map (tech, arch, 33, 33, pipe+1, pipe)
       port map (ma(32 downto 0), mb(32 downto 0), clk, holdn, vcc,  prod(65 downto 0));
+    mm <= ('0', '0', '0', '0');
+    mreg <= (others => '0');
   end generate;
 
 

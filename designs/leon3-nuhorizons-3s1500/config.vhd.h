@@ -29,7 +29,7 @@
   constant CFG_NOTAG	: integer := CONFIG_NOTAG;
   constant CFG_NWP  	: integer := CONFIG_IU_WATCHPOINTS;
   constant CFG_PWD 	: integer := CONFIG_PWD*2;
-  constant CFG_FPU 	: integer := CONFIG_FPU + 16*CONFIG_FPU_NETLIST;
+  constant CFG_FPU 	: integer := CONFIG_FPU + 16*CONFIG_FPU_NETLIST + 32*CONFIG_FPU_GRFPU_SHARED;
   constant CFG_GRFPUSH  : integer := CONFIG_FPU_GRFPU_SHARED;
   constant CFG_ICEN  	: integer := CONFIG_ICACHE_ENABLE;
   constant CFG_ISETS	: integer := CFG_IU_ISETS;
@@ -74,6 +74,7 @@
   constant CFG_DEFMST  	  : integer := CONFIG_AHB_DEFMST;
   constant CFG_RROBIN  	  : integer := CONFIG_AHB_RROBIN;
   constant CFG_SPLIT   	  : integer := CONFIG_AHB_SPLIT;
+  constant CFG_FPNPEN  	  : integer := CONFIG_AHB_FPNPEN;
   constant CFG_AHBIO   	  : integer := 16#CONFIG_AHB_IOADDR#;
   constant CFG_APBADDR 	  : integer := 16#CONFIG_APB_HADDR#;
   constant CFG_AHB_MON 	  : integer := CONFIG_AHB_MON;

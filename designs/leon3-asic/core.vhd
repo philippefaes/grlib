@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -113,7 +113,8 @@ entity core is
     tck         : in std_ulogic;
     tms         : in std_ulogic;
     tdi         : in std_ulogic;
-    tdo         : out std_ulogic
+    tdo         : out std_ulogic;
+    tdoen       : out std_ulogic
 	);
 end;
 
@@ -234,7 +235,7 @@ begin
     ramsn_core, ramoen_core, rwen_core, oen_core, writen_core, read_core, iosn_core, romsn_core, brdyn_core, bexcn_core,
     wdogn_core, gpioin_core, gpioout_core, lgpioen, prom32_core, promedac_core, spw_clksel_core,
     llspw_clk, spw_rxd_core, spw_rxs_core, spw_txd_core, spw_txs_core, spw_ten_core,
-    trst, tck, tms, tdi, tdo,
+    trst, tck, tms, tdi, tdo, tdoen,
     scanen, testen, testrst, testoen,
     chain_tck, chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
 

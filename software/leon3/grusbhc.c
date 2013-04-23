@@ -834,7 +834,7 @@ int uhc_test(int addr, int bedesc, int beregs)
 
   regs->usbcmdsts = cond_regswap(0x0000ffff);
 
-  if (!(get_usbsts(regs) & UHC_USBSTS_HCHALTED))
+  if ((get_usbsts(regs) & UHC_USBSTS_HCHALTED))
     fail(1);
 
   if (loadmem((int)&td[0].lp) != cond_bswap(TD_T,bedesc))

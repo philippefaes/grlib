@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -22,12 +22,7 @@
 -- Author:      Edvin Catovic, Jiri Gaisler - Gaisler Research
 -- Description: JTAG communication link with AHB master interface
 ------------------------------------------------------------------------------  
--- GRLIB2 CORE
--- VENDOR:      VENDOR_GAISLER
--- DEVICE:      GAISLER_AHBJTAG
--- VERSION:     1
--- AHBMASTER:   0
--------------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
@@ -52,7 +47,8 @@ entity ahbjtag is
     ver    : integer range 0 to 15 := 0;
     ainst   : integer range 0 to 255 := 2;
     dinst   : integer range 0 to 255 := 3;
-    scantest : integer := 0);
+    scantest : integer := 0;
+    oepol  : integer := 1);
   port (
     rst         : in  std_ulogic;
     clk         : in  std_ulogic;
@@ -89,6 +85,7 @@ signal dmai : ahb_dma_in_type;
 signal dmao : ahb_dma_out_type;
 signal ltapi : tap_in_type;
 signal ltapo : tap_out_type;
+signal ltck: std_ulogic;
 
 begin
 
@@ -98,15 +95,17 @@ begin
     port map (rst, clk, dmai, dmao, ahbi, ahbo);
 
   tap0 : tap generic map (tech => tech, irlen => 6, idcode => idcode, 
-	manf => manf, part => part, ver => ver, scantest => scantest)
-    port map (trst, tck, tms, tdi, tdo, ltapo.tck, ltapo.tdi, ltapo.inst, ltapo.reset, ltapo.capt,
+	manf => manf, part => part, ver => ver, scantest => scantest, oepol => oepol)
+    port map (trst, tck, tms, tdi, tdo, ltck, ltapo.tdi, ltapo.inst, ltapo.reset, ltapo.capt,
               ltapo.shift, ltapo.upd, ltapo.asel, ltapo.dsel, ltapi.en, ltapi.tdo, tapi_tdo,
-	      ahbi.testen, ahbi.testrst, tdoen);
+	      ahbi.testen, ahbi.testrst, ahbi.testoen, tdoen);
+
+  ltapo.tck <= ltapo.inst(0) when scantest/=0 and ahbi.testen='1' else ltck;
   
   jtagcom0 : jtagcom generic map (isel => TAPSEL, nsync => nsync, ainst => ainst, dinst => dinst, reread => REREAD)
     port map (rst, clk, ltapo, ltapi, dmao, dmai);
 
-  tapo_tck <= ltapo.tck; tapo_tdi <= ltapo.tdi; tapo_inst <= ltapo.inst;  
+  tapo_tck <= ltck; tapo_tdi <= ltapo.tdi; tapo_inst <= ltapo.inst;
   tapo_rst <= ltapo.reset; tapo_capt <= ltapo.capt; tapo_shft <= ltapo.shift; 
   tapo_upd <= ltapo.upd;  
 

@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ use gaisler.i2c.all;
 use gaisler.net.all;
 use gaisler.jtag.all;
 use gaisler.spacewire.all;
+use gaisler.ddrpkg.all;
 
 library esa;
 use esa.memoryctrl.all;
@@ -212,9 +213,6 @@ constant I2C_FILTER : integer := (CPU_FREQ*5+50000)/100000+1;
 constant IOAEN : integer := CFG_DDRSP;
 
 signal stati : ahbstat_in_type;
-
-signal ddsi  : ddrmem_in_type;
-signal ddso  : ddrmem_out_type;
 
 signal ddrclkfb, ssrclkfb, ddr_clkl, ddr_clk90l, ddr_clknl, ddr_clk270l : std_ulogic;
 signal ddr_clkv 	: std_logic_vector(2 downto 0);
@@ -398,12 +396,13 @@ begin
       port map (sram_flash_data, memo.data, memo.vbdrive, memi.data);
  
   ddrsp0 : if (CFG_DDRSP /= 0) generate 
-
+    -- phyiconf => 1 = no diff pads for DDR clock pairs
     ddrc0 : ddrspa generic map ( fabtech => CFG_FABTECH, memtech => memtech, 
 	hindex => 0, haddr => 16#400#, hmask => 16#F00#, ioaddr => 1, 
 	pwron => CFG_DDRSP_INIT, MHz => BOARD_FREQ/1000, 
 	clkmul => CFG_DDRSP_FREQ/10, clkdiv => 10, ahbfreq => CPU_FREQ/1000,
-	col => CFG_DDRSP_COL, Mbyte => CFG_DDRSP_SIZE, ddrbits => 32)
+	col => CFG_DDRSP_COL, Mbyte => CFG_DDRSP_SIZE, ddrbits => 32,
+        phyiconf => 1)
      port map (
 	rst, rstn, lclk, clkm, lock, clkml, clkml, ahbsi, ahbso(0),
 	ddr_clkv, ddr_clkbv, open, ddr_clk_fb,

@@ -147,13 +147,6 @@ package config is
   constant CFG_GRGPIO_IMASK : integer := 16#FFFF#;
   constant CFG_GRGPIO_WIDTH : integer := (32);
 
--- ATA interface
-  constant CFG_ATA : integer := 1;
-  constant CFG_ATAIO : integer := 16#A00#;
-  constant CFG_ATAIRQ : integer := (10);
-  constant CFG_ATADMA : integer := 0;
-  constant CFG_ATAFIFO : integer := 8;
-
 -- GRLIB debugging
   constant CFG_DUART : integer := 0;
 end;

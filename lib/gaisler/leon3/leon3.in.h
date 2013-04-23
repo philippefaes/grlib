@@ -339,6 +339,10 @@
 #ifdef CONFIG_MMU_I32
 #define CONFIG_ITLBNUM 32
 #endif
+#ifdef CONFIG_MMU_I64
+#define CONFIG_ITLBNUM 64
+#endif
+
 
 #define CONFIG_DTLBNUM 2
 #ifdef CONFIG_MMU_D2
@@ -360,6 +364,10 @@
 #ifdef CONFIG_MMU_D32
 #undef CONFIG_DTLBNUM
 #define CONFIG_DTLBNUM 32
+#endif
+#ifdef CONFIG_MMU_D64
+#undef CONFIG_DTLBNUM
+#define CONFIG_DTLBNUM 64
 #endif
 #ifdef CONFIG_MMU_FASTWB
 #define CFG_MMU_FASTWB 1
@@ -427,14 +435,14 @@
 #define CONFIG_RF_ERRINJ 0
 #endif
 
-#ifndef CONFIG_FPUFT_EN
-#define CONFIG_FPUFT 0
-#else
-#ifdef CONFIG_FPU_GRFPU
-#define CONFIG_FPUFT 2
-#else
+#if defined CONFIG_FPUFT_PAR
 #define CONFIG_FPUFT 1
-#endif
+#elif defined CONFIG_FPUFT_DMR
+#define CONFIG_FPUFT 2
+#elif defined CONFIG_FPUFT_TMR
+#define CONFIG_FPUFT 4
+#else
+#define CONFIG_FPUFT 0
 #endif
 
 #ifndef CONFIG_CACHE_FT_EN

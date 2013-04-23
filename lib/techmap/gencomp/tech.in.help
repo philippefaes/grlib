@@ -19,11 +19,15 @@ CONFIG_SYN_INFERRED
   - Lattice : EC/ECP/XP FPGAs
   - Quicklogic : Eclipse/E/II FPGAs
   - UMC-0.18 : UMC 0.18 um CMOS with Virtual Silicon libraries
-  - Xilinx-Spartan/2/3: Xilinx Spartan/2/3 libraries
+  - Xilinx-Spartan/2/3/6: Xilinx Spartan/2/3/6 libraries
   - Xilinx-Spartan3E: Xilinx Spartan3E libraries
   - Xilinx-Virtex/E: Xilinx Virtex/E libraries
-  - Xilinx-Virtex2/4/5: Xilinx Virtex2/4/5 libraries
+  - Xilinx-Virtex2/4/5/6/7: Xilinx Virtex2/4/5/6/7 libraries
 
+  Note: Level of technology support depends on type of GRLIB
+  distribution. A technology may be present in this list while the
+  tech support files are missing from the GRLIB distribution.
+  Actel support is only available in commercial and FT distributions.
 
 Ram library
 CONFIG_MEM_VIRAGE

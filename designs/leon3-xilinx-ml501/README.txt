@@ -18,7 +18,7 @@ Design specifics:
 
 * The GRETH core is enabled and runs without problems at 100 Mbit.
   Using 1 Gbit is also possible with the commercial grlib version.
-  Ethernet debug link is enabled, default IP is 192.168.0.53.
+  Ethernet debug link is enabled, default IP is 192.168.0.51.
 
 * DDR2 is supported either by the DDR2SPA core or by the Xilinx MIG.
 
@@ -43,6 +43,9 @@ Design specifics:
    without having to regenerate the MIG itself. The default settings
    are compatible with the provided 256 Mbyte SODIMM.
 
+   It is essential to use ISE 13.4. MIG generation is not supported
+   for any other ISE version in this design.
+
 * The SSRAM can be interfaced with the LEON2 Memory controller. 
   Start GRMON with -ramrws 1 when the LEON2 controller is used.
 
@@ -66,25 +69,29 @@ Design specifics:
 
 * Sample output from GRMON is:
 
- GRMON LEON debug monitor v1.1.32
+$ grmon -eth -ip 192.168.0.51 -u -nb 
 
- Copyright (C) 2004-2008 Gaisler Research - all rights reserved.
+ GRMON LEON debug monitor v1.1.52 professional version (debug)
+
+ Copyright (C) 2004-2011 Aeroflex Gaisler - all rights reserved.
  For latest updates, go to http://www.gaisler.com/
  Comments or bug-reports to support@gaisler.com
 
+ This debug version will expire on 28/12/2012
 
  ethernet startup.
  Device ID: : 0x501
- GRLIB build version: 3199
+ GRLIB build version: 4114
 
  initialising ....................
  detected frequency:  80 MHz
+ SRAM waitstates: 2
 
  Component                            Vendor
  LEON3 SPARC V8 Processor             Gaisler Research
  AHB Debug UART                       Gaisler Research
  AHB Debug JTAG TAP                   Gaisler Research
- SVGA frame buffer                    Gaisler Research
+ SVGA Controller                      Gaisler Research
  GR Ethernet MAC                      Gaisler Research
  DDR2 Controller                      Gaisler Research
  AHB/APB Bridge                       Gaisler Research
@@ -95,8 +102,8 @@ Design specifics:
  Generic APB UART                     Gaisler Research
  Multi-processor Interrupt Ctrl       Gaisler Research
  Modular Timer Unit                   Gaisler Research
- Keyboard PS/2 interface              Gaisler Research
- Keyboard PS/2 interface              Gaisler Research
+ PS/2 interface                       Gaisler Research
+ PS/2 interface                       Gaisler Research
  General purpose I/O port             Gaisler Research
  AMBA Wrapper for OC I2C-master       Gaisler Research
  AMBA Wrapper for OC I2C-master       Gaisler Research
@@ -104,42 +111,45 @@ Design specifics:
 
  Use command 'info sys' to print a detailed report of attached cores
 
-grlib> info sys
+grlib> inf sys
 00.01:003   Gaisler Research  LEON3 SPARC V8 Processor (ver 0x0)
              ahb master 0
 01.01:007   Gaisler Research  AHB Debug UART (ver 0x0)
              ahb master 1
              apb: 80000700 - 80000800
              baud rate 115200, ahb frequency 80.00
-02.01:01c   Gaisler Research  AHB Debug JTAG TAP (ver 0x0)
+02.01:01c   Gaisler Research  AHB Debug JTAG TAP (ver 0x1)
              ahb master 2
-03.01:063   Gaisler Research  SVGA frame buffer (ver 0x0)
+03.01:063   Gaisler Research  SVGA Controller (ver 0x0)
              ahb master 3
              apb: 80000600 - 80000700
-             clk0: 25.00 MHz  clk1: 25.00 MHz  clk2: 40.00 MHz  clk3: 65.00 MHz
+             clk0: 25.00 MHz  clk1: 25.00 MHz  clk2: 40.00 MHz  clk3: 65.00 MHz  
 04.01:01d   Gaisler Research  GR Ethernet MAC (ver 0x0)
              ahb master 4, irq 12
              apb: 80000b00 - 80000c00
-             edcl ip 192.168.0.53, buffer 2 kbyte
-00.01:02e   Gaisler Research  DDR2 Controller (ver 0x0)
+             Device index: dev0
+             1000 Mbit capable
+             edcl ip 192.168.0.51, buffer 8 kbyte
+00.01:02e   Gaisler Research  DDR2 Controller (ver 0x1)
              ahb: 40000000 - 60000000
              ahb: fff00100 - fff00200
-             64-bit DDR2 : 1 * 256 Mbyte @ 0x40000000
+             64-bit DDR2 : 1 * 256 Mbyte @ 0x40000000, 4 internal banks
                           140 MHz, col 10, ref 7.8 us, trfc 135 ns
 01.01:006   Gaisler Research  AHB/APB Bridge (ver 0x0)
              ahb: 80000000 - 80100000
 02.01:004   Gaisler Research  LEON3 Debug Support Unit (ver 0x1)
              ahb: 90000000 - a0000000
-             AHB trace 128 lines, stack pointer 0x4ffffff0
-             CPU#0 win 8, hwbp 2, itrace 128, V8 mul/div, srmmu, lddel 1
-                   icache 2 * 8 kbyte, 32 byte/line lru
-                   dcache 1 * 8 kbyte, 16 byte/line
+             AHB trace 128 lines, 32-bit bus, stack pointer 0x4ffffff0
+             CPU#0 win 8, hwbp 2, itrace 128, V8 mul/div, srmmu, lddel 1, GRFPU-lite
+                   icache 2 * 8 kbyte, 32 byte/line rnd
+                   dcache 4 * 4 kbyte, 16 byte/line rnd
 03.04:00f   European Space Agency  LEON2 Memory Controller (ver 0x1)
              ahb: 00000000 - 20000000
              ahb: 20000000 - 40000000
              ahb: c0000000 - c2000000
              apb: 80000000 - 80000100
              16-bit prom @ 0x00000000
+             32-bit static ram: 1 * 1024 kbyte @ 0xc0000000
 04.01:067   Gaisler Research  System ACE I/F Controller (ver 0x0)
              irq 13
              ahb: fff00200 - fff00300
@@ -158,19 +168,19 @@ grlib> info sys
              irq 8
              apb: 80000300 - 80000400
              8-bit scaler, 2 * 32-bit timers, divisor 80
-04.01:060   Gaisler Research  Keyboard PS/2 interface (ver 0x1)
+04.01:060   Gaisler Research  PS/2 interface (ver 0x2)
              irq 4
              apb: 80000400 - 80000500
-05.01:060   Gaisler Research  Keyboard PS/2 interface (ver 0x1)
+05.01:060   Gaisler Research  PS/2 interface (ver 0x2)
              irq 5
              apb: 80000500 - 80000600
-08.01:01a   Gaisler Research  General purpose I/O port (ver 0x0)
+08.01:01a   Gaisler Research  General purpose I/O port (ver 0x1)
              apb: 80000800 - 80000900
-09.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x0)
+09.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x3)
              irq 14
              apb: 80000900 - 80000a00
              Controller index for use in GRMON: 1
-0c.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x0)
+0c.01:028   Gaisler Research  AMBA Wrapper for OC I2C-master (ver 0x3)
              irq 11
              apb: 80000c00 - 80000d00
              Controller index for use in GRMON: 2
@@ -181,11 +191,11 @@ grlib> fla
 
  Intel-style 16-bit flash on D[31:16]
 
- Manuf.    Intel
- Device    Strataflash P30
+ Manuf.    Intel               
+ Device    Strataflash P30   
 
- Device ID 8bdcffff006f43f1
- User   ID ffffffffffffffff
+ Device ID 006f43f18bdcffff    
+ User   ID ffffffffffffffff    
 
 
  1 x 32 Mbyte = 32 Mbyte total @ 0x00000000
@@ -201,7 +211,7 @@ grlib> fla
  region  0     : 255 blocks of 128 Kbytes
  region  1     : 4 blocks of 32 Kbytes
 
-grlib> i2c 2 scan
+grlib>  i2c 2 scan
 
 Scanning 7-bit address space on I2C bus:
  Detected I2C device at address 0x2c
@@ -211,30 +221,30 @@ Scanning 7-bit address space on I2C bus:
  Detected I2C device at address 0x53
 Scan of I2C bus completed. 5 devices found
 
-grlib> i2c 2 read 0x50 0x10 16
+grlib>  i2c 2 read 0x50 0x10 16
 
  10:    ff      ff      ff      ff
  14:    ff      ff      30      30
  18:    31      00      ff      58
  1c:    43      35      56      4c
 
-grlib> i2c 1 dvi init_ml50x_dvi
+grlib>  i2c 1 dvi init_ml50x_dvi
 
  Transmitter was not set to Chrontel CH7301C (AS=0), changing..
 
  DVI transmitter set to Chrontel CH7301C (AS=0)
 
- Initializing CH7301 for ML50x Leon3/GRLIB template design..
+ Initializing CH7301 for LEON/GRLIB design..
  Initialization done..
 
-grlib> i2c 1 dvi showreg
+grlib>  i2c 1 dvi showreg
 
  Registers for Chrontel CH7301C (AS=0) DVI transmitter:
 
         0x1c:   04
-        0x1d:   43
+        0x1d:   45
         0x1e:   d0
-        0x1f:   9a
+        0x1f:   8a
         0x20:   00
         0x21:   00
         0x23:   00
@@ -249,7 +259,5 @@ grlib> i2c 1 dvi showreg
         0x4a:   95
         0x4b:   17
         0x56:   00
-
-grlib>   
 
 

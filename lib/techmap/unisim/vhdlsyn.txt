@@ -15,14 +15,9 @@ grspwc2_unisim_16_16_rmap0.vhd
 grspwc2_unisim_32_64_rmap1.vhd
 leon3ft_unisim.vhd
 grusbhc_unisim.vhd
-grusbhc_unisim_comb0.vhd
-grusbhc_unisim_comb1.vhd
-grusbhc_unisim_comb2.vhd
-grusbhc_unisim_comb3.vhd
 ssrctrl_unisim.vhd
 ftmctrl_unisim_sd0.vhd
 sysmon_unisim.vhd
 mul_unisim.vhd
 spictrl_unisim.vhd
-spictrl_unisim_comb0.vhd
-spictrl_unisim_comb1.vhd
+obt1553_unisim.vhd

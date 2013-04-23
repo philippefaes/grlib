@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -37,9 +37,10 @@ package spi is
     sck     : std_ulogic;
     spisel  : std_ulogic;
     astart  : std_ulogic;
+    cstart  : std_ulogic;
   end record;
 
-  constant spi_in_none : spi_in_type := ('0', '0', '0', '0', '0');
+  constant spi_in_none : spi_in_type := ('0', '0', '0', '0', '0', '0');
   
   type spi_out_type is record
     miso     : std_ulogic;
@@ -51,33 +52,39 @@ package spi is
     ssn      : std_logic_vector(7 downto 0);  -- used by GE/OC SPI core
     enable   : std_ulogic;
     astart   : std_ulogic;
+    aready   : std_ulogic;
   end record;
 
   constant spi_out_none : spi_out_type := ('0', '0', '0', '0', '0', '0',
-                                           (others => '0'), '0', '0');
+                                           (others => '0'), '0', '0', '0');
   
   -- SPI master/slave controller
   component spictrl
     generic (
-      pindex   : integer := 0;
-      paddr    : integer := 0;
-      pmask    : integer := 16#fff#;
-      pirq     : integer := 0;
-      fdepth   : integer range 1 to 7       := 1;
-      slvselen : integer range 0 to 1       := 0;
-      slvselsz : integer range 1 to 32      := 1;
-      oepol    : integer range 0 to 1       := 0;
-      odmode   : integer range 0 to 1       := 0;
-      automode : integer range 0 to 1       := 0;
-      acntbits : integer range 1 to 32      := 32;
-      aslvsel  : integer range 0 to 1       := 0;
-      twen     : integer range 0 to 1       := 1;
-      maxwlen  : integer range 0 to 15      := 0;
-      netlist  : integer                    := 0;
-      syncram  : integer range 0 to 1       := 1;
-      memtech  : integer                    := 0;
-      ft       : integer range 0 to 2       := 0;
-      scantest : integer range 0 to 1       := 0
+      pindex    : integer := 0;
+      paddr     : integer := 0;
+      pmask     : integer := 16#fff#;
+      pirq      : integer := 0;
+      fdepth    : integer range 1 to 7       := 1;
+      slvselen  : integer range 0 to 1       := 0;
+      slvselsz  : integer range 1 to 32      := 1;
+      oepol     : integer range 0 to 1       := 0;
+      odmode    : integer range 0 to 1       := 0;
+      automode  : integer range 0 to 1       := 0;
+      acntbits  : integer range 1 to 32      := 32;
+      aslvsel   : integer range 0 to 1       := 0;
+      twen      : integer range 0 to 1       := 1;
+      maxwlen   : integer range 0 to 15      := 0;
+      netlist   : integer                    := 0;
+      syncram   : integer range 0 to 1       := 1;
+      memtech   : integer                    := 0;
+      ft        : integer range 0 to 2       := 0;
+      scantest  : integer range 0 to 1       := 0;
+      syncrst   : integer range 0 to 1       := 0;
+      automask0 : integer                    := 0;
+      automask1 : integer                    := 0;
+      automask2 : integer                    := 0;
+      automask3 : integer                    := 0
       );
     port (
       rstn   : in std_ulogic;
@@ -208,6 +215,9 @@ package spi is
     initialized : std_ulogic;
   end record;
 
+  constant spimctrl_out_none : spimctrl_out_type :=
+    ('0', '1', '0', '1', '1', '1', '0', '0');
+  
   component spimctrl
     generic (
       hindex      : integer := 0;
@@ -225,7 +235,8 @@ package spi is
       scaler      : integer range 1 to 512 := 1;
       altscaler   : integer range 1 to 512 := 1;
       pwrupcnt    : integer := 0;
-      maxahbaccsz : integer range 0 to 256 := AHBDW
+      maxahbaccsz : integer range 0 to 256 := AHBDW;
+      offset      : integer := 0
       );
     port (
       rstn    : in  std_ulogic;

@@ -6,7 +6,7 @@ DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 UCF=$(GRLIB)/boards/$(BOARD)/$(TOP).ucf
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=std
-XSTOPT=""
+XSTOPT=
 SYNPOPT="set_option -pipe 1; set_option -retiming 1; set_option -verification_mode 1; set_option -write_apr_constraint 0"
 VHDLSYNFILES=config.vhd prgmem.vhd ahbrom.vhd ft245uart.vhd leon3mp.vhd
 VHDLSIMFILES=testbench.vhd
@@ -17,9 +17,9 @@ CLEAN=soft-clean
 
 TECHLIBS = altera altera_mf stratixii 
 LIBSKIP = gsi spansion fmf core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	tmtc openchip ihp gleichmann usbhc spw 
+	tmtc openchip ihp usbhc spw 
 DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
-	grusbhc spacewire usb haps hcan
+	grusbhc spacewire usb hcan
 FILESKIP = grcan.vhd
 
 include $(GRLIB)/software/leon3/Makefile

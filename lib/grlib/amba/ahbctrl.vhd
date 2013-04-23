@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@ use ieee.std_logic_1164.all;
 library grlib;
 use grlib.stdlib.all;
 use grlib.amba.all;
+use grlib.config_types.all;
+use grlib.config.all;
 -- pragma translate_off
 use grlib.devices.all;
 use std.textio.all;
@@ -78,7 +80,8 @@ entity ahbctrl is
     testen  : in  std_ulogic := '0';
     testrst : in  std_ulogic := '1';
     scanen  : in  std_ulogic := '0';
-    testoen : in  std_ulogic := '1'
+    testoen : in  std_ulogic := '1';
+    testsig : in  std_logic_vector(1+GRLIB_CONFIG_ARRAY(grlib_techmap_testin_extra) downto 0) := (others => '0')
   );
 end;
 
@@ -357,7 +360,6 @@ begin
   variable hready  : std_ulogic;
   variable defslv  : std_ulogic;
   variable cfgsel  : std_ulogic;
-  variable hcache  : std_ulogic;
   variable hresp   : std_logic_vector(1 downto 0);
   variable hrdata  : std_logic_vector(AHBDW-1 downto 0);
   variable haddr   : std_logic_vector(31 downto 0);
@@ -575,6 +577,17 @@ begin
     --then master can have changed, and when not hready then the
     --previous master will still be selected
     v.hmasterlock := msto(v.hmaster).hlock or (r.hmasterlock and not hready);
+    --if the master asserting hlock received a SPLIT/RETRY response
+    --to the previous access then disregard the current lock request.
+    --the bus will otherwise be locked when the previous access is
+    --retried instead of treating hlock as coupled to the next access.
+    --use hmasterlockd to keep the bus locked for SPLIT/RETRY to locked
+    --accesses.
+    if v.hmaster = r.hmasterd and slvo(r.hslave).hresp(1) = '1' then
+      if r.hmasterlockd = '0' then
+        v.hmasterlock := '0'; v.hmasterlockd := '0';
+      end if;
+    end if;
 
     -- split support
     vsplit := (others => '0');
@@ -587,8 +600,6 @@ begin
         end loop;
       end loop;
     end if;
-
-    if r.cfgsel = '1' then hcache := '1'; else hcache := slvo(v.hslave).hcache; end if;
     
     -- interrupt merging
     hirq := (others => '0');
@@ -610,7 +621,6 @@ begin
       vslvi.hmaster    := conv_std_logic_vector(r.hmaster, 4);
       vslvi.hsel       := hsel(0 to NAHBSLV-1); 
       vslvi.hmbsel     := hmbsel; 
-      vslvi.hcache     := hcache; 
       vslvi.hirq       := hirq;       
     else
       vslvi := ahbs_in_none;
@@ -626,6 +636,7 @@ begin
     vslvi.testrst := testrst; 
     vslvi.scanen  := scanen and testen; 
     vslvi.testoen := testoen; 
+    vslvi.testin  := testen & (scanen and testen) & testsig;
 
     -- reset operation
     if (rst = '0') then
@@ -640,12 +651,12 @@ begin
     msti.hready  <= hready;
     msti.hresp   <= hresp;
     msti.hrdata  <= hrdata;
-    msti.hcache  <= hcache;
     msti.hirq    <= hirq; 
     msti.testen  <= testen; 
     msti.testrst <= testrst; 
     msti.scanen  <= scanen and testen; 
     msti.testoen <= testoen; 
+    msti.testin  <= testen & (scanen and testen) & testsig;
 
     -- drive slave inputs
     slvi     <= vslvi;
@@ -658,7 +669,6 @@ begin
     lmsti.hready  <= hready;
     lmsti.hresp   <= hresp;
     lmsti.hrdata  <= hrdata;
-    lmsti.hcache  <= hcache;
     lmsti.hirq    <= hirq; 
 -- pragma translate_on
 
@@ -798,7 +808,7 @@ begin
         for j in 1 to NAHBIR-1 loop 
           assert (msto(i).hconfig(j) = zx or FULLPNP or ccheck = 0 or cfgmask = 0)
             report "AHB master " & tost(i) & " propagates non-zero user defined PnP data, " &
-            "but AHBCTRL full PnP decoding has not been enabled"
+            "but AHBCTRL full PnP decoding has not been enabled (check fpnpen VHDL generic)"
             severity warning;
         end loop;
 	assert (msto(i).hindex = i) or (icheck = 0)
@@ -808,7 +818,8 @@ begin
         for j in 0 to NAHBCFG-1 loop 
           assert (msto(i).hconfig(j) = zx or ccheck = 0)
             report "AHB master " & tost(i) & " appears to be disabled, " &
-            "but the master config record is not driven to zero"
+            "but the master config record is not driven to zero " &
+            "(check vendor ID or drive unused bus index with appropriate values)."
             severity warning;
         end loop;
       end if;
@@ -818,7 +829,8 @@ begin
         for j in 0 to NAHBCFG-1 loop 
           assert (msto(i).hconfig(j) = zx or ccheck = 0)
             report "AHB master " & tost(i) & " is outside the range of " &
-            "decoded master indexes but the master config record is not driven to zero"
+            "decoded master indexes but the master config record is not driven to zero " &
+            "(check nahbm VHDL generic)."
             severity warning;
         end loop;
       end loop;
@@ -837,7 +849,7 @@ begin
         for j in 1 to NAHBIR-1 loop 
           assert (slvo(i).hconfig(j) = zx or FULLPNP or ccheck = 0 or cfgmask = 0)
             report "AHB slave " & tost(i) & " propagates non-zero user defined PnP data, " &
-            "but AHBCTRL full PnP decoding has not been enabled"
+            "but AHBCTRL full PnP decoding has not been enabled (check fpnpen VHDL generic)."
             severity warning;
         end loop;
         for j in NAHBIR to NAHBCFG-1 loop
@@ -930,7 +942,8 @@ begin
         for j in 0 to NAHBCFG-1 loop 
           assert (slvo(i).hconfig(j) = zx or ccheck = 0)
             report "AHB slave " & tost(i) & " appears to be disabled, " &
-            "but the slave config record is not driven to zero"
+            "but the slave config record is not driven to zero " &
+            "(check vendor ID or drive unused bus index with appropriate values)."
             severity warning;
         end loop;
       end if;
@@ -940,7 +953,8 @@ begin
         for j in 0 to NAHBCFG-1 loop 
           assert (slvo(i).hconfig(j) = zx or ccheck = 0)
             report "AHB slave " & tost(i) & " is outside the range of " &
-            "decoded slave indexes but the slave config record is not driven to zero"
+            "decoded slave indexes but the slave config record is not driven to zero " &
+            "(check nahbs VHDL generic)."
             severity warning;
         end loop;
       end loop;

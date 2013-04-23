@@ -1,1 +1,1 @@
-test/simtrans1553.vhd
+simtrans1553.vhd

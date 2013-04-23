@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -17,13 +17,14 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Entity: 	greth_rx
+-- Entity: 	greth_rx 
 -- File:	greth_rx.vhd
 -- Author:	Marko Isomaki 
 -- Description:	Ethernet receiver
 ------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 library grlib;
 use grlib.stdlib.all;
 library eth;
@@ -33,7 +34,9 @@ entity greth_rx is
   generic(
     nsync          : integer range 1 to 2 := 2;
     rmii           : integer range 0 to 1 := 0;
-    multicast      : integer range 0 to 1 := 0);
+    multicast      : integer range 0 to 1 := 0;
+    maxsize        : integer := 1500 
+    );
   port(
     rst            : in  std_ulogic;
     clk            : in  std_ulogic;
@@ -44,7 +47,9 @@ entity greth_rx is
 end entity;
 
 architecture rtl of greth_rx is
-  constant maxsize   : integer := 1518;
+--  constant maxsize   : integer := 1518;
+  constant maxsizerx : unsigned(15 downto 0) :=
+    to_unsigned(maxsize + 18, 16);
   constant minsize   : integer := 64;
     
   --receiver types
@@ -239,7 +244,7 @@ begin
         write_req := '1';
       end if;
       if er = '1' then v.status(2) := '1'; end if;
-      if conv_integer(r.byte_count) > maxsize then
+      if conv_integer(r.byte_count) > maxsizerx then
         v.rx_state := errorst; v.status(1) := '1';
         v.byte_count := r.byte_count - 4;
       end if;

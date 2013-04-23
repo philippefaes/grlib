@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -35,7 +35,6 @@ use hynix.components.all;
 use work.debug.all;
 
 use work.config.all;	-- configuration
-use work.ml510.all;	-- configuration
 
 entity testbench is
   generic (
@@ -303,7 +302,7 @@ begin
     u1 : HY5PS121621F
       generic map (TimingCheckFlag => true, PUSCheckFlag => false,
                    index => (1 + 2*(CFG_DDR2SP_DATAWIDTH/64))-i, bbits => CFG_DDR2SP_DATAWIDTH,
-                   fname => sdramfile, fdelay => 100*CFG_MIG_DDR2)
+                   fname => sdramfile, fdelay => 0)
       port map (DQ => dimm0_ddr2_dq2(i*16+15+32*(32/CFG_DDR2SP_DATAWIDTH) downto i*16+32*(32/CFG_DDR2SP_DATAWIDTH)),
                 LDQS  => dimm0_ddr2_dqs_p(i*2+4*(32/CFG_DDR2SP_DATAWIDTH)),
                 LDQSB => dimm0_ddr2_dqs_n(i*2+4*(32/CFG_DDR2SP_DATAWIDTH)),
@@ -322,7 +321,7 @@ begin
     u1 : HY5PS121621F
       generic map (TimingCheckFlag => true, PUSCheckFlag => false,
                    index => (1 + 2*(CFG_DDR2SP_DATAWIDTH/64))-i, bbits => CFG_DDR2SP_DATAWIDTH,
-                   fname => sdramfile, fdelay => 100*CFG_MIG_DDR2)
+                   fname => sdramfile, fdelay => 0)
       port map (DQ => dimm1_ddr2_dq2(i*16+15+32*(32/CFG_DDR2SP_DATAWIDTH) downto i*16+32*(32/CFG_DDR2SP_DATAWIDTH)),
                 LDQS  => dimm1_ddr2_dqs_p(i*2+4*(32/CFG_DDR2SP_DATAWIDTH)),
                 LDQSB => dimm1_ddr2_dqs_n(i*2+4*(32/CFG_DDR2SP_DATAWIDTH)),
@@ -337,23 +336,13 @@ begin
                 UDM => dimm1_ddr2_dqm(i*2+1+4*(32/CFG_DDR2SP_DATAWIDTH)));
   end generate;
 
-  nodelgen : if CFG_MIG_DDR2 = 1 generate
-    ddr2delay0 : delay_wire 
-      generic map(data_width => dimm0_ddr2_dq'length, delay_atob => 0.0, delay_btoa => 0.0)
-      port map(a => dimm0_ddr2_dq, b => dimm0_ddr2_dq2);
-    ddr2delay1 : delay_wire 
-      generic map(data_width => dimm1_ddr2_dq'length, delay_atob => 0.0, delay_btoa => 0.0)
-      port map(a => dimm1_ddr2_dq, b => dimm1_ddr2_dq2);
-  end generate;
 
-  delgen : if CFG_MIG_DDR2 = 0 generate
-    ddr2delay0 : delay_wire 
-      generic map(data_width => dimm0_ddr2_dq'length, delay_atob => 0.0, delay_btoa => 2.5)
-      port map(a => dimm0_ddr2_dq, b => dimm0_ddr2_dq2);
-    ddr2delay1 : delay_wire 
-      generic map(data_width => dimm1_ddr2_dq'length, delay_atob => 0.0, delay_btoa => 2.5)
-      port map(a => dimm1_ddr2_dq, b => dimm1_ddr2_dq2);
-  end generate;
+  ddr2delay0 : delay_wire 
+    generic map(data_width => dimm0_ddr2_dq'length, delay_atob => 0.0, delay_btoa => 2.5)
+    port map(a => dimm0_ddr2_dq, b => dimm0_ddr2_dq2);
+  ddr2delay1 : delay_wire 
+    generic map(data_width => dimm1_ddr2_dq'length, delay_atob => 0.0, delay_btoa => 2.5)
+    port map(a => dimm1_ddr2_dq, b => dimm1_ddr2_dq2);
 
   prom0 : sram16 generic map (index => 4, abits => romdepth, fname => promfile)
 	port map (flash_a(romdepth-1 downto 0), flash_d(15 downto 0),

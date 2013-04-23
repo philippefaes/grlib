@@ -1,2 +1,0 @@
-#!/bin/sh
-echo elaborate -ifmt verilog -ifn $1

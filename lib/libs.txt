@@ -1,4 +1,4 @@
-tech/dware
+#tech/dware
 synplify
 techmap
 spw
@@ -13,7 +13,7 @@ gr1553
 gaisler
 esa
 #nasa
-gleichmann
 fmf
 spansion
 gsi
+

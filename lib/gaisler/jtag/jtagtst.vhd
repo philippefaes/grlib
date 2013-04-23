@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -81,6 +81,14 @@ package jtagtst is
                    signal tdo           : in std_ulogic;
                    cp                   : in integer);
 
+  procedure jwrite(addr, hsize, data           : in std_logic_vector;
+                   signal tck, tms, tdi : out std_ulogic;
+                   signal tdo           : in std_ulogic;
+                   cp                   : in integer;
+                   ainst                : in integer := 2;
+                   dinst                : in integer := 3;
+                   isize                : in integer := 6);
+
   procedure jread(addr                 : in  std_logic_vector;
                   data                 : out std_logic_vector;
                   signal tck, tms, tdi : out std_ulogic;
@@ -91,14 +99,18 @@ package jtagtst is
 
   procedure bscantest(signal tdo : in std_ulogic;
                       signal tck, tms, tdi : out std_ulogic;
-                      cp: in integer);
+                      cp: in integer;
+                      inst_samp: integer := 5;
+                      inst_extest: integer := 6;
+                      inst_intest: integer := 7;
+                      inst_mbist: integer := 11;
+                      fastmode: boolean := false);
 
   procedure bscansampre(signal tdo : in std_ulogic;
                         signal tck, tms, tdi : out std_ulogic;
                         nsigs: in integer;
                         sigpre: in std_logic_vector; sigsamp: out std_logic_vector;
-                        cp: in integer);
-
+                        cp: in integer; inst_samp: integer);
   
 end;  
 
@@ -158,7 +170,42 @@ package body jtagtst is
     wait for 5 * cp * 1 ns;
     tmp := '0' & data;
     shift(true, 33, tmp, dr, tck, tms, tdi, tdo, cp); -- write data reg
-  end;  
+  end;
+
+  procedure jwrite(addr, hsize, data    : in std_logic_vector;
+                   signal tck, tms, tdi : out std_ulogic;
+                   signal tdo           : in std_ulogic;
+                   cp                   : in integer;
+                   ainst                : in integer := 2;
+                   dinst                : in integer := 3;
+                   isize                : in integer := 6) is
+    variable tmp : std_logic_vector(32 downto 0);
+    variable tmp2 : std_logic_vector(34 downto 0);
+    variable dr : std_logic_vector(32 downto 0);
+    variable dr2 : std_logic_vector(34 downto 0);
+    variable v_ainst : std_logic_vector(0 to 7);
+    variable v_dinst : std_logic_vector(0 to 7);
+    variable tmp3 : std_logic_vector(7 downto 0);
+    variable tmp4 : std_logic_vector(7 downto 0);
+  begin
+    tmp3 := conv_std_logic_vector(ainst,8);
+    tmp4 := conv_std_logic_vector(dinst,8);
+    for i in 0 to 7 loop
+      v_ainst(i) := tmp3(i);
+      v_dinst(i) := tmp4(i);
+    end loop;
+
+    wait for 10 * cp * 1 ns;
+    shift(false, isize, v_ainst(0 to isize-1), dr, tck, tms, tdi, tdo, cp);  -- inst = addrreg
+    wait for 5 * cp * 1 ns;
+    tmp2 := '1' & hsize & addr;    
+    shift(true, 35, tmp2, dr2, tck, tms, tdi, tdo, cp); -- write add reg
+    wait for 5 * cp * 1 ns;
+    shift(false, isize, v_dinst(0 to isize-1), dr, tck, tms, tdi, tdo, cp);  -- inst = datareg
+    wait for 5 * cp * 1 ns;
+    tmp := '0' & data;
+    shift(true, 33, tmp, dr, tck, tms, tdi, tdo, cp); -- write data reg
+  end;
 
   procedure jread(addr                 : in  std_logic_vector;
                   data                 : out std_logic_vector;
@@ -390,18 +437,23 @@ begin
                         signal tck, tms, tdi : out std_ulogic;
                         nsigs: in integer;
                         sigpre: in std_logic_vector; sigsamp: out std_logic_vector;
-                        cp: in integer) is
+                        cp: in integer; inst_samp: integer) is
     variable tmp: std_logic_vector(5 downto 0);
   begin
-    shift(false,6, conv_std_logic_vector(5,6), tmp, tck,tms,tdi,tdo, cp);
+    shift(false,6, conv_std_logic_vector(inst_samp,6), tmp, tck,tms,tdi,tdo, cp);
     shift(true, nsigs, sigpre, sigsamp, tck,tms,tdi,tdo, cp);
   end procedure;
 
   -- Boundary scan test
   procedure bscantest(signal tdo : in std_ulogic;
                       signal tck, tms, tdi : out std_ulogic;
-                      cp: in integer) is
-    variable tmpin,tmpout: std_logic_vector(1499 downto 0);
+                      cp: in integer;
+                      inst_samp: integer := 5;
+                      inst_extest: integer := 6;
+                      inst_intest: integer := 7;
+                      inst_mbist: integer := 11;
+                      fastmode: boolean := false) is
+    variable tmpin,tmpout: std_logic_vector(1999 downto 0);
     variable i,bslen: integer;
     variable dc: std_logic;
     variable tmp6: std_logic_vector(5 downto 0);
@@ -415,7 +467,7 @@ begin
     -- Probe length of boundary scan chain    
     tmpin := (others => '0');
     tmpin(tmpin'length/2) := '1';
-    bscansampre(tdo,tck,tms,tdi,tmpin'length,tmpin,tmpout,cp);
+    bscansampre(tdo,tck,tms,tdi,tmpin'length,tmpin,tmpout,cp,inst_samp);
     i := tmpout'length/2;
     for x in tmpout'length/2 to tmpout'high loop
       if tmpout(x)='1' then
@@ -429,21 +481,38 @@ begin
       return;
     end if;
     print("[bscan] Detected boundary scan chain length: " & tost(bslen));
-    print("[bscan] Looping over outputs...");
-    shift(false,6, conv_std_logic_vector(6,6), tmp6, tck,tms,tdi,tdo, cp);  -- extest
-    for x in 0 to bslen loop
-      tmpin :=(others => '0');
-      tmpin(x) := '1';
+    if fastmode then
+      print("[bscan] Setting EXTEST with all chain regs=0");
+      shift(false,6, conv_std_logic_vector(inst_extest,6), tmp6, tck,tms,tdi,tdo, cp);  -- extest
+      print("[bscan] In EXTEST, changing all chain regs to 1");
+      tmpin := (others => '1');
       shift(true, bslen, tmpin(bslen-1 downto 0), tmpout(bslen-1 downto 0), tck,tms,tdi,tdo, cp);
-    end loop;
-    print("[bscan] Looping over inputs...");
-    shift(false,6, conv_std_logic_vector(7,6), tmp6, tck,tms,tdi,tdo, cp);  -- intest
-    for x in 0 to bslen loop
-      tmpin :=(others => '0');
-      tmpin(x) := '1';
+      print("[bscan] Setting INTEST with all chain regs=1");
+      shift(false,6, conv_std_logic_vector(inst_intest,6), tmp6, tck,tms,tdi,tdo, cp);  -- intest
+      print("[bscan] In INTEST, changing all chain regs to 0");
+      tmpin := (others => '0');
       shift(true, bslen, tmpin(bslen-1 downto 0), tmpout(bslen-1 downto 0), tck,tms,tdi,tdo, cp);
-    end loop;
-    shift(false,6, conv_std_logic_vector(11,6), tmp6, tck,tms,tdi,tdo, cp);  -- MBIST command
+    else
+      print("[bscan] Looping over outputs...");
+      shift(false,6, conv_std_logic_vector(inst_extest,6), tmp6, tck,tms,tdi,tdo, cp);  -- extest
+      for x in 0 to bslen loop
+        tmpin :=(others => '0');
+        tmpin(x) := '1';
+        shift(true, bslen, tmpin(bslen-1 downto 0), tmpout(bslen-1 downto 0), tck,tms,tdi,tdo, cp);
+      end loop;
+      print("[bscan] Looping over inputs...");
+      shift(false,6, conv_std_logic_vector(inst_intest,6), tmp6, tck,tms,tdi,tdo, cp);  -- intest
+      for x in 0 to bslen loop
+        tmpin :=(others => '0');
+        tmpin(x) := '1';
+        shift(true, bslen, tmpin(bslen-1 downto 0), tmpout(bslen-1 downto 0), tck,tms,tdi,tdo, cp);
+      end loop;
+    end if;
+    if inst_mbist >= 0 then
+      print("[bscan] Shifting in MBIST command");
+      shift(false,6, conv_std_logic_vector(inst_mbist,6), tmp6, tck,tms,tdi,tdo, cp);  -- MBIST command
+    end if;
+    print("[bscan] Test done");
   end procedure;
   
 end;

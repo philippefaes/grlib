@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -589,7 +589,6 @@ begin
       ahbso.hrdata <= ahbdrivedata(hrdata2x);
     end if;
     ahbso.hsplit <= (others => '0');
-    ahbso.hcache <= '0';
     ahbso.hirq   <= hirq;
     ahbso.hindex <= hindex;    
 

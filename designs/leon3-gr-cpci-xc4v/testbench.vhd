@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -69,6 +69,7 @@ entity testbench is
     pci_req 	: inout std_logic;
     pci_serr    : inout std_logic;
     pci_host   	: in std_logic := '1';
+    pci_int 	  : inout std_logic_vector(3 downto 0);
     pci_66	: in std_logic := '0'
   );
 end; 
@@ -184,7 +185,7 @@ begin
         etxd, etx_en, etx_er, emdc, 
     	pci_rst, pci_clk, pci_gnt, pci_idsel, pci_lock, pci_ad, pci_cbe,
     	pci_frame, pci_irdy, pci_trdy, pci_devsel, pci_stop, pci_perr, pci_par,
-    	pci_req, pci_serr, pci_host, pci_66, pci_arb_req, pci_arb_gnt, 
+    	pci_req, pci_serr, pci_host, pci_int, pci_66, pci_arb_req, pci_arb_gnt, 
 	can_txd, can_rxd,
 	spw_clk, spw_rxdp, spw_rxdn, spw_rxsp, spw_rxsn, spw_txdp, 
 	spw_txdn, spw_txsp, spw_txsn

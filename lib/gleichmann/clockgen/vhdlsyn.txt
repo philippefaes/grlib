@@ -1,2 +1,0 @@
-ge_clkgen_p.vhd
-clockgenerator_ea.vhd

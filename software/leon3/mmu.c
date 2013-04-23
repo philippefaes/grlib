@@ -238,7 +238,7 @@ __asm__(
 
 
 #ifndef LEON2
- mmu_double();
+  if (((rsysreg(0) >> ITE_BIT) & 3) == 0) mmu_double();
 #endif
 
 
@@ -328,7 +328,7 @@ __asm__(
                       "nop\n\t" );
  
 #ifndef LEON2
- mmu_double();
+ if (((rsysreg(0) >> ITE_BIT) & 3) == 0) mmu_double();
 #endif
  // supervisor = 1 
  {

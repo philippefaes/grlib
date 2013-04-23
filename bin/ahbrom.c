@@ -78,7 +78,6 @@ begin\n\
   ahbso.hresp   <= \"00\"; \n\
   ahbso.hsplit  <= (others => '0'); \n\
   ahbso.hirq    <= (others => '0');\n\
-  ahbso.hcache  <= '1';\n\
   ahbso.hconfig <= hconfig;\n\
   ahbso.hindex  <= hindex;\n\
 \n\

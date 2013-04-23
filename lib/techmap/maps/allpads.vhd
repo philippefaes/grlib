@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -491,7 +491,8 @@ component unisim_skew_outpad
 end component;
 
 component unisim_clkpad 
-  generic (level : integer := 0; voltage : integer := x33v; arch : integer := 0; hf : integer := 0);
+  generic (level : integer := 0; voltage : integer := x33v; arch : integer := 0; hf : integer := 0;
+           tech : integer := 0);
   port (pad : in std_ulogic; o : out std_ulogic; rstn : std_ulogic := '1'; lock : out std_ulogic);
 end component; 
 
@@ -744,35 +745,42 @@ constant n2x_padcontrol_bits: integer := 22;
 constant n2x_padcontrol_none: std_logic_vector(n2x_padcontrol_bits-1 downto 0) := (others => '0');
 
 component n2x_inpad
-  generic (level : integer := 0; voltage : integer := x33v);
-  port (pad : in  std_ulogic; o : out std_ulogic);
+  generic (level : integer := 0; voltage : integer := x33v; reg : integer := 0);
+  port (pad : in  std_ulogic; o : out std_ulogic;
+        clk : in  std_ulogic := '0'; rstn : in  std_ulogic := '0');
 end component; 
 
 component n2x_iopad
   generic (level : integer := 0; slew : integer := 0;
-  voltage  : integer := x33v; strength : integer := 12);
+  voltage  : integer := x33v; strength : integer := 12;
+  reg : integer := 0);
   port (pad : inout std_ulogic; i, en  : in std_ulogic; o : out std_ulogic;
         compen, compupd: in std_ulogic;
         pcomp, ncomp: in std_logic_vector(4 downto 0);
-        pslew, nslew: in std_logic_vector(3 downto 0));
+        pslew, nslew: in std_logic_vector(3 downto 0);
+        clk : in  std_ulogic := '0'; rstn : in  std_ulogic := '0');
 end component;
 
 component n2x_outpad
   generic (level : integer := 0; slew : integer := 0;
-  voltage : integer := 0; strength : integer := 12);
+  voltage : integer := 0; strength : integer := 12;
+  reg : integer := 0);
   port (pad : out std_ulogic; i : in std_ulogic;
         compen, compupd: in std_ulogic;
         pcomp, ncomp: in std_logic_vector(4 downto 0);
-        pslew, nslew: in std_logic_vector(3 downto 0));
+        pslew, nslew: in std_logic_vector(3 downto 0);
+        clk : in  std_ulogic := '0'; rstn : in  std_ulogic := '0');
 end component;
 
 component n2x_toutpad
   generic (level : integer := 0; slew : integer := 0;
-  voltage  : integer := 0; strength : integer := 12);
+  voltage  : integer := 0; strength : integer := 12;
+  reg : integer := 0);
   port (pad : out std_ulogic; i, en : in  std_ulogic;
         compen, compupd: in std_ulogic;
         pcomp, ncomp: in std_logic_vector(4 downto 0);
-        pslew, nslew: in std_logic_vector(3 downto 0));
+        pslew, nslew: in std_logic_vector(3 downto 0);
+        clk : in  std_ulogic := '0'; rstn : in  std_ulogic := '0');
 end component;
 
 component n2x_inpad_ds
@@ -805,5 +813,49 @@ component n2x_inpad_ddrv
     c1, c2 : in  std_ulogic; ce : in  std_ulogic;
     r      : in  std_ulogic; s  : in  std_ulogic);
 end component;
+
+component n2x_sdram_phy
+  generic (
+    level    : integer := 0;
+    voltage  : integer := x33v;
+    strength : integer := 12;
+    aw       : integer := 15;               -- # address bits
+    dw       : integer := 32;               -- # data bits
+    ncs      : integer := 2;
+    reg      : integer := 0);               -- 1: include registers on all signals
+  port (
+    -- SDRAM interface
+    addr      : out   std_logic_vector(aw-1 downto 0);
+    dq        : inout std_logic_vector(dw-1 downto 0);
+    cke       : out   std_logic_vector(ncs-1 downto 0);
+    sn        : out   std_logic_vector(ncs-1 downto 0);
+    wen       : out   std_ulogic;
+    rasn      : out   std_ulogic;
+    casn      : out   std_ulogic;
+    dqm       : out   std_logic_vector(dw/8-1 downto 0);
+
+    -- Interface toward memory controller
+    laddr     : in    std_logic_vector(aw-1 downto 0);
+    ldq_din   : out   std_logic_vector(dw-1 downto 0);
+    ldq_dout  : in    std_logic_vector(dw-1 downto 0);
+    ldq_oen   : in    std_logic_vector(dw-1 downto 0);
+    lcke      : in    std_logic_vector(ncs-1 downto 0);
+    lsn       : in    std_logic_vector(ncs-1 downto 0);
+    lwen      : in    std_ulogic;
+    lrasn     : in    std_ulogic;
+    lcasn     : in    std_ulogic;
+    ldqm      : in    std_logic_vector(dw/8-1 downto 0);
+
+    -- Only used when reg generic is non-zero
+    rstn      : in  std_ulogic;         -- Registered pads reset
+    clk       : in  std_ulogic;         -- SDRAM clock for registered pads
+    
+    -- Optional pad configuration inputs
+    cfgi_cmd  : in std_logic_vector(19 downto 0) := "00000000000000000000"; -- CMD pads
+    cfgi_dq   : in std_logic_vector(19 downto 0) := "00000000000000000000"  -- DQ pads
+  );
+end component;
+
+
 
 end;

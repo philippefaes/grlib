@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -28,8 +28,6 @@ use ieee.std_logic_1164.all;
 library grlib;
 use grlib.stdlib.all;
 use grlib.amba.all;
-library gaisler;
-use gaisler.misc.all;
 library techmap;
 use techmap.gencomp.all;
 
@@ -131,7 +129,9 @@ package grusb is
       memsel      : integer                      := 0;
       syncprst    : integer range 0 to 1         := 0;
       sysfreq     : integer                      := 65000;
-      pcidev      : integer range 0 to 1         := 0);
+      pcidev      : integer range 0 to 1         := 0;
+      debug       : integer                      := 0;
+      debugsize   : integer                      := 8192);
     port (
       clk       : in  std_ulogic;
       uclk      : in  std_ulogic;
@@ -202,7 +202,8 @@ package grusb is
       irqi       : integer range 0 to NAHBIRQ-1 := 1;
       irqo       : integer range 0 to NAHBIRQ-1 := 2;
       functesten : integer range 0 to 1         := 0;
-      scantest   : integer range 0 to 1         := 0);
+      scantest   : integer range 0 to 1         := 0;
+      nsync      : integer range 1 to 2         := 1);
     port (
       uclk  : in  std_ulogic;
       usbi  : in  grusb_in_type;
@@ -229,7 +230,8 @@ package grusb is
       keepclk    : integer range 0 to 1   := 0;
       functesten : integer range 0 to 1   := 0;
       burstlength: integer range 1 to 512 := 8;
-      scantest   : integer range 0 to 1   := 0
+      scantest   : integer range 0 to 1   := 0;
+      nsync      : integer range 1 to 2   := 1
       );
     port (
       uclk : in  std_ulogic;
@@ -244,7 +246,8 @@ package grusb is
 
   component grusbhc_gen is
     generic (
-      memtech     : integer range 0 to NTECH     := DEFMEMTECH;
+      tech        : integer                      := 0;
+      memtech     : integer                      := 0;
       nports      : integer range 1 to 15        := 1;
       ehcgen      : integer range 0 to 1         := 1;
       uhcgen      : integer range 0 to 1         := 1;
@@ -268,7 +271,9 @@ package grusb is
       memsel      : integer                      := 0;
       syncprst    : integer range 0 to 1         := 0;
       sysfreq     : integer                      := 65000;
-      pcidev      : integer range 0 to 1         := 0);
+      pcidev      : integer range 0 to 1         := 0;
+      debug       : integer                      := 0;
+      debugsize   : integer                      := 8192);
     port (
       clk               : in  std_ulogic;
       uclk              : in  std_ulogic;
@@ -281,13 +286,12 @@ package grusb is
       ehc_apbsi_pwdata  : in  std_logic_vector(31 downto 0);
       -- EHC APB slave output signals    
       ehc_apbso_prdata  : out std_logic_vector(31 downto 0);
-      ehc_apbso_pirq    : out std_ulogic;
+      ehc_irq           : out std_ulogic;
       -- EHC/UHC(s) AHB master input signals
       ahbmi_hgrant      : in  std_logic_vector(n_cc*uhcgen downto 0);
       ahbmi_hready      : in  std_ulogic;
       ahbmi_hresp       : in  std_logic_vector(1 downto 0);
       ahbmi_hrdata      : in  std_logic_vector(31 downto 0);
-      ahbmi_hcache      : in  std_ulogic;
       -- UHC(s) AHB slave input signals
       uhc_ahbsi_hsel    : in  std_logic_vector((n_cc-1)*uhcgen downto 0);
       uhc_ahbsi_haddr   : in  std_logic_vector(31 downto 0);
@@ -321,8 +325,7 @@ package grusb is
       uhc_ahbso_hresp   : out std_logic_vector(((n_cc*2)-1)*uhcgen downto 0);
       uhc_ahbso_hrdata  : out std_logic_vector(((n_cc*32)-1)*uhcgen downto 0);
       uhc_ahbso_hsplit  : out std_logic_vector(((n_cc*16)-1)*uhcgen downto 0);
-      uhc_ahbso_hcache  : out std_logic_vector((n_cc-1)*uhcgen downto 0);
-      uhc_ahbso_hirq    : out std_logic_vector((n_cc-1)*uhcgen downto 0);
+      uhc_irq           : out std_logic_vector((n_cc-1)*uhcgen downto 0);
       -- ULPI/UTMI+ output signals
       xcvrselect        : out std_logic_vector(((nports*2)-1) downto 0);
       termselect        : out std_logic_vector((nports-1) downto 0);
@@ -359,6 +362,7 @@ package grusb is
       hostdisconnect    : in  std_logic_vector((nports-1) downto 0);
       nxt               : in  std_logic_vector((nports-1) downto 0);
       dir               : in  std_logic_vector((nports-1) downto 0);
+      urstdrive         : in  std_logic_vector((nports-1) downto 0);
       -- scan signals
       testen            : in  std_ulogic;
       testrst           : in  std_ulogic;
@@ -414,7 +418,8 @@ package grusb is
       keepclk    : integer range 0 to 1         := 0;
       sepirq     : integer range 0 to 1         := 0;
       functesten : integer range 0 to 1         := 0;
-      scantest   : integer range 0 to 1         := 0);
+      scantest   : integer range 0 to 1         := 0;
+      nsync      : integer range 1 to 2         := 1);
     port (
       -- usb clock
       uclk              : in  std_ulogic;

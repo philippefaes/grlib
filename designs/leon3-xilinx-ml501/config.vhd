@@ -1,7 +1,5 @@
 
 
-
-
 -----------------------------------------------------------------------------
 -- LEON3 Demonstration design test bench configuration
 -- Copyright (C) 2009 Aeroflex Gaisler
@@ -47,16 +45,16 @@ package config is
   constant CFG_ISETS : integer := 2;
   constant CFG_ISETSZ : integer := 8;
   constant CFG_ILINE : integer := 8;
-  constant CFG_IREPL : integer := 0;
+  constant CFG_IREPL : integer := 2;
   constant CFG_ILOCK : integer := 0;
   constant CFG_ILRAMEN : integer := 0;
   constant CFG_ILRAMADDR: integer := 16#8E#;
   constant CFG_ILRAMSZ : integer := 1;
   constant CFG_DCEN : integer := 1;
-  constant CFG_DSETS : integer := 2;
+  constant CFG_DSETS : integer := 4;
   constant CFG_DSETSZ : integer := 4;
   constant CFG_DLINE : integer := 4;
-  constant CFG_DREPL : integer := 0;
+  constant CFG_DREPL : integer := 2;
   constant CFG_DLOCK : integer := 0;
   constant CFG_DSNOOP : integer := 1 + 1 + 4*1;
   constant CFG_DFIXED : integer := 16#0#;
@@ -84,7 +82,7 @@ package config is
 -- AMBA settings
   constant CFG_DEFMST : integer := (0);
   constant CFG_RROBIN : integer := 1;
-  constant CFG_SPLIT : integer := 1;
+  constant CFG_SPLIT : integer := 0;
   constant CFG_FPNPEN : integer := 0;
   constant CFG_AHBIO : integer := 16#FFF#;
   constant CFG_APBADDR : integer := 16#800#;
@@ -100,7 +98,7 @@ package config is
   constant CFG_DSU_ETH : integer := 1 + 0 + 0;
   constant CFG_ETH_BUF : integer := 8;
   constant CFG_ETH_IPM : integer := 16#C0A8#;
-  constant CFG_ETH_IPL : integer := 16#0035#;
+  constant CFG_ETH_IPL : integer := 16#0033#;
   constant CFG_ETH_ENM : integer := 16#020000#;
   constant CFG_ETH_ENL : integer := 16#000030#;
 -- LEON2 memory controller
@@ -114,30 +112,30 @@ package config is
   constant CFG_MCTRL_SD64 : integer := 0;
   constant CFG_MCTRL_PAGE : integer := 0 + 0;
 -- Xilinx MIG
-  constant CFG_MIG_DDR2 : integer := 1;
-  constant CFG_MIG_RANKS : integer := (1);
-  constant CFG_MIG_COLBITS : integer := (10);
-  constant CFG_MIG_ROWBITS : integer := (13);
-  constant CFG_MIG_BANKBITS: integer := (2);
+  constant CFG_MIG_DDR2 : integer := 0;
+  constant CFG_MIG_RANKS : integer := 1;
+  constant CFG_MIG_COLBITS : integer := 10;
+  constant CFG_MIG_ROWBITS : integer := 13;
+  constant CFG_MIG_BANKBITS: integer := 2;
   constant CFG_MIG_HMASK : integer := 16#F00#;
 -- DDR controller
-  constant CFG_DDR2SP : integer := 0;
-  constant CFG_DDR2SP_INIT : integer := 0;
-  constant CFG_DDR2SP_FREQ : integer := 100;
-  constant CFG_DDR2SP_TRFC : integer := 130;
-  constant CFG_DDR2SP_DATAWIDTH : integer := 64;
+  constant CFG_DDR2SP : integer := 1;
+  constant CFG_DDR2SP_INIT : integer := 1;
+  constant CFG_DDR2SP_FREQ : integer := (140);
+  constant CFG_DDR2SP_TRFC : integer := (130);
+  constant CFG_DDR2SP_DATAWIDTH : integer := (64);
   constant CFG_DDR2SP_FTEN : integer := 0;
   constant CFG_DDR2SP_FTWIDTH : integer := 0;
-  constant CFG_DDR2SP_COL : integer := 9;
-  constant CFG_DDR2SP_SIZE : integer := 8;
-  constant CFG_DDR2SP_DELAY0 : integer := 0;
-  constant CFG_DDR2SP_DELAY1 : integer := 0;
-  constant CFG_DDR2SP_DELAY2 : integer := 0;
-  constant CFG_DDR2SP_DELAY3 : integer := 0;
-  constant CFG_DDR2SP_DELAY4 : integer := 0;
-  constant CFG_DDR2SP_DELAY5 : integer := 0;
-  constant CFG_DDR2SP_DELAY6 : integer := 0;
-  constant CFG_DDR2SP_DELAY7 : integer := 0;
+  constant CFG_DDR2SP_COL : integer := (10);
+  constant CFG_DDR2SP_SIZE : integer := (256);
+  constant CFG_DDR2SP_DELAY0 : integer := (15);
+  constant CFG_DDR2SP_DELAY1 : integer := (15);
+  constant CFG_DDR2SP_DELAY2 : integer := (15);
+  constant CFG_DDR2SP_DELAY3 : integer := (15);
+  constant CFG_DDR2SP_DELAY4 : integer := (15);
+  constant CFG_DDR2SP_DELAY5 : integer := (15);
+  constant CFG_DDR2SP_DELAY6 : integer := (15);
+  constant CFG_DDR2SP_DELAY7 : integer := (15);
   constant CFG_DDR2SP_NOSYNC : integer := 0;
 -- AHB status register
   constant CFG_AHBSTAT : integer := 1;

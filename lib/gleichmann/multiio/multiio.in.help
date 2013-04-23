@@ -1,3 +1,0 @@
-MultiIO Design
-CONFIG_MULTIIO_ENABLE
-  Say Y here to enable a simple MultiIO Design (LEDS, DIPSWITCHES, etc.).

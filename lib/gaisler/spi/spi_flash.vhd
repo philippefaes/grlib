@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -35,6 +35,13 @@
 --     +--------+-----------------------------------------------+
 --     | 4      |  SPI memory device                            |
 --     +--------+-----------------------------------------------+
+--
+-- For ftype => 4, the memoffset generic can be used to specify an address
+-- offset that till be automatically be removed by the memory model. For
+-- instance, memoffset => 16#1000# and an access to 0x1000 will read the
+-- internal memory array at offset 0x0. This is a quick hack to support booting
+-- from SPIMCTRL that has an offset specified and not having to modify the
+-- SREC.
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -43,7 +50,8 @@ use std.textio.all;
 
 library grlib, gaisler;
 use grlib.stdlib.all;
-use gaisler.sim.all;
+use grlib.stdio.all;
+--use gaisler.sim.all;
 
 entity spi_flash is
   
@@ -53,7 +61,9 @@ entity spi_flash is
     fname      : string  := "prom.srec";     -- File to read from
     readcmd    : integer := 16#0B#;          -- SPI memory device read command
     dummybyte  : integer := 1;
-    dualoutput : integer := 0);
+    dualoutput : integer := 0;
+    memoffset  : integer := 0);              -- Addr. offset automatically removed
+                                             -- by Flash model
   port (
     sck : in    std_ulogic;
     di  : inout std_logic;
@@ -297,7 +307,7 @@ architecture sim of spi_flash is
     
     
   begin  -- simple_spi_flash_model
-    di <= 'Z';
+    di <= 'Z'; do <= 'Z';
     loop 
       if csn /= '0' then wait until csn = '0'; end if;
 
@@ -382,10 +392,10 @@ architecture sim of spi_flash is
     file fload : text open read_mode is fname;
     variable fline : line;
     variable fchar : character; 
-    variable rtype : bit_vector(3 downto 0);
-    variable raddr : bit_vector(31 downto 0);
-    variable rlen  : bit_vector(7 downto 0);
-    variable rdata : bit_vector(0 to 127);
+    variable rtype : std_logic_vector(3 downto 0);
+    variable raddr : std_logic_vector(31 downto 0);
+    variable rlen  : std_logic_vector(7 downto 0);
+    variable rdata : std_logic_vector(0 to 127);
 
     variable wordaddr : integer;
     
@@ -400,23 +410,24 @@ architecture sim of spi_flash is
       readline(fload, fline);
       read(fline, fchar);
       if fchar /= 'S' or fchar /= 's' then
-        hexread(fline, rtype);
-        hexread(fline, rlen);
+        hread(fline, rtype);
+        hread(fline, rlen);
+        raddr := (others => '0');
         case rtype is 
           when "0001" =>
-            hexread(fline, raddr(15 downto 0));
+            hread(fline, raddr(15 downto 0));
           when "0010" =>
-            hexread(fline, raddr(23 downto 0));
+            hread(fline, raddr(23 downto 0));
           when "0011" =>
-            hexread(fline, raddr);
+            hread(fline, raddr);
             raddr(31 downto 24) := (others => '0');
           when others => next;
         end case;
 
-        hexread(fline, rdata);
+        hread(fline, rdata);
         for i in 0 to 3 loop
-          mem(conv_integer(to_stdlogicvector(raddr(31 downto 2))+i)) :=
-              to_stdlogicvector(rdata(i*32 to i*32+31));
+          mem(conv_integer(raddr(31 downto 2)+i)) :=
+              rdata(i*32 to i*32+31);
         end loop;
       end if;
     end loop;
@@ -454,6 +465,14 @@ architecture sim of spi_flash is
         if dbg /= 0 then
           Print(time'image(now) & ": spi_memory_model: received address: " &
                 tost(address));
+          if memoffset /= 0 then
+            Print(time'image(now) & ": spi_memory_model: address after removed offset " &
+                tost(address-memoffset));
+          end if;
+        end if;
+
+        if memoffset /= 0 then
+          address := address - memoffset;
         end if;
         
         index := 31 - conv_integer(address(1 downto 0)) * 8;

@@ -88,11 +88,6 @@
 -- JTAG based DSU interface
   constant CFG_AHB_JTAG	: integer := CONFIG_DSU_JTAG;
 
--- USB DSU
-  constant CFG_GRUSB_DCL        : integer := CONFIG_GRUSB_DCL;
-  constant CFG_GRUSB_DCL_UIFACE : integer := CONFIG_GRUSB_DCL_UIFACE;
-  constant CFG_GRUSB_DCL_DW     : integer := CONFIG_GRUSB_DCL_DW;
-
 -- Ethernet DSU
   constant CFG_DSU_ETH	: integer := CONFIG_DSU_ETH + CONFIG_DSU_ETH_PROG + CONFIG_DSU_ETH_DIS;
   constant CFG_ETH_BUF 	: integer := CFG_DSU_ETHB;
@@ -132,6 +127,15 @@
   constant CFG_DDR2SP_DELAY7 	   : integer := CONFIG_DDR2SP_DELAY7;
   constant CFG_DDR2SP_NOSYNC       : integer := CONFIG_DDR2SP_NOSYNC;
 
+-- Xilinx MIG
+  constant CFG_MIG_DDR2    : integer := CONFIG_MIG_DDR2;
+  constant CFG_MIG_RANKS   : integer := CONFIG_MIG_RANKS;
+  constant CFG_MIG_COLBITS : integer := CONFIG_MIG_COLBITS;
+  constant CFG_MIG_ROWBITS : integer := CONFIG_MIG_ROWBITS;
+  constant CFG_MIG_BANKBITS: integer := CONFIG_MIG_BANKBITS;
+  constant CFG_MIG_HMASK   : integer := 16#CONFIG_MIG_HMASK#;
+
+
 -- AHB status register
   constant CFG_AHBSTAT 	: integer := CONFIG_AHBSTAT_ENABLE;
   constant CFG_AHBSTATN	: integer := CONFIG_AHBSTAT_NFTSLV;
@@ -153,13 +157,6 @@
   constant CFG_GRETH1G	: integer := CONFIG_GRETH_GIGA;
   constant CFG_ETH_FIFO : integer := CFG_GRETH_FIFO;
 
--- ATA interface
-  constant CFG_ATA      : integer := CONFIG_ATA_ENABLE;
-  constant CFG_ATAIO    : integer := 16#CONFIG_ATAIO#;
-  constant CFG_ATAIRQ   : integer := CONFIG_ATAIRQ;
-  constant CFG_ATADMA   : integer := CONFIG_ATA_MWDMA;
-  constant CFG_ATAFIFO  : integer := CONFIG_ATA_FIFO;
-
 -- CAN 2.0 interface
   constant CFG_CAN      : integer := CONFIG_CAN_ENABLE;
   constant CFG_CAN_NUM  : integer := CONFIG_CAN_NUM;
@@ -169,45 +166,6 @@
   constant CFG_CAN_SYNCRST : integer := CONFIG_CAN_SYNCRST;
   constant CFG_CANFT    : integer := CONFIG_CAN_FT;
 
--- GR USB 2.0 Device Controller
-  constant CFG_GRUSBDC        : integer := CONFIG_GRUSBDC_ENABLE;
-  constant CFG_GRUSBDC_AIFACE : integer := CONFIG_GRUSBDC_AIFACE;
-  constant CFG_GRUSBDC_UIFACE : integer := CONFIG_GRUSBDC_UIFACE;
-  constant CFG_GRUSBDC_DW     : integer := CONFIG_GRUSBDC_DW;
-  constant CFG_GRUSBDC_NEPI   : integer := CONFIG_GRUSBDC_NEPI;
-  constant CFG_GRUSBDC_NEPO   : integer := CONFIG_GRUSBDC_NEPO;
-  constant CFG_GRUSBDC_I0     : integer := CONFIG_GRUSBDC_I0;
-  constant CFG_GRUSBDC_I1     : integer := CONFIG_GRUSBDC_I1;
-  constant CFG_GRUSBDC_I2     : integer := CONFIG_GRUSBDC_I2;
-  constant CFG_GRUSBDC_I3     : integer := CONFIG_GRUSBDC_I3;
-  constant CFG_GRUSBDC_I4     : integer := CONFIG_GRUSBDC_I4;
-  constant CFG_GRUSBDC_I5     : integer := CONFIG_GRUSBDC_I5;
-  constant CFG_GRUSBDC_I6     : integer := CONFIG_GRUSBDC_I6;
-  constant CFG_GRUSBDC_I7     : integer := CONFIG_GRUSBDC_I7;
-  constant CFG_GRUSBDC_I8     : integer := CONFIG_GRUSBDC_I8;
-  constant CFG_GRUSBDC_I9     : integer := CONFIG_GRUSBDC_I9;
-  constant CFG_GRUSBDC_I10    : integer := CONFIG_GRUSBDC_I10;
-  constant CFG_GRUSBDC_I11    : integer := CONFIG_GRUSBDC_I11;
-  constant CFG_GRUSBDC_I12    : integer := CONFIG_GRUSBDC_I12;
-  constant CFG_GRUSBDC_I13    : integer := CONFIG_GRUSBDC_I13;
-  constant CFG_GRUSBDC_I14    : integer := CONFIG_GRUSBDC_I14;
-  constant CFG_GRUSBDC_I15    : integer := CONFIG_GRUSBDC_I15;
-  constant CFG_GRUSBDC_O0     : integer := CONFIG_GRUSBDC_O0;
-  constant CFG_GRUSBDC_O1     : integer := CONFIG_GRUSBDC_O1;
-  constant CFG_GRUSBDC_O2     : integer := CONFIG_GRUSBDC_O2;
-  constant CFG_GRUSBDC_O3     : integer := CONFIG_GRUSBDC_O3;
-  constant CFG_GRUSBDC_O4     : integer := CONFIG_GRUSBDC_O4;
-  constant CFG_GRUSBDC_O5     : integer := CONFIG_GRUSBDC_O5;
-  constant CFG_GRUSBDC_O6     : integer := CONFIG_GRUSBDC_O6;
-  constant CFG_GRUSBDC_O7     : integer := CONFIG_GRUSBDC_O7;
-  constant CFG_GRUSBDC_O8     : integer := CONFIG_GRUSBDC_O8;
-  constant CFG_GRUSBDC_O9     : integer := CONFIG_GRUSBDC_O9;
-  constant CFG_GRUSBDC_O10    : integer := CONFIG_GRUSBDC_O10;
-  constant CFG_GRUSBDC_O11    : integer := CONFIG_GRUSBDC_O11;
-  constant CFG_GRUSBDC_O12    : integer := CONFIG_GRUSBDC_O12;
-  constant CFG_GRUSBDC_O13    : integer := CONFIG_GRUSBDC_O13;
-  constant CFG_GRUSBDC_O14    : integer := CONFIG_GRUSBDC_O14;
-  constant CFG_GRUSBDC_O15    : integer := CONFIG_GRUSBDC_O15;
 -- USB Host Controller
   constant CFG_GRUSBHC          : integer := CONFIG_GRUSBHC_ENABLE;
   constant CFG_GRUSBHC_NPORTS   : integer := CONFIG_GRUSBHC_NPORTS;
@@ -284,6 +242,7 @@
   constant CFG_SPIMCTRL_SCALER     : integer := CONFIG_SPIMCTRL_SCALER;
   constant CFG_SPIMCTRL_ASCALER    : integer := CONFIG_SPIMCTRL_ASCALER;
   constant CFG_SPIMCTRL_PWRUPCNT   : integer := CONFIG_SPIMCTRL_PWRUPCNT;
+  constant CFG_SPIMCTRL_OFFSET     : integer := 16#CONFIG_SPIMCTRL_OFFSET#;
 
 -- SPI controller
   constant CFG_SPICTRL_ENABLE  : integer := CONFIG_SPICTRL_ENABLE;

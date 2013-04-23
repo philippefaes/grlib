@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -284,7 +284,7 @@ use grlib.stdlib.all;
 
 entity generic_regfile_4p is
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 32;
-           wrfst : integer := 0; numregs : integer := 40);
+           wrfst : integer := 0; numregs : integer := 40; g0addr: integer := 0);
   port (
     wclk   : in  std_ulogic;
     waddr  : in  std_logic_vector((abits -1) downto 0);
@@ -339,6 +339,9 @@ begin
       then ra3 <= raddr3; end if;
       if wr = '1' then
         memarr(conv_integer(wa)) <= din;
+      end if;
+      if g0addr > 0 and g0addr < numregs then
+        memarr(g0addr) <= (others => '0');
       end if;
     end if;
   end process;

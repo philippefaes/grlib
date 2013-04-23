@@ -1,4 +1,4 @@
-#GRLIB=../..
+GRLIB=../..
 TOP=leon3mp
 BOARD=nuhorizons-sp3-1500
 include $(GRLIB)/boards/$(BOARD)/Makefile.inc
@@ -16,10 +16,10 @@ CLEAN=soft-clean
 
 TECHLIBS = unisim
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	tmtc openchip hynix cypress ihp gleichmann usbhc spw gsi fmf spansion
+	tmtc openchip hynix cypress ihp usbhc spw gsi fmf spansion
 DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest ddr \
-	grusbhc ata ac97 spacewire usb coremp7 leon4 leon4b64 l2cache \
-	slink ascs pwm haps gr1553b iommu
+	grusbhc spacewire usb leon4 leon4v0 l2cache \
+	slink ascs pwm gr1553b iommu
 FILESKIP = grcan.vhd
 
 include $(GRLIB)/bin/Makefile

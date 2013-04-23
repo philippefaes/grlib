@@ -57,11 +57,6 @@ comment 'Peripherals             '
   endmenu
 
   mainmenu_option next_comment
-  comment 'IDE Disk controller  '
-    source lib/gaisler/ata/ata.in
-  endmenu
-
-  mainmenu_option next_comment
   comment 'CAN                     '
     source lib/gaisler/can/can_mc.in
   endmenu

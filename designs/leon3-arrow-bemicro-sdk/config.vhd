@@ -111,20 +111,21 @@ package config is
   constant CFG_DDRSP_SIZE : integer := (8);
   constant CFG_DDRSP_RSKEW : integer := (0);
 -- SPI memory controller
-  constant CFG_SPIMCTRL : integer := 0;
+  constant CFG_SPIMCTRL : integer := 1;
   constant CFG_SPIMCTRL_SDCARD : integer := 0;
-  constant CFG_SPIMCTRL_READCMD : integer := 16#0#;
-  constant CFG_SPIMCTRL_DUMMYBYTE : integer := 0;
+  constant CFG_SPIMCTRL_READCMD : integer := 16#0b#;
+  constant CFG_SPIMCTRL_DUMMYBYTE : integer := 1;
   constant CFG_SPIMCTRL_DUALOUTPUT : integer := 0;
-  constant CFG_SPIMCTRL_SCALER : integer := 1;
-  constant CFG_SPIMCTRL_ASCALER : integer := 1;
-  constant CFG_SPIMCTRL_PWRUPCNT : integer := 0;
+  constant CFG_SPIMCTRL_SCALER : integer := (1);
+  constant CFG_SPIMCTRL_ASCALER : integer := (2);
+  constant CFG_SPIMCTRL_PWRUPCNT : integer := (0);
+  constant CFG_SPIMCTRL_OFFSET : integer := 16#50000#;
 -- AHB ROM
-  constant CFG_AHBROMEN : integer := 1;
+  constant CFG_AHBROMEN : integer := 0;
   constant CFG_AHBROPIP : integer := 0;
   constant CFG_AHBRODDR : integer := 16#000#;
-  constant CFG_ROMADDR : integer := 16#100#;
-  constant CFG_ROMMASK : integer := 16#E00# + 16#100#;
+  constant CFG_ROMADDR : integer := 16#000#;
+  constant CFG_ROMMASK : integer := 16#E00# + 16#000#;
 -- AHB RAM
   constant CFG_AHBRAMEN : integer := 0;
   constant CFG_AHBRSZ : integer := 1;

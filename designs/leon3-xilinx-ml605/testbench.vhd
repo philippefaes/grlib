@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2010, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ use gaisler.sim.all;
 library techmap;
 use techmap.gencomp.all;
 library micron;
-use micron.components.all;
+use micron.all;
 use work.debug.all;
 
 use work.config.all;
@@ -43,11 +43,21 @@ entity testbench is
     disas     : integer := CFG_DISAS;   -- Enable disassembly to console
     dbguart   : integer := CFG_DUART;   -- Print UART on console
     pclow     : integer := CFG_PCLOW;
-    clkperiod : integer := 37            -- system clock period
+    clkperiod : integer := 37
     );
 end;
 
 architecture behav of testbench is
+
+-- DDR3 Simulation parameters
+constant SIM_BYPASS_INIT_CAL : string := "FAST";
+          -- # = "OFF" -  Complete memory init &
+          --               calibration sequence
+          -- # = "SKIP" - Not supported
+          -- # = "FAST" - Complete memory init & use
+          --              abbreviated calib sequence
+
+
   constant promfile  : string  := "prom.srec";        -- rom contents
   constant sdramfile : string  := "sdram.srec";       -- sdram contents
 
@@ -88,8 +98,6 @@ architecture behav of testbench is
   signal ddr3_tdqs_n   : std_logic_vector(DQS_WIDTH-1 downto 0);
   signal ddr3_ck_p     : std_logic_vector(CK_WIDTH-1 downto 0);
   signal ddr3_ck_n     : std_logic_vector(CK_WIDTH-1 downto 0);
-  signal sda           : std_logic;
-  signal scl           : std_logic;
 
   
   -- Debug support unit
@@ -122,7 +130,7 @@ architecture behav of testbench is
   signal gmiiclk_n  : std_logic := '0';
 
   -- Output signals for LEDs
-  signal led       : std_logic_vector(4 downto 0);
+  signal led       : std_logic_vector(6 downto 0);
 
 signal iic_scl_main, iic_sda_main : std_logic;
 signal iic_scl_dvi, iic_sda_dvi : std_logic;
@@ -142,6 +150,29 @@ signal sysace_d        : std_logic_vector(7 downto 0);
 signal clk_33          : std_ulogic := '0';
 
   signal brdyn     : std_ulogic;
+
+component ddr3_model is
+  port (
+     	rst_n	: in    std_logic;
+     	ck	: in    std_logic;
+     	ck_n	: in    std_logic;
+     	cke	: in    std_logic;
+     	cs_n	: in    std_logic;
+     	ras_n	: in    std_logic;
+     	cas_n	: in    std_logic;
+     	we_n	: in    std_logic;
+     	dm_tdqs : inout std_logic_vector(1 downto 0);
+     	ba	: in    std_logic_vector(2 downto 0);
+     	addr	: in    std_logic_vector(12 downto 0);
+     	dq	: inout std_logic_vector(15 downto 0);
+     	dqs	: inout std_logic_vector(1 downto 0);
+     	dqs_n	: inout std_logic_vector(1 downto 0);
+     	tdqs_n  : out   std_logic_vector(1 downto 0);
+     	odt	: in    std_logic
+   );
+end component ddr3_model;
+
+
 begin
   -- clock and reset
   clk        <= not clk after ct * 1 ns;
@@ -150,13 +181,14 @@ begin
   gmiiclk_p    <= not gmiiclk_p after 4 ns;
   gmiiclk_n    <= not gmiiclk_n after 4 ns;
   clk_33       <= not clk_33 after 15 ns;
-  rst        <= '1', '0' after 1000 ns;
+  rst        <= '1', '0' after 200 us;
   rstn1      <= not rst;
   dsubre     <= '0';
   urxd       <= 'H';
   
   d3 : entity work.leon3mp
-    generic map (fabtech, memtech, padtech, disas, dbguart, pclow)
+    generic map (fabtech, memtech, padtech, disas, dbguart, pclow,
+                 SIM_BYPASS_INIT_CAL)
     port map (
       reset     => rst,
       errorn    => error,
@@ -186,8 +218,6 @@ begin
       ddr3_dqs_n    => ddr3_dqs_n,
       ddr3_ck_p     => ddr3_ck_p,
       ddr3_ck_n     => ddr3_ck_n,
---      sda           => sda,
---      scl           => scl,
       
       -- Debug Unit
       dsubre    => dsubre,
@@ -236,25 +266,26 @@ begin
         led => led
       );
 
-  ddr3mem : for i in 0 to 3 generate
-    u0 : entity micron.ddr3 port map (
-    rst_n => ddr3_reset_n,
-    ck => ddr3_ck_p(0),
-    ck_n => ddr3_ck_n(0), 
-    cke => ddr3_cke(0),
-    cs_n => ddr3_cs_n(0),
-    ras_n => ddr3_ras_n,
-    cas_n => ddr3_cas_n,
-    we_n => ddr3_we_n,
-    dm_tdqs => ddr3_dm(i*2+1 downto i*2),
-    ba => ddr3_ba,
-    addr => ddr3_addr,
-    dq => ddr3_dq(16*i+15 downto 16*i),
-    dqs => ddr3_dqs_p(i*2+1 downto i*2),
-    dqs_n => ddr3_dqs_n(i*2+1 downto i*2),
-    tdqs_n => ddr3_tdqs_n(i*2+1 downto i*2),
-    odt => ddr3_odt(0));
-  end generate;
+  gen_mem: for i in 0 to 3 generate
+    u1: ddr3_model port map
+      (
+    	rst_n	=> ddr3_reset_n,
+    	ck	=> ddr3_ck_p(0),
+    	ck_n	=> ddr3_ck_n(0),
+    	cke	=> ddr3_cke(0),
+    	cs_n	=> ddr3_cs_n(0),
+    	ras_n	=> ddr3_ras_n,
+    	cas_n	=> ddr3_cas_n,
+    	we_n	=> ddr3_we_n,
+    	dm_tdqs => ddr3_dm((2*(i+1)-1) downto (i*2)),
+    	ba	=> ddr3_ba,
+    	addr	=> ddr3_addr,
+    	dq	=> ddr3_dq((16*i+15) downto (16*i)),
+    	dqs	=> ddr3_dqs_p((2*(i+1)-1) downto (i*2)),
+    	dqs_n	=> ddr3_dqs_n((2*(i+1)-1) downto (i*2)),
+    	tdqs_n  => ddr3_tdqs_n((2*(i+1)-1) downto (i*2)),
+    	odt	=> ddr3_odt(0));
+  end generate gen_mem;
 
 --  prom0 : sram
 --    generic map (index => 6, abits => 24, fname => promfile)
@@ -287,7 +318,9 @@ begin
 
   iuerr : process
   begin
-    wait for 55 us;
+     wait for 210 us; -- This is for proper DDR3 behaviour durign init phase not needed durin simulation
+     wait on led(3);  -- DDR3 Memory Init ready
+     wait for 5000 ns;
     assert (to_X01(error) = '1')
       report "*** IU in error mode, simulation halted ***"
       severity failure;

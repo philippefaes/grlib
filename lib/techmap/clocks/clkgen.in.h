@@ -15,6 +15,8 @@
 #define CFG_CLK_TECH actfus
 #elif defined CONFIG_CLK_CLKDLL
 #define CFG_CLK_TECH virtex
+#elif defined CONFIG_CLK_CLKPLLE2
+#define CFG_CLK_TECH CONFIG_SYN_TECH
 #elif defined CONFIG_CLK_DCM
 #define CFG_CLK_TECH CONFIG_SYN_TECH
 #elif defined CONFIG_CLK_LIB18T

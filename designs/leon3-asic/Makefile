@@ -6,7 +6,7 @@ DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 UCF=$(GRLIB)/boards/$(BOARD)/$(TOP).ucf
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=std
-XSTOPT=""
+XSTOPT=
 VHDLSYNFILES=config.vhd ahbrom.vhd \
 	bschain.vhd leon3core.vhd core.vhd pads.vhd leon3mp.vhd
 
@@ -19,9 +19,9 @@ DCSCRIPT=ut025crh.tcl
 
 TECHLIBS = nextreme virage atc18 artisan virage90 tsmc90 umc18 cust1
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	openchip gleichmann gsi spansion tmtc ihp fmf cypress hynix
-DIRSKIP = b1553 pcif leon2 leon2ft leon4 leon4b64 l2cache iommu coremp7 \
-	usb ddr crypto ata satcan slink ascs pwm haps gr1553b ac97
+	openchip gsi spansion tmtc ihp fmf cypress hynix
+DIRSKIP = b1553 pcif leon2 leon2ft leon4 leon4v0 l2cache iommu \
+	usb ddr crypto satcan slink ascs pwm gr1553b
 
 FILESKIP =
 

@@ -1,6 +1,6 @@
 /*****************************************************************************/
 /*   This file is a part of the GRLIB VHDL IP LIBRARY                        */
-/*   Copyright (C) 2007 GAISLER RESEARCH                                     */
+/*   Copyright (C) 2007 - 2012 Aeroflex Gaisler                              */
 /*                                                                           */
 /*   This program is free software; you can redistribute it and/or modify    */
 /*   it under the terms of the GNU General Public License as published by    */
@@ -12,8 +12,10 @@
 
 /* Changelog */
 /* 2008-02-01: GRETH API separated from test  - Marko Isomaki */
+/* 2012-09-06: include stdlib.h */
 
 #include "greth_api.h"
+#include <stdlib.h>
 
 /* Bypass cache load  */
 static inline int load(int addr)

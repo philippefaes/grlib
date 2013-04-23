@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ begin
   o2 <= transport clkout2 after tp + (tp*clkdiv2*(clkphase2 mod 360)) / (clkmul*360);
   o3 <= transport clkout3 after tp + (tp*clkdiv3*(clkphase3 mod 360)) / (clkmul*360);
   o4 <= transport clkout4 after tp + (tp*clkdiv4*(clkphase4 mod 360)) / (clkmul*360);
-  lock <= llock;
+  lock <= llock after tp*20;            -- 20 cycle inertia on lock signal
   
   freqmeas: process(i)
     variable ts,te: time;

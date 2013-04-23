@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@ use gaisler.net.all;
 use gaisler.jtag.all;
 use gaisler.spacewire.all;
 use gaisler.grusb.all;
-use gaisler.ata.all;
 
 library esa;
 use esa.memoryctrl.all;
@@ -146,21 +145,7 @@ entity leon3mp is
     usb_txvalid   : out std_ulogic;
     usb_validh    : inout std_ulogic;
     usb_xcvrsel   : out std_ulogic;
-    usb_vbus      : in std_ulogic;
-
-    ata_rstn  : out std_logic; 
-    ata_data  : inout std_logic_vector(15 downto 0);
-    ata_da    : out std_logic_vector(2 downto 0);  
-    ata_cs0   : out std_logic;
-    ata_cs1   : out std_logic;
-    ata_dior  : out std_logic;
-    ata_diow  : out std_logic;
-    ata_iordy : in std_logic;
-    ata_intrq : in std_logic;
-    ata_dmarq : in std_logic; 
-    ata_dmack : out std_logic;
-    --ata_dasp  : in std_logic
-    ata_csel  : out std_logic
+    usb_vbus      : in std_ulogic
 
 	);
 end;
@@ -174,7 +159,7 @@ constant blength : integer := 12;
 constant fifodepth : integer := 8;
 constant maxahbm : integer := CFG_NCPU+CFG_AHB_UART+CFG_GRETH+
 	CFG_AHB_JTAG+CFG_SPW_NUM*CFG_SPW_EN+CFG_GRUSB_DCL+CFG_SVGA_ENABLE+
-	CFG_ATA+CFG_GRUSBDC;
+	CFG_GRUSBDC;
 
 signal vcc, gnd   : std_logic_vector(4 downto 0);
 signal memi  : memory_in_type;
@@ -230,7 +215,7 @@ signal vgao  : apbvga_out_type;
 
 constant BOARD_FREQ : integer := 50000;   -- input frequency in KHz
 constant CPU_FREQ : integer := BOARD_FREQ * CFG_CLKMUL / CFG_CLKDIV;  -- cpu frequency in KHz
-constant IOAEN : integer := CFG_CAN + CFG_ATA + CFG_GRUSBDC;
+constant IOAEN : integer := CFG_CAN + CFG_GRUSBDC;
 
 signal spwi : grspw_in_type_vector(0 to 2);
 signal spwo : grspw_out_type_vector(0 to 2);
@@ -244,9 +229,6 @@ signal stati : ahbstat_in_type;
 signal uclk : std_ulogic;
 signal usbi : grusb_in_type;
 signal usbo : grusb_out_type;
-
-signal idei : ata_in_type;
-signal ideo : ata_out_type;
 
 constant SPW_LOOP_BACK : integer := 0;
 
@@ -663,7 +645,7 @@ begin
       clkgen_spw_rx : clkgen  		-- clock generator
       generic map (clktech, 12, 2, 0,
 	1, 0, 0, 0, 25000)
-      port map (clk3, clk3, spw_clkl, spw_clkln, open, open, open, cgi2, cgo2, open, open);
+      port map (ethclk, ethclk, spw_clkl, spw_clkln, open, open, open, cgi2, cgo2, open, open);
     end generate;
         
     swloop : for i in 0 to CFG_SPW_NUM-1 generate
@@ -836,57 +818,6 @@ begin
         ahbmo(CFG_NCPU+CFG_AHB_UART+CFG_GRETH+CFG_AHB_JTAG+CFG_SVGA_ENABLE+
               CFG_SPW_NUM*CFG_SPW_EN));
   end generate usb_dcl0;
-  
------------------------------------------------------------------------
----  AHB ATA ----------------------------------------------------------
------------------------------------------------------------------------
-
-  ata0 : if CFG_ATA = 1 generate
-    atac0 : atactrl
-      generic map(
-        tech => 0, fdepth => CFG_ATAFIFO,
-        mhindex => CFG_NCPU+CFG_AHB_UART+CFG_GRETH+CFG_AHB_JTAG+
-        CFG_SVGA_ENABLE+CFG_SPW_NUM*CFG_SPW_EN+CFG_GRUSB_DCL+
-        CFG_GRUSBDC,
-        shindex => 3, haddr => 16#A00#, hmask => 16#fff#, pirq  => CFG_ATAIRQ,
-        mwdma => CFG_ATADMA, TWIDTH   => 8,
-        -- PIO mode 0 settings (@100MHz clock)
-        PIO_mode0_T1   => 6,   -- 70ns
-        PIO_mode0_T2   => 28,  -- 290ns
-        PIO_mode0_T4   => 2,   -- 30ns
-        PIO_mode0_Teoc => 23   -- 240ns ==> T0 - T1 - T2 = 600 - 70 - 290 = 240
-        )
-      port map(
-        rst => rstn, arst => vcc(0), clk => clkm, ahbmi => ahbmi,
-        ahbmo => ahbmo(CFG_NCPU+CFG_AHB_UART+CFG_GRETH+CFG_AHB_JTAG+
-                       CFG_SVGA_ENABLE+CFG_SPW_NUM*CFG_SPW_EN+
-                       CFG_GRUSB_DCL+CFG_GRUSBDC),
-        ahbsi => ahbsi, ahbso => ahbso(3), atai => idei, atao => ideo);
-    
-    ata_rstn_pad : outpad generic map (tech => padtech)
-      port map (ata_rstn, ideo.rstn);
-    ata_data_pad : iopadv generic map (tech => padtech, width => 16, oepol => 1)
-      port map (ata_data, ideo.ddo, ideo.oen, idei.ddi);
-    ata_da_pad : outpadv generic map (tech => padtech, width => 3)
-      port map (ata_da, ideo.da);
-    ata_cs0_pad : outpad generic map (tech => padtech)
-      port map (ata_cs0, ideo.cs0);
-    ata_cs1_pad : outpad generic map (tech => padtech)
-      port map (ata_cs1, ideo.cs1);
-    ata_dior_pad : outpad generic map (tech => padtech)
-      port map (ata_dior, ideo.dior);
-    ata_diow_pad : outpad generic map (tech => padtech)
-      port map (ata_diow, ideo.diow);
-    iordy_pad : inpad generic map (tech => padtech)
-      port map (ata_iordy, idei.iordy);
-    intrq_pad : inpad generic map (tech => padtech)
-      port map (ata_intrq, idei.intrq);
-    dmarq_pad : inpad generic map (tech => padtech)
-      port map (ata_dmarq, idei.dmarq);
-    dmack_pad : outpad generic map (tech => padtech)
-      port map (ata_dmack, ideo.dmack);
-    ata_csel <= '0';
-  end generate;
 
 -----------------------------------------------------------------------
 ---  Drive unused bus elements  ---------------------------------------

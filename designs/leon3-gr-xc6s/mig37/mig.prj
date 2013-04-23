@@ -5,7 +5,7 @@
     <Version>3.7</Version>
     <Controller number="3" >
         <MemoryDevice>DDR2_SDRAM/Components/MT47H64M16XX-25</MemoryDevice>
-        <TimePeriod>5000</TimePeriod>
+        <TimePeriod>4000</TimePeriod>
         <EnableVoltageRange>0</EnableVoltageRange>
         <DataMask>1</DataMask>
         <CustomPart>FALSE</CustomPart>
@@ -17,7 +17,7 @@
             <Parameters twtr="7.5" trefi="7.8" twr="15" trtp="7.5" trfc="127.5" trp="15" tras="40" trcd="15" />
         </TimingParameters>
         <mrBurstLength name="Burst Length" >4(010)</mrBurstLength>
-        <mrCasLatency name="CAS Latency" >3</mrCasLatency>
+        <mrCasLatency name="CAS Latency" >4</mrCasLatency>
         <emrDllEnable name="DLL Enable" >Enable-Normal</emrDllEnable>
         <emrOutputDriveStrength name="Output Drive Strength" >Fullstrength</emrOutputDriveStrength>
         <emrRTT name="RTT (nominal) - ODT" >50ohms</emrRTT>

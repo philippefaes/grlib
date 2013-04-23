@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -48,7 +48,8 @@ begin
   xcv : if (tech = virtex2) or (tech = spartan3) generate
     u0 : unisim_inpad_ds generic map (level, voltage, term) port map (padp, padn, o);
   end generate;
-  xc4v : if (tech = virtex4) or (tech = spartan3e) or (tech = virtex5) or (tech = spartan6) or (tech = virtex6) generate
+  xc4v : if (tech = virtex4) or (tech = spartan3e) or (tech = virtex5) or (tech = spartan6) 
+            or (tech = virtex6) or (tech = virtex7) or (tech = kintex7) or (tech =artix7) or (tech =zynq7000) generate
     u0 : virtex4_inpad_ds generic map (level, voltage) port map (padp, padn, o);
   end generate;
   axc : if (tech = axcel) or (tech = axdsp) generate

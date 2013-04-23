@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@ use techmap.gencomp.all;
 use work.debug.all;
 library hynix;
 use hynix.components.all;
+library grlib;
+use grlib.stdlib.all;
 
 use work.config.all;	-- configuration
 
@@ -177,7 +179,9 @@ begin
   ps2clk <= "HH"; ps2data <= "HH";
   pio(4) <= pio(5); pio(1) <= pio(2); pio <= (others => 'H');
   wdogn <= 'H';
-  usb_clkout  <= not usb_clkout after 8.33 ns;     -- ~60MHz
+  nousbtr: if (CFG_GRUSBHC = 0) generate
+    usb_clkout  <= not usb_clkout after 8.33 ns;     -- ~60MHz
+  end generate nousbtr;
   switch(7) <= '1';
   switch(8) <= '0';
   emdio <= 'H';
@@ -190,8 +194,8 @@ begin
 	disas, dbguart, pclow )
       port map (rst, clk, clk2, clk125, wdogn, address(24 downto 0), data, 
 	oen, writen, romsn,
-	ddr_clk, ddr_clkb, ddr_cke, ddr_odt, ddr_we, ddr_ras, ddr_cas, ddr_dm,
-	ddr_dqs, ddr_ad, ddr_ba, ddr_dq, ddr_rzq, ddr_zio,
+	ddr_clk, ddr_clkb, ddr_cke, ddr_odt, ddr_we, ddr_ras, ddr_csb ,ddr_cas, ddr_dm,
+	ddr_dqs, ddr_dqsn, ddr_ad, ddr_ba, ddr_dq, ddr_rzq, ddr_zio,
 	txd1, rxd1, ctsn1, rtsn1, txd2, rxd2, ctsn2, rtsn2, pio, genio,
         switch, led, erx_clk, emdio, erxd(3 downto 0), erx_dv, emdint,
 	etx_clk, etxd(3 downto 0), etx_en, emdc, 
@@ -214,8 +218,7 @@ begin
     ddr2mem0 : for i in 0 to 0 generate
       u1 : HY5PS121621F
         generic map (TimingCheckFlag => false, PUSCheckFlag => false,
-                     index => i, bbits => 16, fname => sdramfile,
-		     fdelay => 150)
+                     index => i, bbits => 16, fname => sdramfile, fdelay => 340)
         port map (DQ => ddr_dq(i*16+15 downto i*16),
                   LDQS  => ddr_dqs(i*2), LDQSB => ddr_dqsn(i*2),
                   UDQS => ddr_dqs(i*2+1), UDQSB => ddr_dqsn(i*2+1),
@@ -241,14 +244,10 @@ begin
         erx_er, erx_col, erx_crs, etxd, etx_en, etx_er, emdc, etx_clk);
   end generate;
 
-   iuerr : process
-   begin
-     wait for 5000 ns;
-     if to_x01(errorn) = '1' then wait on errorn; end if;
-     assert (to_x01(errorn) = '1') 
-       report "*** IU in error mode, simulation halted ***"
-         severity failure ;
-   end process;
+  usbtr: if (CFG_GRUSBHC = 1) generate
+    u0: ulpi
+      port map (usb_clkout, usb_d, usb_nxt, usb_stp, usb_dir, usb_resetn);
+  end generate usbtr;
 
   data <= buskeep(data) after 5 ns;
 
@@ -260,6 +259,7 @@ begin
     begin
     dsutx <= '1';
     dsurst <= '0';
+    wait for 201 us;
     wait for 2500 ns;
     dsurst <= '1';
     wait;

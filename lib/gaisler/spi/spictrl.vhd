@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -65,7 +65,12 @@ entity spictrl is
     syncram   : integer range 0 to 1      := 1;  -- Use SYNCRAM for buffers
     memtech   : integer                   := 0;  -- Memory technology
     ft        : integer range 0 to 2      := 0;  -- Fault-Tolerance
-    scantest  : integer range 0 to 1      := 0
+    scantest  : integer range 0 to 1      := 0;  -- Scan test support
+    syncrst   : integer range 0 to 1      := 0;  -- Use only sync reset
+    automask0 : integer                   := 0;  -- Mask 0 for automated transfers
+    automask1 : integer                   := 0;  -- Mask 1 for automated transfers
+    automask2 : integer                   := 0;  -- Mask 2 for automated transfers
+    automask3 : integer                   := 0   -- Mask 3 for automated transfers
     );
   port (
     rstn   : in std_ulogic;
@@ -112,7 +117,12 @@ architecture rtl of spictrl is
       syncram   : integer range 0 to 1     := 1;
       memtech   : integer range 0 to NTECH := 0;
       ft        : integer range 0 to 2     := 0;
-      scantest  : integer range 0 to 1     := 0);
+      scantest  : integer range 0 to 1     := 0;
+      syncrst   : integer range 0 to 1     := 0;
+      automask0 : integer                  := 0;
+      automask1 : integer                  := 0;
+      automask2 : integer                  := 0;
+      automask3 : integer                  := 0);
     port (
       rstn          : in std_ulogic;
       clk           : in std_ulogic; 
@@ -134,6 +144,7 @@ architecture rtl of spictrl is
       spii_sck      : in  std_ulogic;
       spii_spisel   : in  std_ulogic;
       spii_astart   : in  std_ulogic;
+      spii_cstart   : in  std_ulogic;
       spio_miso     : out std_ulogic;
       spio_misooen  : out std_ulogic;
       spio_mosi     : out std_ulogic;
@@ -142,6 +153,7 @@ architecture rtl of spictrl is
       spio_sckoen   : out std_ulogic;
       spio_enable   : out std_ulogic;
       spio_astart   : out std_ulogic;
+      spio_aready   : out std_ulogic;
       slvsel        : out std_logic_vector((slvselsz-1) downto 0));
   end component;
 
@@ -155,21 +167,26 @@ begin
   ctrl_rtl : if netlist = 0 generate
     rtlc :  spictrlx
       generic map (
-        rev      => SPICTRL_REV,
-        fdepth   => fdepth,
-        slvselen => slvselen,
-        slvselsz => slvselsz,
-        oepol    => oepol,
-        odmode   => odmode,
-        automode => automode,
-        acntbits => acntbits,
-        aslvsel  => aslvsel,
-        twen     => twen,
-        maxwlen  => maxwlen,
-        syncram  => syncram,
-        memtech  => memtech,
-        ft       => ft,
-        scantest => scantest)
+        rev       => SPICTRL_REV,
+        fdepth    => fdepth,
+        slvselen  => slvselen,
+        slvselsz  => slvselsz,
+        oepol     => oepol,
+        odmode    => odmode,
+        automode  => automode,
+        acntbits  => acntbits,
+        aslvsel   => aslvsel,
+        twen      => twen,
+        maxwlen   => maxwlen,
+        syncram   => syncram,
+        memtech   => memtech,
+        ft        => ft,
+        scantest  => scantest,
+        syncrst   => syncrst,
+        automask0 => automask0,
+        automask1 => automask1,
+        automask2 => automask2,
+        automask3 => automask3)
       port map (
         rstn         => rstn,
         clk          => clk,
@@ -191,6 +208,7 @@ begin
         spii_sck     => spii.sck,
         spii_spisel  => spii.spisel,
         spii_astart  => spii.astart,
+        spii_cstart  => spii.cstart,
         spio_miso    => spio.miso,
         spio_misooen => spio.misooen,
         spio_mosi    => spio.mosi,
@@ -199,23 +217,28 @@ begin
         spio_sckoen  => spio.sckoen,
         spio_enable  => spio.enable,
         spio_astart  => spio.astart,
+        spio_aready  => spio.aready,
         slvsel       => slvsel);
   end generate ctrl_rtl;
 
   ctrl_netlist : if netlist /= 0 generate
     netlc :  spictrl_net
       generic map (
-        tech     => netlist,
-        fdepth   => fdepth,
-        slvselen => slvselen,
-        slvselsz => slvselsz,
-        oepol    => oepol,
-        odmode   => odmode,
-        automode => automode,
-        acntbits => acntbits,
-        aslvsel  => aslvsel,
-        twen     => twen,
-        maxwlen  => maxwlen)
+        tech      => netlist,
+        fdepth    => fdepth,
+        slvselen  => slvselen,
+        slvselsz  => slvselsz,
+        oepol     => oepol,
+        odmode    => odmode,
+        automode  => automode,
+        acntbits  => acntbits,
+        aslvsel   => aslvsel,
+        twen      => twen,
+        maxwlen   => maxwlen,
+        automask0 => automask0,
+        automask1 => automask1,
+        automask2 => automask2,
+        automask3 => automask3)
       port map (
         rstn         => rstn,
         clk          => clk,
@@ -237,6 +260,7 @@ begin
         spii_sck     => spii.sck,
         spii_spisel  => spii.spisel,
         spii_astart  => spii.astart,
+        spii_cstart  => spii.cstart,
         spio_miso    => spio.miso,
         spio_misooen => spio.misooen,
         spio_mosi    => spio.mosi,
@@ -245,6 +269,7 @@ begin
         spio_sckoen  => spio.sckoen,
         spio_enable  => spio.enable,
         spio_astart  => spio.astart,
+        spio_aready  => spio.aready,
         slvsel       => slvsel);
   end generate ctrl_netlist;
 

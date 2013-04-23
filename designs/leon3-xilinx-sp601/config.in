@@ -47,12 +47,7 @@ comment 'Peripherals             '
   comment 'Memory controllers             '
     source lib/esa/memoryctrl/mctrl.in
     source lib/gaisler/ddr/ddr2sp.in
-    mainmenu_option next_comment
-    comment 'Xilinx MIG DDR2 controller   '
-      if [ "$CONFIG_DDR2SP" = "n" ]; then
-	bool 'Enable Xilinx MIG DDR2 controller' CONFIG_MIG_DDR2
-      fi
-    endmenu
+    source lib/gaisler/ddr/mig.in
   endmenu
 
   mainmenu_option next_comment

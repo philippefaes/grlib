@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -17,18 +17,11 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Entity: 	gpio
--- File:	gpio.vhd
+-- Entity: 	grgpio
+-- File:	grgpio.vhd
 -- Author:	Jiri Gaisler - Gaisler Research
 -- Description:	Scalable general-purpose I/O port
 ------------------------------------------------------------------------------
--- GRLIB2 CORE
--- VENDOR:      VENDOR_GAISLER
--- DEVICE:      GAISLER_GPIO
--- VERSION:     0
--- APB:         0
--- BAR: 0       TYPE: 0010      PREFETCH: 0     CACHE: 0        DESC: IO_AREA
--------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -69,7 +62,7 @@ end;
 
 architecture rtl of grgpio is
 
-constant REVISION : integer := 1;
+constant REVISION : integer := 2;
 constant PIMASK : std_logic_vector(31 downto 0) := '0' & conv_std_logic_vector(imask, 31);
 
 constant BPMASK : std_logic_vector(31 downto 0) := conv_std_logic_vector(bypass, 32);
@@ -160,11 +153,12 @@ begin
           r.bypass(nbits-1 downto 0) and BPMASK(nbits-1 downto 0);
       end if;
     when "0111" =>
-      null;
+      readdata(12 downto 8) := conv_std_logic_vector(irqgen, 5);
+      readdata(4 downto 0) := conv_std_logic_vector(nbits-1, 5);
     when others =>
       if irqgen > 1 then
         for i in 0 to (nbits+3)/4-1 loop
-          if irqgen <= 4 or i = conv_integer(apbi.paddr(4 downto 2)) then
+          if i = conv_integer(apbi.paddr(4 downto 2)) then
             for j in 0 to 3 loop
               if (j+i*4) > (nbits-1) then
                 exit;
@@ -206,7 +200,7 @@ begin
       when others =>
         if irqgen > 1 then
           for i in 0 to (nbits+3)/4-1 loop
-            if irqgen <= 4 or i = conv_integer(apbi.paddr(4 downto 2)) then
+            if i = conv_integer(apbi.paddr(4 downto 2)) then
               for j in 0 to 3 loop
                 if (j+i*4) > (nbits-1) then
                   exit;
@@ -296,7 +290,9 @@ begin
     apbo.prdata <= readdata; 	-- drive apb read bus
     apbo.pirq <= xirq;
 
-    if (syncrst = 1 ) and (rst = '0') then
+    if (scantest = 1) and (apbi.testen = '1') then
+      dir := (others => apbi.testoen);
+    elsif (syncrst = 1 ) and (rst = '0') then
       if oepol = 1 then dir := (others => '0');
       else dir := (others => '1'); end if;
     end if;

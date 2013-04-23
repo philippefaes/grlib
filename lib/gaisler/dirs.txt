@@ -1,13 +1,13 @@
 devices 
 arith 
 memctrl
-grfpu 
-fpu 
-leon3 
-leon3ft 
-leon4 
-leon4b64
-#leon4ft
+grfpu grlfpu grfpc grlfpc 
+grfpcft grlfpcft
+grfpc4 grlfpc4
+srmmu
+leon3 leon3v1 leon3ftv2
+leon4 leon4v0
+irqmp
 l2cache
 can 
 hcan 
@@ -25,14 +25,13 @@ spacewire
 usb 
 ddr 
 crypto 
-ata 
 satcan 
 slink 
 ascs 
 pwm
-haps
-coremp7
 gr1553b
+gr1553b/core
 iommu
 i2c
 spi
+nand

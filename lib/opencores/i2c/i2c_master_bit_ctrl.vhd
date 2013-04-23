@@ -379,15 +379,19 @@ begin
               sync_scl_sda: process(clk, nReset, fSCL_chg, fSDA_chg, fiscl_oen_chg, fisda_oen_chg)
                 variable scl_chg, sda_chg, iscl_oen_chg, isda_oen_chg : std_ulogic;
               begin
-                scl_chg := fSCL_chg; sda_chg := fSDA_chg;
-                iscl_oen_chg := fiscl_oen_chg; isda_oen_chg := fisda_oen_chg;
+                --scl_chg := fSCL_chg; sda_chg := fSDA_chg;
+                --iscl_oen_chg := fiscl_oen_chg; isda_oen_chg := fisda_oen_chg;
 	        if (nReset = '0') then                  
+                  scl_chg := fSCL_chg; sda_chg := fSDA_chg;
+                  iscl_oen_chg := fiscl_oen_chg; isda_oen_chg := fisda_oen_chg;
                   filtcnt <= (others => '0');
                   fSCL <= (others => '1'); fSDA <= (others => '1');
                   fSCL_chg <= '0'; fSDA_chg <= '0';
                   fiscl_oen <= (others => '1'); fiscl_oen_chg <= '0';
                   fisda_oen <= '1'; fisda_oen_chg <= '0';
 	        elsif (clk'event and clk = '1') then
+                  scl_chg := fSCL_chg; sda_chg := fSDA_chg;
+                  iscl_oen_chg := fiscl_oen_chg; isda_oen_chg := fisda_oen_chg;
 	          if (rst = '1') or (ena = '0') then                    
                     filtcnt <= (others => '0');
                     fSCL <= (others => '1'); fSDA <= (others => '1');

@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -44,13 +44,17 @@ entity regfile_3p is
     raddr2 : in  std_logic_vector((abits -1) downto 0);
     re2    : in  std_ulogic;
     rdata2 : out std_logic_vector((dbits -1) downto 0);
-    testin   : in std_logic_vector(3 downto 0) := "0000");
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
 end;
 
 architecture rtl of regfile_3p is
   constant rfinfer : boolean := (regfile_3p_infer(tech) = 1) or
 	(((is_unisim(tech) = 1)) and (abits <= 5));
+  signal xwe,xre1,xre2 : std_ulogic;
 begin
+  xwe <= we and not testin(TESTIN_WIDTH-2) when testen/=0 else we;
+  xre1 <= re1 and not testin(TESTIN_WIDTH-2) when testen/=0 else re1;
+  xre2 <= re2 and not testin(TESTIN_WIDTH-2) when testen/=0 else re2;
   
   s0 : if rfinfer generate
    rhu : generic_regfile_3p generic map (tech, abits, dbits, wrfst, numregs)
@@ -60,7 +64,7 @@ begin
   s1 : if not rfinfer generate
     pere : if tech = peregrine generate
       rfhard : peregrine_regfile_3p generic map (abits, dbits)
-      port map ( wclk, waddr, wdata, we, raddr1, re1, rdata1, raddr2, re2, rdata2);
+      port map ( wclk, waddr, wdata, xwe, raddr1, xre1, rdata1, raddr2, xre2, rdata2);
     end generate;
     dp : if tech /= peregrine generate
       x0 : syncram_2p generic map (tech, abits, dbits, 0, wrfst, testen)

@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -30,8 +30,6 @@ library techmap;
 use techmap.gencomp.all;
 library micron;
 use micron.components.all;
-library opencores;
-use opencores.occomp.all;
 use work.debug.all;
 
 use work.config.all;	-- configuration
@@ -118,23 +116,6 @@ constant lresp : boolean := false;
 signal sa      	: std_logic_vector(14 downto 0);
 signal sd   	: std_logic_vector(31 downto 0);
 
--- ATA signals
-signal ata_rst   : std_logic;   
-signal ata_data  : std_logic_vector(15 downto 0);
-signal ata_da    : std_logic_vector(2 downto 0);
-signal ata_cs0   : std_logic;
-signal ata_cs1   : std_logic;
-signal ata_dior  : std_logic;
-signal ata_diow  : std_logic;
-signal ata_iordy : std_logic;
-signal ata_intrq : std_logic;
-signal ata_dmack : std_logic;
-signal cf_gnd_da : std_logic_vector(10 downto 3); 
-signal cf_atasel : std_logic; 
-signal cf_we     : std_logic; 
-signal cf_power  : std_logic;
-signal cf_csel   : std_logic;
-
 begin
 
 -- clock and reset
@@ -147,9 +128,7 @@ begin
     port map (rst, clk, error, address, data, ramsn, ramoen, rwen, mben, iosn,
 	romsn, oen, writen, open, open, sa(11 downto 0), sd, sdclk, sdcke, 
 	sdcsn, sdwen, sdrasn, sdcasn, sddqm, sdba, dsutx, dsurx, dsubren, 
-	dsuact, rxd1, txd1, ata_rst, ata_data, ata_da, ata_cs0, ata_cs1, 
-	ata_dior, ata_diow, ata_iordy, ata_intrq, ata_dmack, cf_power, 
-	cf_gnd_da, cf_atasel, cf_we, cf_csel, eth_aen, eth_readn, 
+	dsuact, rxd1, txd1, eth_aen, eth_readn, 
 	eth_writen, eth_nbe); 
 
   sd1 : if (CFG_MCTRL_SDEN = 1) and (CFG_MCTRL_SEPBUS = 1) generate
@@ -177,19 +156,6 @@ begin
       port map (address(sramdepth+1 downto 2), data(31-i*8 downto 24-i*8), ramsn,
 		  rwen, ramoen);
   end generate;
-  
-  ata_dev0 : ata_device_oc
-  port map(
-    ata_rst_n  => ata_rst,
-    ata_data   => ata_data,
-    ata_da     => ata_da,
-    ata_cs0    => ata_cs0,
-    ata_cs1    => ata_cs1,
-    ata_dior_n => ata_dior,
-    ata_diow_n => ata_diow,
-    ata_iordy  => ata_iordy,
-    ata_intrq  => ata_intrq
-  );
 
   error <= 'H';			  -- ERROR pull-up
 

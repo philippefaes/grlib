@@ -53,10 +53,8 @@
 --
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
-library gaisler;
-use gaisler.sim.all;
 library grlib;
---use grlib.stdlib.all;
+use grlib.stdio.all;
 
 ENTITY VHDL_BURST_CORE IS
   GENERIC (
@@ -378,21 +376,21 @@ BEGIN
           if L1'length > 0 then	--'
             read(L1, ch);
             if (ch = 'S') or (ch = 's') then
-              hexread(L1, rectype);
-              hexread(L1, reclen);
+              hread(L1, rectype);
+              hread(L1, reclen);
 	      len := to_integer(reclen)-1;
 	      recaddr := (others => '0');
 	      case rectype is 
 		when "0001" =>
-                  hexread(L1, recaddr(15 downto 0));
+                  hread(L1, recaddr(15 downto 0));
 		when "0010" =>
-                  hexread(L1, recaddr(23 downto 0));
+                  hread(L1, recaddr(23 downto 0));
 		when "0011" =>
-                  hexread(L1, recaddr);
+                  hread(L1, recaddr);
 		  recaddr(31 downto 20) := (others => '0');
 		when others => next;
 	      end case;
-              hexread(L1, recdata);
+              hread(L1, recdata);
 --              if index = 6 then
 --	        ai := to_integer(recaddr);
 -- 	        for i in 0 to 15 loop

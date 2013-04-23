@@ -135,13 +135,6 @@ package config is
   constant CFG_GRETH1G : integer := 0;
   constant CFG_ETH_FIFO : integer := 16;
 
--- ATA interface
-  constant CFG_ATA : integer := 1;
-  constant CFG_ATAIO : integer := 16#A00#;
-  constant CFG_ATAIRQ : integer := (10);
-  constant CFG_ATADMA : integer := 1;
-  constant CFG_ATAFIFO : integer := (8);
-
 -- CAN 2.0 interface
   constant CFG_CAN : integer := 0;
   constant CFG_CAN_NUM : integer := 1;

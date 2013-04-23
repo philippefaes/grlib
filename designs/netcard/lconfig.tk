@@ -712,14 +712,23 @@ proc menu1 {w title} {
 	$w.config.f.x0.x.menu add radiobutton -label "Altera-CycloneIII" -variable tmpvar_0 -value "Altera-CycloneIII" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Altera-Others" -variable tmpvar_0 -value "Altera-Others" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Actel-Axcelerator" -variable tmpvar_0 -value "Actel-Axcelerator" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Actel-Axcelerator-DSP" -variable tmpvar_0 -value "Actel-Axcelerator-DSP" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Actel-Proasic" -variable tmpvar_0 -value "Actel-Proasic" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Actel-ProasicPlus" -variable tmpvar_0 -value "Actel-ProasicPlus" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Actel-Proasic3" -variable tmpvar_0 -value "Actel-Proasic3" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Actel-Proasic3E" -variable tmpvar_0 -value "Actel-Proasic3E" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Actel-Proasic3L" -variable tmpvar_0 -value "Actel-Proasic3L" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Actel-IGLOO/p/L" -variable tmpvar_0 -value "Actel-IGLOO/p/L" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Actel-Fusion" -variable tmpvar_0 -value "Actel-Fusion" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Aeroflex-UT025CRH" -variable tmpvar_0 -value "Aeroflex-UT025CRH" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Aeroflex-UT130HBD" -variable tmpvar_0 -value "Aeroflex-UT130HBD" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Aeroflex-UT90NHBD" -variable tmpvar_0 -value "Aeroflex-UT90NHBD" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Atmel-ATC18" -variable tmpvar_0 -value "Atmel-ATC18" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Atmel-ATC18RHA" -variable tmpvar_0 -value "Atmel-ATC18RHA" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "IBM-CMOS9SF" -variable tmpvar_0 -value "IBM-CMOS9SF" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Custom1" -variable tmpvar_0 -value "Custom1" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "eASIC90" -variable tmpvar_0 -value "eASIC90" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "eASIC45" -variable tmpvar_0 -value "eASIC45" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "IHP25" -variable tmpvar_0 -value "IHP25" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "IHP25RH" -variable tmpvar_0 -value "IHP25RH" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Lattice-EC/ECP/XP" -variable tmpvar_0 -value "Lattice-EC/ECP/XP" -command "update_active"
@@ -728,17 +737,23 @@ proc menu1 {w title} {
 	$w.config.f.x0.x.menu add radiobutton -label "RH-LIB18T" -variable tmpvar_0 -value "RH-LIB18T" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "RH-UMC" -variable tmpvar_0 -value "RH-UMC" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "SMIC130" -variable tmpvar_0 -value "SMIC130" -command "update_active"
-	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Spartan2" -variable tmpvar_0 -value "Xilinx-Spartan2" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "TM65Gplus" -variable tmpvar_0 -value "TM65Gplus" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "TSMC90" -variable tmpvar_0 -value "TSMC90" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "UMC180" -variable tmpvar_0 -value "UMC180" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Artix7" -variable tmpvar_0 -value "Xilinx-Artix7" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Kintex7" -variable tmpvar_0 -value "Xilinx-Kintex7" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Spartan3" -variable tmpvar_0 -value "Xilinx-Spartan3" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Spartan3E" -variable tmpvar_0 -value "Xilinx-Spartan3E" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Spartan6" -variable tmpvar_0 -value "Xilinx-Spartan6" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Virtex" -variable tmpvar_0 -value "Xilinx-Virtex" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-VirtexE" -variable tmpvar_0 -value "Xilinx-VirtexE" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Virtex2" -variable tmpvar_0 -value "Xilinx-Virtex2" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Virtex4" -variable tmpvar_0 -value "Xilinx-Virtex4" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Virtex5" -variable tmpvar_0 -value "Xilinx-Virtex5" -command "update_active"
-	$w.config.f.x0.x.menu add radiobutton -label "UMC180" -variable tmpvar_0 -value "UMC180" -command "update_active"
-	$w.config.f.x0.x.menu add radiobutton -label "TSMC90" -variable tmpvar_0 -value "TSMC90" -command "update_active"
-	menusplit $w $w.config.f.x0.x.menu 33
+	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Virtex6" -variable tmpvar_0 -value "Xilinx-Virtex6" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Virtex7" -variable tmpvar_0 -value "Xilinx-Virtex7" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-Zynq7000" -variable tmpvar_0 -value "Xilinx-Zynq7000" -command "update_active"
+	menusplit $w $w.config.f.x0.x.menu 48
 	global tmpvar_1
 	minimenu $w.config.f 1 1 "Memory Library                           " tmpvar_1 CONFIG_MEM_INFERRED
 	menu $w.config.f.x1.x.menu -tearoffcommand "menutitle \"Memory Library                           \""
@@ -825,22 +840,40 @@ proc update_define_menu1 {} {
 	if {$tmpvar_0 == "Altera-Others"} then {set CONFIG_SYN_ALTERA 1} else {set CONFIG_SYN_ALTERA 0}
 	global CONFIG_SYN_AXCEL
 	if {$tmpvar_0 == "Actel-Axcelerator"} then {set CONFIG_SYN_AXCEL 1} else {set CONFIG_SYN_AXCEL 0}
+	global CONFIG_SYN_AXDSP
+	if {$tmpvar_0 == "Actel-Axcelerator-DSP"} then {set CONFIG_SYN_AXDSP 1} else {set CONFIG_SYN_AXDSP 0}
 	global CONFIG_SYN_PROASIC
 	if {$tmpvar_0 == "Actel-Proasic"} then {set CONFIG_SYN_PROASIC 1} else {set CONFIG_SYN_PROASIC 0}
 	global CONFIG_SYN_PROASICPLUS
 	if {$tmpvar_0 == "Actel-ProasicPlus"} then {set CONFIG_SYN_PROASICPLUS 1} else {set CONFIG_SYN_PROASICPLUS 0}
 	global CONFIG_SYN_PROASIC3
 	if {$tmpvar_0 == "Actel-Proasic3"} then {set CONFIG_SYN_PROASIC3 1} else {set CONFIG_SYN_PROASIC3 0}
+	global CONFIG_SYN_PROASIC3E
+	if {$tmpvar_0 == "Actel-Proasic3E"} then {set CONFIG_SYN_PROASIC3E 1} else {set CONFIG_SYN_PROASIC3E 0}
+	global CONFIG_SYN_PROASIC3L
+	if {$tmpvar_0 == "Actel-Proasic3L"} then {set CONFIG_SYN_PROASIC3L 1} else {set CONFIG_SYN_PROASIC3L 0}
+	global CONFIG_SYN_IGLOO
+	if {$tmpvar_0 == "Actel-IGLOO/p/L"} then {set CONFIG_SYN_IGLOO 1} else {set CONFIG_SYN_IGLOO 0}
+	global CONFIG_SYN_FUSION
+	if {$tmpvar_0 == "Actel-Fusion"} then {set CONFIG_SYN_FUSION 1} else {set CONFIG_SYN_FUSION 0}
 	global CONFIG_SYN_UT025CRH
 	if {$tmpvar_0 == "Aeroflex-UT025CRH"} then {set CONFIG_SYN_UT025CRH 1} else {set CONFIG_SYN_UT025CRH 0}
+	global CONFIG_SYN_UT130HBD
+	if {$tmpvar_0 == "Aeroflex-UT130HBD"} then {set CONFIG_SYN_UT130HBD 1} else {set CONFIG_SYN_UT130HBD 0}
+	global CONFIG_SYN_UT90NHBD
+	if {$tmpvar_0 == "Aeroflex-UT90NHBD"} then {set CONFIG_SYN_UT90NHBD 1} else {set CONFIG_SYN_UT90NHBD 0}
 	global CONFIG_SYN_ATC18
 	if {$tmpvar_0 == "Atmel-ATC18"} then {set CONFIG_SYN_ATC18 1} else {set CONFIG_SYN_ATC18 0}
 	global CONFIG_SYN_ATC18RHA
 	if {$tmpvar_0 == "Atmel-ATC18RHA"} then {set CONFIG_SYN_ATC18RHA 1} else {set CONFIG_SYN_ATC18RHA 0}
+	global CONFIG_SYN_CMOS9SF
+	if {$tmpvar_0 == "IBM-CMOS9SF"} then {set CONFIG_SYN_CMOS9SF 1} else {set CONFIG_SYN_CMOS9SF 0}
 	global CONFIG_SYN_CUSTOM1
 	if {$tmpvar_0 == "Custom1"} then {set CONFIG_SYN_CUSTOM1 1} else {set CONFIG_SYN_CUSTOM1 0}
 	global CONFIG_SYN_EASIC90
 	if {$tmpvar_0 == "eASIC90"} then {set CONFIG_SYN_EASIC90 1} else {set CONFIG_SYN_EASIC90 0}
+	global CONFIG_SYN_EASIC45
+	if {$tmpvar_0 == "eASIC45"} then {set CONFIG_SYN_EASIC45 1} else {set CONFIG_SYN_EASIC45 0}
 	global CONFIG_SYN_IHP25
 	if {$tmpvar_0 == "IHP25"} then {set CONFIG_SYN_IHP25 1} else {set CONFIG_SYN_IHP25 0}
 	global CONFIG_SYN_IHP25RH
@@ -857,12 +890,22 @@ proc update_define_menu1 {} {
 	if {$tmpvar_0 == "RH-UMC"} then {set CONFIG_SYN_RHUMC 1} else {set CONFIG_SYN_RHUMC 0}
 	global CONFIG_SYN_SMIC13
 	if {$tmpvar_0 == "SMIC130"} then {set CONFIG_SYN_SMIC13 1} else {set CONFIG_SYN_SMIC13 0}
-	global CONFIG_SYN_SPARTAN2
-	if {$tmpvar_0 == "Xilinx-Spartan2"} then {set CONFIG_SYN_SPARTAN2 1} else {set CONFIG_SYN_SPARTAN2 0}
+	global CONFIG_SYN_TM65GPLUS
+	if {$tmpvar_0 == "TM65Gplus"} then {set CONFIG_SYN_TM65GPLUS 1} else {set CONFIG_SYN_TM65GPLUS 0}
+	global CONFIG_SYN_TSMC90
+	if {$tmpvar_0 == "TSMC90"} then {set CONFIG_SYN_TSMC90 1} else {set CONFIG_SYN_TSMC90 0}
+	global CONFIG_SYN_UMC
+	if {$tmpvar_0 == "UMC180"} then {set CONFIG_SYN_UMC 1} else {set CONFIG_SYN_UMC 0}
+	global CONFIG_SYN_ARTIX7
+	if {$tmpvar_0 == "Xilinx-Artix7"} then {set CONFIG_SYN_ARTIX7 1} else {set CONFIG_SYN_ARTIX7 0}
+	global CONFIG_SYN_KINTEX7
+	if {$tmpvar_0 == "Xilinx-Kintex7"} then {set CONFIG_SYN_KINTEX7 1} else {set CONFIG_SYN_KINTEX7 0}
 	global CONFIG_SYN_SPARTAN3
 	if {$tmpvar_0 == "Xilinx-Spartan3"} then {set CONFIG_SYN_SPARTAN3 1} else {set CONFIG_SYN_SPARTAN3 0}
 	global CONFIG_SYN_SPARTAN3E
 	if {$tmpvar_0 == "Xilinx-Spartan3E"} then {set CONFIG_SYN_SPARTAN3E 1} else {set CONFIG_SYN_SPARTAN3E 0}
+	global CONFIG_SYN_SPARTAN6
+	if {$tmpvar_0 == "Xilinx-Spartan6"} then {set CONFIG_SYN_SPARTAN6 1} else {set CONFIG_SYN_SPARTAN6 0}
 	global CONFIG_SYN_VIRTEX
 	if {$tmpvar_0 == "Xilinx-Virtex"} then {set CONFIG_SYN_VIRTEX 1} else {set CONFIG_SYN_VIRTEX 0}
 	global CONFIG_SYN_VIRTEXE
@@ -873,10 +916,12 @@ proc update_define_menu1 {} {
 	if {$tmpvar_0 == "Xilinx-Virtex4"} then {set CONFIG_SYN_VIRTEX4 1} else {set CONFIG_SYN_VIRTEX4 0}
 	global CONFIG_SYN_VIRTEX5
 	if {$tmpvar_0 == "Xilinx-Virtex5"} then {set CONFIG_SYN_VIRTEX5 1} else {set CONFIG_SYN_VIRTEX5 0}
-	global CONFIG_SYN_UMC
-	if {$tmpvar_0 == "UMC180"} then {set CONFIG_SYN_UMC 1} else {set CONFIG_SYN_UMC 0}
-	global CONFIG_SYN_TSMC90
-	if {$tmpvar_0 == "TSMC90"} then {set CONFIG_SYN_TSMC90 1} else {set CONFIG_SYN_TSMC90 0}
+	global CONFIG_SYN_VIRTEX6
+	if {$tmpvar_0 == "Xilinx-Virtex6"} then {set CONFIG_SYN_VIRTEX6 1} else {set CONFIG_SYN_VIRTEX6 0}
+	global CONFIG_SYN_VIRTEX7
+	if {$tmpvar_0 == "Xilinx-Virtex7"} then {set CONFIG_SYN_VIRTEX7 1} else {set CONFIG_SYN_VIRTEX7 0}
+	global CONFIG_SYN_ZYNQ7000
+	if {$tmpvar_0 == "Xilinx-Zynq7000"} then {set CONFIG_SYN_ZYNQ7000 1} else {set CONFIG_SYN_ZYNQ7000 0}
 	global tmpvar_1
 	global CONFIG_MEM_INFERRED
 	if {$tmpvar_1 == "Inferred"} then {set CONFIG_MEM_INFERRED 1} else {set CONFIG_MEM_INFERRED 0}
@@ -957,20 +1002,27 @@ proc menu2 {w title} {
 	menu $w.config.f.x0.x.menu -tearoffcommand "menutitle \"Clock generator                     \""
 	$w.config.f.x0.x.menu add radiobutton -label "Inferred" -variable tmpvar_2 -value "Inferred" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Actel-HCLKBUF" -variable tmpvar_2 -value "Actel-HCLKBUF" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Aeroflex-UT130HBD" -variable tmpvar_2 -value "Aeroflex-UT130HBD" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Altera-ALTPLL" -variable tmpvar_2 -value "Altera-ALTPLL" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Lattice-EXPLL" -variable tmpvar_2 -value "Lattice-EXPLL" -command "update_active"
-	$w.config.f.x0.x.menu add radiobutton -label "Proasic3-PLLL" -variable tmpvar_2 -value "Proasic3-PLLL" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Proasic3-PLL" -variable tmpvar_2 -value "Proasic3-PLL" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Proasic3E-PLL" -variable tmpvar_2 -value "Proasic3E-PLL" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Proasic3L-PLL" -variable tmpvar_2 -value "Proasic3L-PLL" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Fusion-PLL" -variable tmpvar_2 -value "Fusion-PLL" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "RH-LIB18T-PLL" -variable tmpvar_2 -value "RH-LIB18T-PLL" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "DARE-PLL" -variable tmpvar_2 -value "DARE-PLL" -command "update_active"
+	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-PLLE2" -variable tmpvar_2 -value "Xilinx-PLLE2" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-CLKDLL" -variable tmpvar_2 -value "Xilinx-CLKDLL" -command "update_active"
 	$w.config.f.x0.x.menu add radiobutton -label "Xilinx-DCM" -variable tmpvar_2 -value "Xilinx-DCM" -command "update_active"
-	menusplit $w $w.config.f.x0.x.menu 9
-	int $w.config.f 2 1 "Clock multiplication factor (2 - 32)" CONFIG_CLK_MUL
-	int $w.config.f 2 2 "Clock division factor (2 - 32)" CONFIG_CLK_DIV
-	int $w.config.f 2 3 "Outout division factor (2 - 32)" CONFIG_OCLK_DIV
-	bool $w.config.f 2 4 "Enable Xilinx CLKDLL for PCI clock" CONFIG_PCI_CLKDLL
-	bool $w.config.f 2 5 "Disable external feedback for SDRAM clock" CONFIG_CLK_NOFB
-	bool $w.config.f 2 6 "Use PCI clock as system clock" CONFIG_PCI_SYSCLK
+	menusplit $w $w.config.f.x0.x.menu 14
+	int $w.config.f 2 1 "Clock multiplication factor (allowed values are tech dependent)" CONFIG_CLK_MUL
+	int $w.config.f 2 2 "Clock division factor (allowed values are tech dependent)" CONFIG_CLK_DIV
+	int $w.config.f 2 3 "Outout division factor (1 - 32)" CONFIG_OCLK_DIV
+	int $w.config.f 2 4 "Outout division factor, 2nd clk (0 - 32, see help)" CONFIG_OCLKB_DIV
+	int $w.config.f 2 5 "Outout division factor, 3rd clk (0 - 32, see help)" CONFIG_OCLKC_DIV
+	bool $w.config.f 2 6 "Enable Xilinx CLKDLL for PCI clock" CONFIG_PCI_CLKDLL
+	bool $w.config.f 2 7 "Disable external feedback for SDRAM clock" CONFIG_CLK_NOFB
+	bool $w.config.f 2 8 "Use PCI clock as system clock" CONFIG_PCI_SYSCLK
 
 
 
@@ -1011,24 +1063,32 @@ proc update_menu2 {} {
 	global CONFIG_CLK_ALTDLL
 	global CONFIG_CLK_LATDLL
 	global CONFIG_CLK_PRO3PLL
+	global CONFIG_CLK_PRO3EPLL
+	global CONFIG_CLK_PRO3LPLL
 	global CONFIG_CLK_CLKDLL
 	global CONFIG_CLK_LIB18T
+	global CONFIG_CLK_FUSPLL
+	global CONFIG_CLK_CLKPLLE2
 	global CONFIG_CLK_MUL
-	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1)} then {.menu2.config.f.x1.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x1.l configure -state normal; } else {.menu2.config.f.x1.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x1.l configure -state disabled}
+	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1 || $CONFIG_CLK_FUSPLL == 1 || $CONFIG_CLK_CLKPLLE2 == 1)} then {.menu2.config.f.x1.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x1.l configure -state normal; } else {.menu2.config.f.x1.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x1.l configure -state disabled}
 	global CONFIG_CLK_DIV
-	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1)} then {.menu2.config.f.x2.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x2.l configure -state normal; } else {.menu2.config.f.x2.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x2.l configure -state disabled}
+	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1 || $CONFIG_CLK_FUSPLL == 1 || $CONFIG_CLK_CLKPLLE2 == 1)} then {.menu2.config.f.x2.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x2.l configure -state normal; } else {.menu2.config.f.x2.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x2.l configure -state disabled}
 	global CONFIG_OCLK_DIV
-	if {($CONFIG_CLK_PRO3PLL == 1)} then {.menu2.config.f.x3.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x3.l configure -state normal; } else {.menu2.config.f.x3.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x3.l configure -state disabled}
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {.menu2.config.f.x3.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x3.l configure -state normal; } else {.menu2.config.f.x3.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x3.l configure -state disabled}
+	global CONFIG_OCLKB_DIV
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {.menu2.config.f.x4.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x4.l configure -state normal; } else {.menu2.config.f.x4.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x4.l configure -state disabled}
+	global CONFIG_OCLKC_DIV
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {.menu2.config.f.x5.x configure -state normal -foreground [ cget .ref -foreground ]; .menu2.config.f.x5.l configure -state normal; } else {.menu2.config.f.x5.x configure -state disabled -foreground [ cget .ref -disabledforeground ]; .menu2.config.f.x5.l configure -state disabled}
 	global CONFIG_PCI_CLKDLL
 	if {($CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_DCM == 1)} then {
-	configure_entry .menu2.config.f.x4 normal {n l y}} else {configure_entry .menu2.config.f.x4 disabled {y n l}}
+	configure_entry .menu2.config.f.x6 normal {n l y}} else {configure_entry .menu2.config.f.x6 disabled {y n l}}
 	global CONFIG_CLK_NOFB
 	if {($CONFIG_CLK_DCM == 1)} then {
-	configure_entry .menu2.config.f.x5 normal {n l y}} else {configure_entry .menu2.config.f.x5 disabled {y n l}}
+	configure_entry .menu2.config.f.x7 normal {n l y}} else {configure_entry .menu2.config.f.x7 disabled {y n l}}
 	global CONFIG_PCI_ENABLE
 	global CONFIG_PCI_SYSCLK
 	if {($CONFIG_PCI_ENABLE != 1)} then {
-	configure_entry .menu2.config.f.x6 normal {n l y}} else {configure_entry .menu2.config.f.x6 disabled {y n l}}
+	configure_entry .menu2.config.f.x8 normal {n l y}} else {configure_entry .menu2.config.f.x8 disabled {y n l}}
 }
 
 
@@ -1040,26 +1100,40 @@ proc update_define_menu2 {} {
 	if {$tmpvar_2 == "Inferred"} then {set CONFIG_CLK_INFERRED 1} else {set CONFIG_CLK_INFERRED 0}
 	global CONFIG_CLK_HCLKBUF
 	if {$tmpvar_2 == "Actel-HCLKBUF"} then {set CONFIG_CLK_HCLKBUF 1} else {set CONFIG_CLK_HCLKBUF 0}
+	global CONFIG_CLK_UT130HBD
+	if {$tmpvar_2 == "Aeroflex-UT130HBD"} then {set CONFIG_CLK_UT130HBD 1} else {set CONFIG_CLK_UT130HBD 0}
 	global CONFIG_CLK_ALTDLL
 	if {$tmpvar_2 == "Altera-ALTPLL"} then {set CONFIG_CLK_ALTDLL 1} else {set CONFIG_CLK_ALTDLL 0}
 	global CONFIG_CLK_LATDLL
 	if {$tmpvar_2 == "Lattice-EXPLL"} then {set CONFIG_CLK_LATDLL 1} else {set CONFIG_CLK_LATDLL 0}
 	global CONFIG_CLK_PRO3PLL
-	if {$tmpvar_2 == "Proasic3-PLLL"} then {set CONFIG_CLK_PRO3PLL 1} else {set CONFIG_CLK_PRO3PLL 0}
+	if {$tmpvar_2 == "Proasic3-PLL"} then {set CONFIG_CLK_PRO3PLL 1} else {set CONFIG_CLK_PRO3PLL 0}
+	global CONFIG_CLK_PRO3EPLL
+	if {$tmpvar_2 == "Proasic3E-PLL"} then {set CONFIG_CLK_PRO3EPLL 1} else {set CONFIG_CLK_PRO3EPLL 0}
+	global CONFIG_CLK_PRO3LPLL
+	if {$tmpvar_2 == "Proasic3L-PLL"} then {set CONFIG_CLK_PRO3LPLL 1} else {set CONFIG_CLK_PRO3LPLL 0}
+	global CONFIG_CLK_FUSPLL
+	if {$tmpvar_2 == "Fusion-PLL"} then {set CONFIG_CLK_FUSPLL 1} else {set CONFIG_CLK_FUSPLL 0}
 	global CONFIG_CLK_LIB18T
 	if {$tmpvar_2 == "RH-LIB18T-PLL"} then {set CONFIG_CLK_LIB18T 1} else {set CONFIG_CLK_LIB18T 0}
 	global CONFIG_CLK_RHUMC
 	if {$tmpvar_2 == "DARE-PLL"} then {set CONFIG_CLK_RHUMC 1} else {set CONFIG_CLK_RHUMC 0}
+	global CONFIG_CLK_CLKPLLE2
+	if {$tmpvar_2 == "Xilinx-PLLE2"} then {set CONFIG_CLK_CLKPLLE2 1} else {set CONFIG_CLK_CLKPLLE2 0}
 	global CONFIG_CLK_CLKDLL
 	if {$tmpvar_2 == "Xilinx-CLKDLL"} then {set CONFIG_CLK_CLKDLL 1} else {set CONFIG_CLK_CLKDLL 0}
 	global CONFIG_CLK_DCM
 	if {$tmpvar_2 == "Xilinx-DCM"} then {set CONFIG_CLK_DCM 1} else {set CONFIG_CLK_DCM 0}
 	global CONFIG_CLK_MUL
-	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1)} then {validate_int CONFIG_CLK_MUL "$CONFIG_CLK_MUL" 2}
+	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1 || $CONFIG_CLK_FUSPLL == 1 || $CONFIG_CLK_CLKPLLE2 == 1)} then {validate_int CONFIG_CLK_MUL "$CONFIG_CLK_MUL" 2}
 	global CONFIG_CLK_DIV
-	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1)} then {validate_int CONFIG_CLK_DIV "$CONFIG_CLK_DIV" 2}
+	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1 || $CONFIG_CLK_FUSPLL == 1 || $CONFIG_CLK_CLKPLLE2 == 1)} then {validate_int CONFIG_CLK_DIV "$CONFIG_CLK_DIV" 2}
 	global CONFIG_OCLK_DIV
-	if {($CONFIG_CLK_PRO3PLL == 1)} then {validate_int CONFIG_OCLK_DIV "$CONFIG_OCLK_DIV" 2}
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {validate_int CONFIG_OCLK_DIV "$CONFIG_OCLK_DIV" 1}
+	global CONFIG_OCLKB_DIV
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {validate_int CONFIG_OCLKB_DIV "$CONFIG_OCLKB_DIV" 0}
+	global CONFIG_OCLKC_DIV
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {validate_int CONFIG_OCLKC_DIV "$CONFIG_OCLKC_DIV" 0}
 	global CONFIG_PCI_CLKDLL
 	if {($CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_DCM == 1)} then {
 	set CONFIG_PCI_CLKDLL [expr $CONFIG_PCI_CLKDLL&15]} else {set CONFIG_PCI_CLKDLL [expr $CONFIG_PCI_CLKDLL|16]}
@@ -1127,11 +1201,13 @@ proc menu3 {w title} {
 	int $w.config.f 3 0 "Default AHB master" CONFIG_AHB_DEFMST
 	bool $w.config.f 3 1 "Round-robin arbiter                       " CONFIG_AHB_RROBIN
 	bool $w.config.f 3 2 "AHB split-transaction support             " CONFIG_AHB_SPLIT
-	hex $w.config.f 3 3 "I/O area start address (haddr\[31:20\]) " CONFIG_AHB_IOADDR
-	hex $w.config.f 3 4 "AHB/APB bridge address (haddr\[31:20\]) " CONFIG_APB_HADDR
-	bool $w.config.f 3 5 "Enable AMBA AHB monitor              " CONFIG_AHB_MON
-	bool $w.config.f 3 6 "Report AHB errors                  " CONFIG_AHB_MONERR
-	bool $w.config.f 3 7 "Report AHB warings                 " CONFIG_AHB_MONWAR
+	bool $w.config.f 3 3 "Enable full plug&play decoding            " CONFIG_AHB_FPNPEN
+	hex $w.config.f 3 4 "I/O area start address (haddr\[31:20\]) " CONFIG_AHB_IOADDR
+	hex $w.config.f 3 5 "AHB/APB bridge address (haddr\[31:20\]) " CONFIG_APB_HADDR
+	bool $w.config.f 3 6 "Enable AMBA AHB monitor              " CONFIG_AHB_MON
+	bool $w.config.f 3 7 "Report AHB errors                  " CONFIG_AHB_MONERR
+	bool $w.config.f 3 8 "Report AHB warings                 " CONFIG_AHB_MONWAR
+	bool $w.config.f 3 9 "Write trace to simulation console    " CONFIG_AHB_DTRACE
 
 
 
@@ -1171,10 +1247,10 @@ proc update_menu3 {} {
 	global CONFIG_AHB_MON
 	global CONFIG_AHB_MONERR
 	if {($CONFIG_AHB_MON == 1)} then {
-	configure_entry .menu3.config.f.x6 normal {n l y}} else {configure_entry .menu3.config.f.x6 disabled {y n l}}
+	configure_entry .menu3.config.f.x7 normal {n l y}} else {configure_entry .menu3.config.f.x7 disabled {y n l}}
 	global CONFIG_AHB_MONWAR
 	if {($CONFIG_AHB_MON == 1)} then {
-	configure_entry .menu3.config.f.x7 normal {n l y}} else {configure_entry .menu3.config.f.x7 disabled {y n l}}
+	configure_entry .menu3.config.f.x8 normal {n l y}} else {configure_entry .menu3.config.f.x8 disabled {y n l}}
 }
 
 
@@ -1741,14 +1817,23 @@ set CONFIG_SYN_STRATIXIII 0
 set CONFIG_SYN_CYCLONEIII 0
 set CONFIG_SYN_ALTERA 0
 set CONFIG_SYN_AXCEL 0
+set CONFIG_SYN_AXDSP 0
 set CONFIG_SYN_PROASIC 0
 set CONFIG_SYN_PROASICPLUS 0
 set CONFIG_SYN_PROASIC3 0
+set CONFIG_SYN_PROASIC3E 0
+set CONFIG_SYN_PROASIC3L 0
+set CONFIG_SYN_IGLOO 0
+set CONFIG_SYN_FUSION 0
 set CONFIG_SYN_UT025CRH 0
+set CONFIG_SYN_UT130HBD 0
+set CONFIG_SYN_UT90NHBD 0
 set CONFIG_SYN_ATC18 0
 set CONFIG_SYN_ATC18RHA 0
+set CONFIG_SYN_CMOS9SF 0
 set CONFIG_SYN_CUSTOM1 0
 set CONFIG_SYN_EASIC90 0
+set CONFIG_SYN_EASIC45 0
 set CONFIG_SYN_IHP25 0
 set CONFIG_SYN_IHP25RH 0
 set CONFIG_SYN_LATTICE 0
@@ -1757,16 +1842,22 @@ set CONFIG_SYN_PEREGRINE 0
 set CONFIG_SYN_RH_LIB18T 0
 set CONFIG_SYN_RHUMC 0
 set CONFIG_SYN_SMIC13 0
-set CONFIG_SYN_SPARTAN2 0
+set CONFIG_SYN_TM65GPLUS 0
+set CONFIG_SYN_TSMC90 0
+set CONFIG_SYN_UMC 0
+set CONFIG_SYN_ARTIX7 0
+set CONFIG_SYN_KINTEX7 0
 set CONFIG_SYN_SPARTAN3 0
 set CONFIG_SYN_SPARTAN3E 0
+set CONFIG_SYN_SPARTAN6 0
 set CONFIG_SYN_VIRTEX 0
 set CONFIG_SYN_VIRTEXE 0
 set CONFIG_SYN_VIRTEX2 0
 set CONFIG_SYN_VIRTEX4 0
 set CONFIG_SYN_VIRTEX5 0
-set CONFIG_SYN_UMC 0
-set CONFIG_SYN_TSMC90 0
+set CONFIG_SYN_VIRTEX6 0
+set CONFIG_SYN_VIRTEX7 0
+set CONFIG_SYN_ZYNQ7000 0
 set tmpvar_1 "(not set)"
 set CONFIG_MEM_INFERRED 0
 set CONFIG_MEM_UMC 0
@@ -1782,27 +1873,36 @@ set CONFIG_SYN_SCAN 0
 set tmpvar_2 "(not set)"
 set CONFIG_CLK_INFERRED 0
 set CONFIG_CLK_HCLKBUF 0
+set CONFIG_CLK_UT130HBD 0
 set CONFIG_CLK_ALTDLL 0
 set CONFIG_CLK_LATDLL 0
 set CONFIG_CLK_PRO3PLL 0
+set CONFIG_CLK_PRO3EPLL 0
+set CONFIG_CLK_PRO3LPLL 0
+set CONFIG_CLK_FUSPLL 0
 set CONFIG_CLK_LIB18T 0
 set CONFIG_CLK_RHUMC 0
+set CONFIG_CLK_CLKPLLE2 0
 set CONFIG_CLK_CLKDLL 0
 set CONFIG_CLK_DCM 0
 set CONFIG_CLK_MUL 2
 set CONFIG_CLK_DIV 2
-set CONFIG_OCLK_DIV 2
+set CONFIG_OCLK_DIV 1
+set CONFIG_OCLKB_DIV 0
+set CONFIG_OCLKC_DIV 0
 set CONFIG_PCI_CLKDLL 0
 set CONFIG_CLK_NOFB 0
 set CONFIG_PCI_SYSCLK 0
 set CONFIG_AHB_DEFMST 0
 set CONFIG_AHB_RROBIN 0
 set CONFIG_AHB_SPLIT 0
+set CONFIG_AHB_FPNPEN 0
 set CONFIG_AHB_IOADDR FFF
 set CONFIG_APB_HADDR 800
 set CONFIG_AHB_MON 0
 set CONFIG_AHB_MONERR 0
 set CONFIG_AHB_MONWAR 0
+set CONFIG_AHB_DTRACE 0
 set CONFIG_DSU_UART 0
 set CONFIG_DSU_JTAG 0
 set CONFIG_AHBRAM_ENABLE 0
@@ -1869,14 +1969,23 @@ proc writeconfig {file1 file2} {
 	if { $tmpvar_0 == "Altera-CycloneIII" } then { write_tristate $cfg $autocfg CONFIG_SYN_CYCLONEIII 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_CYCLONEIII 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Altera-Others" } then { write_tristate $cfg $autocfg CONFIG_SYN_ALTERA 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_ALTERA 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Actel-Axcelerator" } then { write_tristate $cfg $autocfg CONFIG_SYN_AXCEL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_AXCEL 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Actel-Axcelerator-DSP" } then { write_tristate $cfg $autocfg CONFIG_SYN_AXDSP 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_AXDSP 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Actel-Proasic" } then { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Actel-ProasicPlus" } then { write_tristate $cfg $autocfg CONFIG_SYN_PROASICPLUS 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_PROASICPLUS 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Actel-Proasic3" } then { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC3 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC3 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Actel-Proasic3E" } then { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC3E 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC3E 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Actel-Proasic3L" } then { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC3L 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_PROASIC3L 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Actel-IGLOO/p/L" } then { write_tristate $cfg $autocfg CONFIG_SYN_IGLOO 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_IGLOO 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Actel-Fusion" } then { write_tristate $cfg $autocfg CONFIG_SYN_FUSION 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_FUSION 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Aeroflex-UT025CRH" } then { write_tristate $cfg $autocfg CONFIG_SYN_UT025CRH 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_UT025CRH 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Aeroflex-UT130HBD" } then { write_tristate $cfg $autocfg CONFIG_SYN_UT130HBD 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_UT130HBD 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Aeroflex-UT90NHBD" } then { write_tristate $cfg $autocfg CONFIG_SYN_UT90NHBD 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_UT90NHBD 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Atmel-ATC18" } then { write_tristate $cfg $autocfg CONFIG_SYN_ATC18 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_ATC18 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Atmel-ATC18RHA" } then { write_tristate $cfg $autocfg CONFIG_SYN_ATC18RHA 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_ATC18RHA 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "IBM-CMOS9SF" } then { write_tristate $cfg $autocfg CONFIG_SYN_CMOS9SF 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_CMOS9SF 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Custom1" } then { write_tristate $cfg $autocfg CONFIG_SYN_CUSTOM1 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_CUSTOM1 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "eASIC90" } then { write_tristate $cfg $autocfg CONFIG_SYN_EASIC90 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_EASIC90 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "eASIC45" } then { write_tristate $cfg $autocfg CONFIG_SYN_EASIC45 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_EASIC45 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "IHP25" } then { write_tristate $cfg $autocfg CONFIG_SYN_IHP25 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_IHP25 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "IHP25RH" } then { write_tristate $cfg $autocfg CONFIG_SYN_IHP25RH 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_IHP25RH 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Lattice-EC/ECP/XP" } then { write_tristate $cfg $autocfg CONFIG_SYN_LATTICE 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_LATTICE 0 [list $notmod] 2 }
@@ -1885,16 +1994,22 @@ proc writeconfig {file1 file2} {
 	if { $tmpvar_0 == "RH-LIB18T" } then { write_tristate $cfg $autocfg CONFIG_SYN_RH_LIB18T 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_RH_LIB18T 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "RH-UMC" } then { write_tristate $cfg $autocfg CONFIG_SYN_RHUMC 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_RHUMC 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "SMIC130" } then { write_tristate $cfg $autocfg CONFIG_SYN_SMIC13 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_SMIC13 0 [list $notmod] 2 }
-	if { $tmpvar_0 == "Xilinx-Spartan2" } then { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN2 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN2 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "TM65Gplus" } then { write_tristate $cfg $autocfg CONFIG_SYN_TM65GPLUS 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_TM65GPLUS 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "TSMC90" } then { write_tristate $cfg $autocfg CONFIG_SYN_TSMC90 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_TSMC90 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "UMC180" } then { write_tristate $cfg $autocfg CONFIG_SYN_UMC 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_UMC 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Xilinx-Artix7" } then { write_tristate $cfg $autocfg CONFIG_SYN_ARTIX7 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_ARTIX7 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Xilinx-Kintex7" } then { write_tristate $cfg $autocfg CONFIG_SYN_KINTEX7 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_KINTEX7 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Xilinx-Spartan3" } then { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN3 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN3 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Xilinx-Spartan3E" } then { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN3E 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN3E 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Xilinx-Spartan6" } then { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN6 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_SPARTAN6 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Xilinx-Virtex" } then { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Xilinx-VirtexE" } then { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEXE 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEXE 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Xilinx-Virtex2" } then { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX2 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX2 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Xilinx-Virtex4" } then { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX4 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX4 0 [list $notmod] 2 }
 	if { $tmpvar_0 == "Xilinx-Virtex5" } then { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX5 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX5 0 [list $notmod] 2 }
-	if { $tmpvar_0 == "UMC180" } then { write_tristate $cfg $autocfg CONFIG_SYN_UMC 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_UMC 0 [list $notmod] 2 }
-	if { $tmpvar_0 == "TSMC90" } then { write_tristate $cfg $autocfg CONFIG_SYN_TSMC90 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_TSMC90 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Xilinx-Virtex6" } then { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX6 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX6 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Xilinx-Virtex7" } then { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX7 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_VIRTEX7 0 [list $notmod] 2 }
+	if { $tmpvar_0 == "Xilinx-Zynq7000" } then { write_tristate $cfg $autocfg CONFIG_SYN_ZYNQ7000 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_SYN_ZYNQ7000 0 [list $notmod] 2 }
 	global tmpvar_1
 	global CONFIG_SYN_INFERRED
 	global CONFIG_SYN_CUSTOM1
@@ -1924,11 +2039,16 @@ proc writeconfig {file1 file2} {
 	
 	if { $tmpvar_2 == "Inferred" } then { write_tristate $cfg $autocfg CONFIG_CLK_INFERRED 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_INFERRED 0 [list $notmod] 2 }
 	if { $tmpvar_2 == "Actel-HCLKBUF" } then { write_tristate $cfg $autocfg CONFIG_CLK_HCLKBUF 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_HCLKBUF 0 [list $notmod] 2 }
+	if { $tmpvar_2 == "Aeroflex-UT130HBD" } then { write_tristate $cfg $autocfg CONFIG_CLK_UT130HBD 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_UT130HBD 0 [list $notmod] 2 }
 	if { $tmpvar_2 == "Altera-ALTPLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_ALTDLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_ALTDLL 0 [list $notmod] 2 }
 	if { $tmpvar_2 == "Lattice-EXPLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_LATDLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_LATDLL 0 [list $notmod] 2 }
-	if { $tmpvar_2 == "Proasic3-PLLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_PRO3PLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_PRO3PLL 0 [list $notmod] 2 }
+	if { $tmpvar_2 == "Proasic3-PLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_PRO3PLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_PRO3PLL 0 [list $notmod] 2 }
+	if { $tmpvar_2 == "Proasic3E-PLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_PRO3EPLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_PRO3EPLL 0 [list $notmod] 2 }
+	if { $tmpvar_2 == "Proasic3L-PLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_PRO3LPLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_PRO3LPLL 0 [list $notmod] 2 }
+	if { $tmpvar_2 == "Fusion-PLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_FUSPLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_FUSPLL 0 [list $notmod] 2 }
 	if { $tmpvar_2 == "RH-LIB18T-PLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_LIB18T 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_LIB18T 0 [list $notmod] 2 }
 	if { $tmpvar_2 == "DARE-PLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_RHUMC 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_RHUMC 0 [list $notmod] 2 }
+	if { $tmpvar_2 == "Xilinx-PLLE2" } then { write_tristate $cfg $autocfg CONFIG_CLK_CLKPLLE2 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_CLKPLLE2 0 [list $notmod] 2 }
 	if { $tmpvar_2 == "Xilinx-CLKDLL" } then { write_tristate $cfg $autocfg CONFIG_CLK_CLKDLL 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_CLKDLL 0 [list $notmod] 2 }
 	if { $tmpvar_2 == "Xilinx-DCM" } then { write_tristate $cfg $autocfg CONFIG_CLK_DCM 1 [list $notmod] 2 } else { write_tristate $cfg $autocfg CONFIG_CLK_DCM 0 [list $notmod] 2 }
 	global CONFIG_CLK_MUL
@@ -1936,13 +2056,21 @@ proc writeconfig {file1 file2} {
 	global CONFIG_CLK_ALTDLL
 	global CONFIG_CLK_LATDLL
 	global CONFIG_CLK_PRO3PLL
+	global CONFIG_CLK_PRO3EPLL
+	global CONFIG_CLK_PRO3LPLL
 	global CONFIG_CLK_CLKDLL
 	global CONFIG_CLK_LIB18T
-	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1)} then {write_int $cfg $autocfg CONFIG_CLK_MUL $CONFIG_CLK_MUL $notmod }
+	global CONFIG_CLK_FUSPLL
+	global CONFIG_CLK_CLKPLLE2
+	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1 || $CONFIG_CLK_FUSPLL == 1 || $CONFIG_CLK_CLKPLLE2 == 1)} then {write_int $cfg $autocfg CONFIG_CLK_MUL $CONFIG_CLK_MUL $notmod }
 	global CONFIG_CLK_DIV
-	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1)} then {write_int $cfg $autocfg CONFIG_CLK_DIV $CONFIG_CLK_DIV $notmod }
+	if {($CONFIG_CLK_DCM == 1 || $CONFIG_CLK_ALTDLL == 1 || $CONFIG_CLK_LATDLL == 1 || $CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_LIB18T == 1 || $CONFIG_CLK_FUSPLL == 1 || $CONFIG_CLK_CLKPLLE2 == 1)} then {write_int $cfg $autocfg CONFIG_CLK_DIV $CONFIG_CLK_DIV $notmod }
 	global CONFIG_OCLK_DIV
-	if {($CONFIG_CLK_PRO3PLL == 1)} then {write_int $cfg $autocfg CONFIG_OCLK_DIV $CONFIG_OCLK_DIV $notmod }
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {write_int $cfg $autocfg CONFIG_OCLK_DIV $CONFIG_OCLK_DIV $notmod }
+	global CONFIG_OCLKB_DIV
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {write_int $cfg $autocfg CONFIG_OCLKB_DIV $CONFIG_OCLKB_DIV $notmod }
+	global CONFIG_OCLKC_DIV
+	if {($CONFIG_CLK_PRO3PLL == 1 || $CONFIG_CLK_PRO3EPLL == 1 || $CONFIG_CLK_PRO3LPLL == 1 || $CONFIG_CLK_FUSPLL == 1)} then {write_int $cfg $autocfg CONFIG_OCLKC_DIV $CONFIG_OCLKC_DIV $notmod }
 	global CONFIG_PCI_CLKDLL
 	if {($CONFIG_CLK_CLKDLL == 1 || $CONFIG_CLK_DCM == 1)} then {write_tristate $cfg $autocfg CONFIG_PCI_CLKDLL $CONFIG_PCI_CLKDLL [list $notmod] 2 }
 	global CONFIG_CLK_NOFB
@@ -1957,6 +2085,8 @@ proc writeconfig {file1 file2} {
 	write_tristate $cfg $autocfg CONFIG_AHB_RROBIN $CONFIG_AHB_RROBIN [list $notmod] 2
 	global CONFIG_AHB_SPLIT
 	write_tristate $cfg $autocfg CONFIG_AHB_SPLIT $CONFIG_AHB_SPLIT [list $notmod] 2
+	global CONFIG_AHB_FPNPEN
+	write_tristate $cfg $autocfg CONFIG_AHB_FPNPEN $CONFIG_AHB_FPNPEN [list $notmod] 2
 	global CONFIG_AHB_IOADDR
 	write_hex $cfg $autocfg CONFIG_AHB_IOADDR $CONFIG_AHB_IOADDR $notmod
 	global CONFIG_APB_HADDR
@@ -1967,6 +2097,8 @@ proc writeconfig {file1 file2} {
 	if {($CONFIG_AHB_MON == 1)} then {write_tristate $cfg $autocfg CONFIG_AHB_MONERR $CONFIG_AHB_MONERR [list $notmod] 2 }
 	global CONFIG_AHB_MONWAR
 	if {($CONFIG_AHB_MON == 1)} then {write_tristate $cfg $autocfg CONFIG_AHB_MONWAR $CONFIG_AHB_MONWAR [list $notmod] 2 }
+	global CONFIG_AHB_DTRACE
+	write_tristate $cfg $autocfg CONFIG_AHB_DTRACE $CONFIG_AHB_DTRACE [list $notmod] 2
 	write_comment $cfg $autocfg "Debug Link           "
 	global CONFIG_DSU_UART
 	write_tristate $cfg $autocfg CONFIG_DSU_UART $CONFIG_DSU_UART [list $notmod] 2
@@ -2042,14 +2174,23 @@ proc clear_choices { } {
 	global CONFIG_SYN_CYCLONEIII; set CONFIG_SYN_CYCLONEIII 0
 	global CONFIG_SYN_ALTERA; set CONFIG_SYN_ALTERA 0
 	global CONFIG_SYN_AXCEL; set CONFIG_SYN_AXCEL 0
+	global CONFIG_SYN_AXDSP; set CONFIG_SYN_AXDSP 0
 	global CONFIG_SYN_PROASIC; set CONFIG_SYN_PROASIC 0
 	global CONFIG_SYN_PROASICPLUS; set CONFIG_SYN_PROASICPLUS 0
 	global CONFIG_SYN_PROASIC3; set CONFIG_SYN_PROASIC3 0
+	global CONFIG_SYN_PROASIC3E; set CONFIG_SYN_PROASIC3E 0
+	global CONFIG_SYN_PROASIC3L; set CONFIG_SYN_PROASIC3L 0
+	global CONFIG_SYN_IGLOO; set CONFIG_SYN_IGLOO 0
+	global CONFIG_SYN_FUSION; set CONFIG_SYN_FUSION 0
 	global CONFIG_SYN_UT025CRH; set CONFIG_SYN_UT025CRH 0
+	global CONFIG_SYN_UT130HBD; set CONFIG_SYN_UT130HBD 0
+	global CONFIG_SYN_UT90NHBD; set CONFIG_SYN_UT90NHBD 0
 	global CONFIG_SYN_ATC18; set CONFIG_SYN_ATC18 0
 	global CONFIG_SYN_ATC18RHA; set CONFIG_SYN_ATC18RHA 0
+	global CONFIG_SYN_CMOS9SF; set CONFIG_SYN_CMOS9SF 0
 	global CONFIG_SYN_CUSTOM1; set CONFIG_SYN_CUSTOM1 0
 	global CONFIG_SYN_EASIC90; set CONFIG_SYN_EASIC90 0
+	global CONFIG_SYN_EASIC45; set CONFIG_SYN_EASIC45 0
 	global CONFIG_SYN_IHP25; set CONFIG_SYN_IHP25 0
 	global CONFIG_SYN_IHP25RH; set CONFIG_SYN_IHP25RH 0
 	global CONFIG_SYN_LATTICE; set CONFIG_SYN_LATTICE 0
@@ -2058,16 +2199,22 @@ proc clear_choices { } {
 	global CONFIG_SYN_RH_LIB18T; set CONFIG_SYN_RH_LIB18T 0
 	global CONFIG_SYN_RHUMC; set CONFIG_SYN_RHUMC 0
 	global CONFIG_SYN_SMIC13; set CONFIG_SYN_SMIC13 0
-	global CONFIG_SYN_SPARTAN2; set CONFIG_SYN_SPARTAN2 0
+	global CONFIG_SYN_TM65GPLUS; set CONFIG_SYN_TM65GPLUS 0
+	global CONFIG_SYN_TSMC90; set CONFIG_SYN_TSMC90 0
+	global CONFIG_SYN_UMC; set CONFIG_SYN_UMC 0
+	global CONFIG_SYN_ARTIX7; set CONFIG_SYN_ARTIX7 0
+	global CONFIG_SYN_KINTEX7; set CONFIG_SYN_KINTEX7 0
 	global CONFIG_SYN_SPARTAN3; set CONFIG_SYN_SPARTAN3 0
 	global CONFIG_SYN_SPARTAN3E; set CONFIG_SYN_SPARTAN3E 0
+	global CONFIG_SYN_SPARTAN6; set CONFIG_SYN_SPARTAN6 0
 	global CONFIG_SYN_VIRTEX; set CONFIG_SYN_VIRTEX 0
 	global CONFIG_SYN_VIRTEXE; set CONFIG_SYN_VIRTEXE 0
 	global CONFIG_SYN_VIRTEX2; set CONFIG_SYN_VIRTEX2 0
 	global CONFIG_SYN_VIRTEX4; set CONFIG_SYN_VIRTEX4 0
 	global CONFIG_SYN_VIRTEX5; set CONFIG_SYN_VIRTEX5 0
-	global CONFIG_SYN_UMC; set CONFIG_SYN_UMC 0
-	global CONFIG_SYN_TSMC90; set CONFIG_SYN_TSMC90 0
+	global CONFIG_SYN_VIRTEX6; set CONFIG_SYN_VIRTEX6 0
+	global CONFIG_SYN_VIRTEX7; set CONFIG_SYN_VIRTEX7 0
+	global CONFIG_SYN_ZYNQ7000; set CONFIG_SYN_ZYNQ7000 0
 	global CONFIG_MEM_INFERRED; set CONFIG_MEM_INFERRED 0
 	global CONFIG_MEM_UMC; set CONFIG_MEM_UMC 0
 	global CONFIG_MEM_RHUMC; set CONFIG_MEM_RHUMC 0
@@ -2077,11 +2224,16 @@ proc clear_choices { } {
 	global CONFIG_MEM_VIRAGE90; set CONFIG_MEM_VIRAGE90 0
 	global CONFIG_CLK_INFERRED; set CONFIG_CLK_INFERRED 0
 	global CONFIG_CLK_HCLKBUF; set CONFIG_CLK_HCLKBUF 0
+	global CONFIG_CLK_UT130HBD; set CONFIG_CLK_UT130HBD 0
 	global CONFIG_CLK_ALTDLL; set CONFIG_CLK_ALTDLL 0
 	global CONFIG_CLK_LATDLL; set CONFIG_CLK_LATDLL 0
 	global CONFIG_CLK_PRO3PLL; set CONFIG_CLK_PRO3PLL 0
+	global CONFIG_CLK_PRO3EPLL; set CONFIG_CLK_PRO3EPLL 0
+	global CONFIG_CLK_PRO3LPLL; set CONFIG_CLK_PRO3LPLL 0
+	global CONFIG_CLK_FUSPLL; set CONFIG_CLK_FUSPLL 0
 	global CONFIG_CLK_LIB18T; set CONFIG_CLK_LIB18T 0
 	global CONFIG_CLK_RHUMC; set CONFIG_CLK_RHUMC 0
+	global CONFIG_CLK_CLKPLLE2; set CONFIG_CLK_CLKPLLE2 0
 	global CONFIG_CLK_CLKDLL; set CONFIG_CLK_CLKDLL 0
 	global CONFIG_CLK_DCM; set CONFIG_CLK_DCM 0
 	global CONFIG_AHBRAM_SZ1; set CONFIG_AHBRAM_SZ1 0
@@ -2127,22 +2279,40 @@ proc update_choices { } {
 	if { $CONFIG_SYN_ALTERA == 1 } then { set tmpvar_0 "Altera-Others" }
 	global CONFIG_SYN_AXCEL
 	if { $CONFIG_SYN_AXCEL == 1 } then { set tmpvar_0 "Actel-Axcelerator" }
+	global CONFIG_SYN_AXDSP
+	if { $CONFIG_SYN_AXDSP == 1 } then { set tmpvar_0 "Actel-Axcelerator-DSP" }
 	global CONFIG_SYN_PROASIC
 	if { $CONFIG_SYN_PROASIC == 1 } then { set tmpvar_0 "Actel-Proasic" }
 	global CONFIG_SYN_PROASICPLUS
 	if { $CONFIG_SYN_PROASICPLUS == 1 } then { set tmpvar_0 "Actel-ProasicPlus" }
 	global CONFIG_SYN_PROASIC3
 	if { $CONFIG_SYN_PROASIC3 == 1 } then { set tmpvar_0 "Actel-Proasic3" }
+	global CONFIG_SYN_PROASIC3E
+	if { $CONFIG_SYN_PROASIC3E == 1 } then { set tmpvar_0 "Actel-Proasic3E" }
+	global CONFIG_SYN_PROASIC3L
+	if { $CONFIG_SYN_PROASIC3L == 1 } then { set tmpvar_0 "Actel-Proasic3L" }
+	global CONFIG_SYN_IGLOO
+	if { $CONFIG_SYN_IGLOO == 1 } then { set tmpvar_0 "Actel-IGLOO/p/L" }
+	global CONFIG_SYN_FUSION
+	if { $CONFIG_SYN_FUSION == 1 } then { set tmpvar_0 "Actel-Fusion" }
 	global CONFIG_SYN_UT025CRH
 	if { $CONFIG_SYN_UT025CRH == 1 } then { set tmpvar_0 "Aeroflex-UT025CRH" }
+	global CONFIG_SYN_UT130HBD
+	if { $CONFIG_SYN_UT130HBD == 1 } then { set tmpvar_0 "Aeroflex-UT130HBD" }
+	global CONFIG_SYN_UT90NHBD
+	if { $CONFIG_SYN_UT90NHBD == 1 } then { set tmpvar_0 "Aeroflex-UT90NHBD" }
 	global CONFIG_SYN_ATC18
 	if { $CONFIG_SYN_ATC18 == 1 } then { set tmpvar_0 "Atmel-ATC18" }
 	global CONFIG_SYN_ATC18RHA
 	if { $CONFIG_SYN_ATC18RHA == 1 } then { set tmpvar_0 "Atmel-ATC18RHA" }
+	global CONFIG_SYN_CMOS9SF
+	if { $CONFIG_SYN_CMOS9SF == 1 } then { set tmpvar_0 "IBM-CMOS9SF" }
 	global CONFIG_SYN_CUSTOM1
 	if { $CONFIG_SYN_CUSTOM1 == 1 } then { set tmpvar_0 "Custom1" }
 	global CONFIG_SYN_EASIC90
 	if { $CONFIG_SYN_EASIC90 == 1 } then { set tmpvar_0 "eASIC90" }
+	global CONFIG_SYN_EASIC45
+	if { $CONFIG_SYN_EASIC45 == 1 } then { set tmpvar_0 "eASIC45" }
 	global CONFIG_SYN_IHP25
 	if { $CONFIG_SYN_IHP25 == 1 } then { set tmpvar_0 "IHP25" }
 	global CONFIG_SYN_IHP25RH
@@ -2159,12 +2329,22 @@ proc update_choices { } {
 	if { $CONFIG_SYN_RHUMC == 1 } then { set tmpvar_0 "RH-UMC" }
 	global CONFIG_SYN_SMIC13
 	if { $CONFIG_SYN_SMIC13 == 1 } then { set tmpvar_0 "SMIC130" }
-	global CONFIG_SYN_SPARTAN2
-	if { $CONFIG_SYN_SPARTAN2 == 1 } then { set tmpvar_0 "Xilinx-Spartan2" }
+	global CONFIG_SYN_TM65GPLUS
+	if { $CONFIG_SYN_TM65GPLUS == 1 } then { set tmpvar_0 "TM65Gplus" }
+	global CONFIG_SYN_TSMC90
+	if { $CONFIG_SYN_TSMC90 == 1 } then { set tmpvar_0 "TSMC90" }
+	global CONFIG_SYN_UMC
+	if { $CONFIG_SYN_UMC == 1 } then { set tmpvar_0 "UMC180" }
+	global CONFIG_SYN_ARTIX7
+	if { $CONFIG_SYN_ARTIX7 == 1 } then { set tmpvar_0 "Xilinx-Artix7" }
+	global CONFIG_SYN_KINTEX7
+	if { $CONFIG_SYN_KINTEX7 == 1 } then { set tmpvar_0 "Xilinx-Kintex7" }
 	global CONFIG_SYN_SPARTAN3
 	if { $CONFIG_SYN_SPARTAN3 == 1 } then { set tmpvar_0 "Xilinx-Spartan3" }
 	global CONFIG_SYN_SPARTAN3E
 	if { $CONFIG_SYN_SPARTAN3E == 1 } then { set tmpvar_0 "Xilinx-Spartan3E" }
+	global CONFIG_SYN_SPARTAN6
+	if { $CONFIG_SYN_SPARTAN6 == 1 } then { set tmpvar_0 "Xilinx-Spartan6" }
 	global CONFIG_SYN_VIRTEX
 	if { $CONFIG_SYN_VIRTEX == 1 } then { set tmpvar_0 "Xilinx-Virtex" }
 	global CONFIG_SYN_VIRTEXE
@@ -2175,10 +2355,12 @@ proc update_choices { } {
 	if { $CONFIG_SYN_VIRTEX4 == 1 } then { set tmpvar_0 "Xilinx-Virtex4" }
 	global CONFIG_SYN_VIRTEX5
 	if { $CONFIG_SYN_VIRTEX5 == 1 } then { set tmpvar_0 "Xilinx-Virtex5" }
-	global CONFIG_SYN_UMC
-	if { $CONFIG_SYN_UMC == 1 } then { set tmpvar_0 "UMC180" }
-	global CONFIG_SYN_TSMC90
-	if { $CONFIG_SYN_TSMC90 == 1 } then { set tmpvar_0 "TSMC90" }
+	global CONFIG_SYN_VIRTEX6
+	if { $CONFIG_SYN_VIRTEX6 == 1 } then { set tmpvar_0 "Xilinx-Virtex6" }
+	global CONFIG_SYN_VIRTEX7
+	if { $CONFIG_SYN_VIRTEX7 == 1 } then { set tmpvar_0 "Xilinx-Virtex7" }
+	global CONFIG_SYN_ZYNQ7000
+	if { $CONFIG_SYN_ZYNQ7000 == 1 } then { set tmpvar_0 "Xilinx-Zynq7000" }
 	global tmpvar_1
 	set tmpvar_1 "Inferred"
 	global CONFIG_MEM_INFERRED
@@ -2201,16 +2383,26 @@ proc update_choices { } {
 	if { $CONFIG_CLK_INFERRED == 1 } then { set tmpvar_2 "Inferred" }
 	global CONFIG_CLK_HCLKBUF
 	if { $CONFIG_CLK_HCLKBUF == 1 } then { set tmpvar_2 "Actel-HCLKBUF" }
+	global CONFIG_CLK_UT130HBD
+	if { $CONFIG_CLK_UT130HBD == 1 } then { set tmpvar_2 "Aeroflex-UT130HBD" }
 	global CONFIG_CLK_ALTDLL
 	if { $CONFIG_CLK_ALTDLL == 1 } then { set tmpvar_2 "Altera-ALTPLL" }
 	global CONFIG_CLK_LATDLL
 	if { $CONFIG_CLK_LATDLL == 1 } then { set tmpvar_2 "Lattice-EXPLL" }
 	global CONFIG_CLK_PRO3PLL
-	if { $CONFIG_CLK_PRO3PLL == 1 } then { set tmpvar_2 "Proasic3-PLLL" }
+	if { $CONFIG_CLK_PRO3PLL == 1 } then { set tmpvar_2 "Proasic3-PLL" }
+	global CONFIG_CLK_PRO3EPLL
+	if { $CONFIG_CLK_PRO3EPLL == 1 } then { set tmpvar_2 "Proasic3E-PLL" }
+	global CONFIG_CLK_PRO3LPLL
+	if { $CONFIG_CLK_PRO3LPLL == 1 } then { set tmpvar_2 "Proasic3L-PLL" }
+	global CONFIG_CLK_FUSPLL
+	if { $CONFIG_CLK_FUSPLL == 1 } then { set tmpvar_2 "Fusion-PLL" }
 	global CONFIG_CLK_LIB18T
 	if { $CONFIG_CLK_LIB18T == 1 } then { set tmpvar_2 "RH-LIB18T-PLL" }
 	global CONFIG_CLK_RHUMC
 	if { $CONFIG_CLK_RHUMC == 1 } then { set tmpvar_2 "DARE-PLL" }
+	global CONFIG_CLK_CLKPLLE2
+	if { $CONFIG_CLK_CLKPLLE2 == 1 } then { set tmpvar_2 "Xilinx-PLLE2" }
 	global CONFIG_CLK_CLKDLL
 	if { $CONFIG_CLK_CLKDLL == 1 } then { set tmpvar_2 "Xilinx-CLKDLL" }
 	global CONFIG_CLK_DCM

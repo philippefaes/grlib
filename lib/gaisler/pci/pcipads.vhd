@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,9 @@ entity pcipads is
     no66         : integer := 0;
     onchipreqgnt : integer := 0;        -- Internal req and gnt signals
     drivereset   : integer := 0;        -- Drive PCI rst with outpad
-    constidsel   : integer := 0         -- pci_idsel is tied to local constant
+    constidsel   : integer := 0;        -- pci_idsel is tied to local constant
+    level        : integer := pci33;    -- input/output level
+    voltage      : integer := x33v      -- input/output voltage
   );
   port (
     pci_rst     : inout std_logic;
@@ -79,11 +81,13 @@ begin
   -- Reset
   rstpad : if noreset = 0 generate
     nodrive: if drivereset = 0 generate
-      pci_rst_pad : iodpad generic map (tech => padtech, level => pci33, oepol => 0) 
+      pci_rst_pad : iodpad generic map (tech => padtech, level => level,
+                                        voltage => voltage, oepol => 0) 
           port map (pci_rst, pcio.rst, pcii.rst);
     end generate nodrive;
     drive: if drivereset /= 0 generate
-      pci_rst_pad : outpad generic map (tech => padtech, level => pci33) 
+      pci_rst_pad : outpad generic map (tech => padtech, level => level,
+                                        voltage => voltage)
         port map (pci_rst, pcio.rst);
       pcii.rst <= pcio.rst;
     end generate drive;
@@ -97,13 +101,14 @@ begin
     pci_req <= pcio.req when pcio.reqen = conv_std_logic(oepol=1) else '1';
   end generate localgnt;
   extgnt: if onchipreqgnt = 0 generate
-    pad_pci_gnt   : inpad generic map (padtech, pci33) port map (pci_gnt, pcii.gnt);
-    pad_pci_req   : toutpad generic map (tech => padtech, level => pci33, oepol => oepol)
+    pad_pci_gnt   : inpad generic map (padtech, level, voltage) port map (pci_gnt, pcii.gnt);
+    pad_pci_req   : toutpad generic map (tech => padtech, level => level,
+                                         voltage => voltage, oepol => oepol)
       port map (pci_req, pcio.req, pcio.reqen);
   end generate extgnt;
 
   idsel_pad: if constidsel = 0 generate
-    pad_pci_idsel : inpad generic map (padtech, pci33) port map (pci_idsel, pcii.idsel);
+    pad_pci_idsel : inpad generic map (padtech, level, voltage) port map (pci_idsel, pcii.idsel);
   end generate idsel_pad;
   idsel_local: if constidsel /= 0 generate
     pcii.idsel <= pci_idsel;
@@ -113,47 +118,49 @@ begin
     pcii.host <= '0';   -- Always host
   end generate;
   dohost : if host = 1 generate
-    pad_pci_host  : inpad generic map (padtech, pci33) port map (pci_host, pcii.host);
+    pad_pci_host  : inpad generic map (padtech, level, voltage) port map (pci_host, pcii.host);
   end generate;
   nohost : if host = 0 generate
     pcii.host <= '1';	-- disable pci host functionality
   end generate;
   
   do66 : if no66 = 0 generate
-    pad_pci_66    : inpad generic map (padtech, pci33) port map (pci_66, pcii.pci66);
+    pad_pci_66    : inpad generic map (padtech, level, voltage) port map (pci_66, pcii.pci66);
   end generate;
   dono66 : if no66 = 1 generate
     pcii.pci66 <= '0';
   end generate;
 
-  pad_pci_lock  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_lock  : iopad generic map (tech => padtech, level => level,
+                                     voltage => voltage, oepol => oepol)
 	          port map (pci_lock, pcio.lock, pcio.locken, pcii.lock);
-  pad_pci_ad    : iopadvv generic map (tech => padtech, level => pci33, width => 32,
-				      oepol => oepol)
+  pad_pci_ad    : iopadvv generic map (tech => padtech, level => level,
+                                       voltage => voltage, width => 32,
+                                       oepol => oepol)
 	          port map (pci_ad, pcio.ad, pcio.vaden, pcii.ad);
-  pad_pci_cbe0  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_cbe0  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_cbe(0), pcio.cbe(0), pcio.cbeen(0), pcii.cbe(0));
-  pad_pci_cbe1  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_cbe1  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_cbe(1), pcio.cbe(1), pcio.cbeen(1), pcii.cbe(1));
-  pad_pci_cbe2  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_cbe2  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_cbe(2), pcio.cbe(2), pcio.cbeen(2), pcii.cbe(2));
-  pad_pci_cbe3  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_cbe3  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_cbe(3), pcio.cbe(3), pcio.cbeen(3), pcii.cbe(3));
-  pad_pci_frame : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_frame : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_frame, pcio.frame, pcio.frameen, pcii.frame);
-  pad_pci_trdy  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_trdy  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_trdy, pcio.trdy, pcio.trdyen, pcii.trdy);
-  pad_pci_irdy  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_irdy  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_irdy, pcio.irdy, pcio.irdyen, pcii.irdy);
-  pad_pci_devsel: iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_devsel: iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_devsel, pcio.devsel, pcio.devselen, pcii.devsel);
-  pad_pci_stop  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_stop  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_stop, pcio.stop, pcio.stopen, pcii.stop);
-  pad_pci_perr  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_perr  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_perr, pcio.perr, pcio.perren, pcii.perr);
-  pad_pci_par   : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_par   : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_par, pcio.par, pcio.paren, pcii.par);
-  pad_pci_serr  : iopad generic map (tech => padtech, level => pci33, oepol => oepol)
+  pad_pci_serr  : iopad generic map (tech => padtech, level => level, voltage => voltage, oepol => oepol)
 	          port map (pci_serr, pcio.serr, pcio.serren, pcii.serr);
 
   -- PCI interrupt pads
@@ -183,23 +190,26 @@ begin
   interrupt : if int /= 0 generate
     x : for i in 0 to 3 generate 
       xo : if i = int - 1 and int < 10 generate
-        pad_pci_int : odpad generic map (tech => padtech, level => pci33, oepol => oepol)
+        pad_pci_int : odpad generic map (tech => padtech, level => level,
+                                         voltage => voltage, oepol => oepol)
           port map (pci_int(i), pcio.inten);
       end generate;
       xonon : if i /= int - 1 and int < 10 and int < 100 generate
         pci_int(i) <= '1';
       end generate;
       xio : if i = (int - 10) and int >= 10 and int < 100 generate
-        pad_pci_int : iodpad generic map (tech => padtech, level => pci33, oepol => oepol)
+        pad_pci_int : iodpad generic map (tech => padtech, level => level,
+                                          voltage => voltage, oepol => oepol)
           port map (pci_int(i), pcio.inten, pcii.int(i));
       end generate;
       xi  : if i /= (int - 10) and int >= 10 and int < 100 generate
-        pad_pci_int : inpad generic map (tech => padtech, level => pci33)
+        pad_pci_int : inpad generic map (tech => padtech, level => level, voltage => voltage)
           port map (pci_int(i), pcii.int(i));
       end generate;
       
       x2o : if i <= (int - 100) and int < 110 and int >= 100 generate
-        pad_pci_int : odpad generic map (tech => padtech, level => pci33, oepol => oepol)
+        pad_pci_int : odpad generic map (tech => padtech, level => level,
+                                         voltage => voltage, oepol => oepol)
           port map (pci_int(i), pcio.vinten(i));
       end generate;
       x2onon : if i > (int - 100) and int < 110 and int >= 100 generate
@@ -207,11 +217,12 @@ begin
       end generate;
       
       x2oi : if i <= (int - 110) and int >= 110 generate
-        pad_pci_int : iodpad generic map (tech => padtech, level => pci33, oepol => oepol)
+        pad_pci_int : iodpad generic map (tech => padtech, level => level,
+                                          voltage => voltage, oepol => oepol)
           port map (pci_int(i), pcio.vinten(i), pcii.int(i));
       end generate;
       x2i : if i > (int - 110) and int >= 110 generate
-        pad_pci_int : inpad generic map (tech => padtech, level => pci33)
+        pad_pci_int : inpad generic map (tech => padtech, level => level, voltage => voltage)
           port map (pci_int(i), pcii.int(i));
       end generate;
 

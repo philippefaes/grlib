@@ -7,88 +7,68 @@
 # Bank 2 => 3.3V
 # Bank 3 => 1.8V (DDR2)
 
-# main clocks
+############################################################################
+# VCC AUX VOLTAGE 
+############################################################################
+CONFIG VCCAUX=3.3;
 
-NET "clkm" 		TNM_NET = "clkm";
+############################################################################
+# DDR2 requires the MCB to operate in Extended performance mode with higher Vccint
+# specification to achieve maximum frequency. Therefore, the following CONFIG constraint
+# follows the corresponding GUI option setting. However, DDR3 can operate at higher 
+# frequencies with any Vcciint value by operating MCB in extended mode. Please do not
+# remove/edit the below constraint to avoid false errors.
+############################################################################
+CONFIG MCB_PERFORMANCE= STANDARD;
 
-##################################################################
-# Enable these is you have enabled the SVGA clock generator
-
-NET video_clk period = 20.000 ;
-NET "video_clk" TNM_NET = "video_clk";
-TIMESPEC "TS_clkm_videoclk" = FROM "clkm" TO "video_clk" TIG;
-TIMESPEC "TS_videoclk_clkm" = FROM "video_clk" TO "clkm" TIG;
-
-##################################################################
-
-##################################################################
-# Enable these is you have enabled any Spacewire ports
-
-#NET spw100 period = 10.000 ;
-#NET "spw100" 	TNM_NET = "spw100";
-#TIMESPEC "TS_clkm_spw100" = FROM "clkm" TO "spw100" TIG;
-#TIMESPEC "TS_spw100_clkm" = FROM "spw100" TO "clkm" TIG;
-
-##################################################################
-
-
-##################################################################
-# Enable these is you have enabled Gigabit Ethernet
-#NET rgmii0/clkm0 period = 40.000 ;
-#NET "rgmii0/clkm0" 	TNM_NET = "clkm0";
-#TIMESPEC "TS_clkm_clkm0" = FROM "clkm" TO "clkm0" TIG;
-#TIMESPEC "TS_clkm0_clkm" = FROM "clkm0" TO "clkm" TIG;
-
-#NET rgmii0/clkm1 period = 8.000 ;
-#NET "rgmii0/clkm1" 	TNM_NET = "clkm1";
-#TIMESPEC "TS_clkm_clkm1" = FROM "clkm" TO "clkm1" TIG;
-#TIMESPEC "TS_clkm1_clkm" = FROM "clkm1" TO "clkm" TIG;
-
-#NET rgmii0/uclk125 period = 8.000;
-#NET "rgmii0/uclk125"	TNM_NET = "uclk125";
-#TIMESPEC "TS_clkm_uclkm125" = FROM "clkm" TO "uclk125" TIG;
-#TIMESPEC "TS_uclk125_clkm" = FROM "uclk125" TO "clkm" TIG;
-
-#NET rgmii0/clk25 period = 40.000;
-#NET "rgmii0/clk25"	TNM_NET = "clk25";
-#TIMESPEC "TS_clkm_clk25" = FROM "clkm" TO "clk25" TIG;
-#TIMESPEC "TS_clk25_clkm" = FROM "clk25" TO "clkm" TIG;
-##################################################################
-
-CONFIG VCCAUX = 3.3;
-
-NET "clk"  period = 20.000 ;
-NET "clk2" period = 5.000 ;
-NET "clk"   LOC = "J20" | IOSTANDARD =LVCMOS33; # soldered oscillator, 50 MHz
-NET "clk2"  LOC = "K20" | IOSTANDARD =LVCMOS33; # socket - user provided frequency
-
-NET erx_clk PERIOD = 8.000 ;
-OFFSET = in : 10.000 : BEFORE erx_clk ;
-OFFSET = out : 15.000 : AFTER erx_clk ;
-#OFFSET = in : 10.000 : BEFORE rx_clki ;
-#OFFSET = out : 15.000 : AFTER rx_clki ;
-NET clk125 PERIOD = 8.000 ;
-OFFSET = out : 19.000 : AFTER clk125 ;
-OFFSET = in : 10.000 : BEFORE clk125 ;
-
-#NET usb_clk period = 16.667;
-#OFFSET = out : 10.000 : AFTER usb_clk ;
-#OFFSET = in : 8.000 : BEFORE usb_clk ;
-
-# Synplify versions of DDR2 false paths
-#NET "mig_gen.ddrc.MCB_inst.memc?_wrapper_inst.memc?_mcb_raw_wrapper_inst.selfrefresh_mcb_mode" TIG;
-#NET "mig_gen.ddrc.MCB_inst.c?_pll_lock" TIG;
-#NET "mig_gen.ddrc.MCB_inst.memc?_wrapper_inst.memc?_mcb_raw_wrapper_inst.gen_term_calib.mcb_soft_calibration_top_inst.mcb_soft_calibration_inst.CKE_Train" TIG; ## This path exists for DDR2 only
-#NET "mig_gen.ddrc.i.calib_done" TIG;
-
-# XST versions of DDR2 false paths
+# --- MIG37 ---
 NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
 NET "mig_gen.ddrc/MCB_inst/c?_pll_lock" TIG;
 NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG; ## This path exists for DDR2 only
-NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL" TIG;
 
-NET "clk" CLOCK_DEDICATED_ROUTE = FALSE;
-PIN "clkgen0/xc3s.v/bufg0.O" CLOCK_DEDICATED_ROUTE = FALSE;
+# --- MIG39 ---
+INST "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;
+
+############################################################################
+# Main clocks
+############################################################################
+
+# Input clock
+NET "clk" TNM_NET = "clk";
+TIMESPEC "TS_clk" = PERIOD "clk" 20.000 ns HIGH 50.00%;
+
+# Input clock 2
+NET "clk2" TNM_NET = "clk2";
+TIMESPEC "TS_clk2" = PERIOD "clk2" 5.000 ns HIGH 50.00%;
+
+# -------------------------------
+# RGMII interface
+
+NET "erx_clk" TNM_NET = "erx_clk";
+TIMESPEC "TS_erx_clk" = PERIOD "erx_clk" 8.000 ns HIGH 50.00%;
+#OFFSET = IN 10ns VALID 5ns BEFORE erx_clk TIMEGRP "erx_clk" RISING;
+OFFSET = IN 5ns valid 8ns BEFORE erx_clk TIMEGRP "erx_clk" RISING;
+
+NET "clk125" TNM_NET = "clk125";
+TIMESPEC "TS_clk125" = PERIOD "clk125" 8.000 ns HIGH 50.00%;
+
+NET "clkm" TNM_NET = "clkm";
+NET "rgmii0?tx_clk" TNM_NET = "rgmii0_tx_clk";
+TIMESPEC "TS_tx_clk_freq" = PERIOD rgmii0_tx_clk 8.00 ns;
+TIMESPEC "TS_clkm_rgmii0_tx_clk" = FROM "clkm" TO "rgmii0_tx_clk" 8 ns DATAPATHONLY;
+TIMESPEC "TS_rgmii0_tx_clk_clkm" = FROM "rgmii0_tx_clk" TO "clkm" 8 ns DATAPATHONLY;
+
+#NET "gmiii_gtx_clk" TNM_NET = "gmiii_gtx_clk";
+#TIMESPEC "TS_clkm_rgmiii_gtx_clk" = FROM "clkm" TO "gmiii_gtx_clk" TIG;
+#TIMESPEC "TS_gmiii_gtx_clk_clkm" = FROM "gmiii_gtx_clk" TO "clkm" TIG;
+# -------------------------------
+
+############################################################################
+# I/O STANDARDS AND LOCATIONS
+############################################################################
+
+NET "clk"   LOC = "J20" | IOSTANDARD =LVCMOS33; # soldered oscillator, 50 MHz
+NET "clk2"  LOC = "K20" | IOSTANDARD =LVCMOS33; # socket - user provided frequency
 
 # memory interface (for Parallel Flash U8)
 # on I/O BANK1 and I/O BANK2 => 3.3V logic 
@@ -98,7 +78,7 @@ PIN "clkgen0/xc3s.v/bufg0.O" CLOCK_DEDICATED_ROUTE = FALSE;
 NET "address(0)"  LOC = "Y3"   | IOSTANDARD =LVCMOS33;
 NET "address(1)"  LOC = "AB10" | IOSTANDARD =LVCMOS33;
 NET "address(2)"  LOC = "AB4"  | IOSTANDARD =LVCMOS33;
-NET "address(3)"  LOC = "AA4" | IOSTANDARD =LVCMOS33;
+NET "address(3)"  LOC = "AA4"  | IOSTANDARD =LVCMOS33;
 NET "address(4)"  LOC = "AB8"  | IOSTANDARD =LVCMOS33;
 NET "address(5)"  LOC = "AB12" | IOSTANDARD =LVCMOS33;
 NET "address(6)"  LOC = "AA10" | IOSTANDARD =LVCMOS33;
@@ -133,8 +113,8 @@ NET "data(30)" LOC = "AB3" | IOSTANDARD =LVCMOS33;
 NET "data(31)" LOC = "AB7" | IOSTANDARD =LVCMOS33;
 
 NET "writen"   LOC = "H17"  | IOSTANDARD = LVCMOS33;
-#NET "read"     LOC = "a14"     | IOSTANDARD = LVCMOS33;
-#NET "iosn"     LOC = "b14"     | IOSTANDARD = LVCMOS33;
+#NET "read"     LOC = "a14"  | IOSTANDARD = LVCMOS33;
+#NET "iosn"     LOC = "b14"  | IOSTANDARD = LVCMOS33;
 NET "romsn"    LOC = "AA22" | IOSTANDARD = LVCMOS33; # also used as pin M0
 NET "oen"      LOC = "H16"  | IOSTANDARD = LVCMOS33;
 
@@ -142,93 +122,76 @@ NET "oen"      LOC = "H16"  | IOSTANDARD = LVCMOS33;
 NET "resetn"      LOC = "aa12" | IOSTANDARD = LVCMOS33;
 NET "wdogn"       LOC = "a4"   | IOSTANDARD = LVCMOS33;
 
-
 # DDR2 memory interface, to U7
 # on I/O BANK3 => 1.8V logic 
 
 NET "ddr_dq(*)"     IN_TERM = NONE;       
 NET "ddr_dqs(*)"    IN_TERM = NONE; 
-NET  "ddr_dq(*)"    IOSTANDARD = SSTL18_II;
+NET "ddr_dqsn(*)"   IN_TERM = NONE; 
 
-NET "ddr_ad(13)" LOC = "g6" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(12)" LOC = "d1" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(11)" LOC = "c1" | IOSTANDARD = SSTL18_II; 
-NET "ddr_ad(10)" LOC = "g4" | IOSTANDARD = SSTL18_II; 
-NET "ddr_ad(9)"  LOC = "e1" | IOSTANDARD = SSTL18_II; 
-NET "ddr_ad(8)"  LOC = "e3" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(7)"  LOC = "h6" | IOSTANDARD = SSTL18_II; 
-NET "ddr_ad(6)"  LOC = "j4" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(5)"  LOC = "k3" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(4)"  LOC = "f3" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(3)"  LOC = "k6" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(2)"  LOC = "h5" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(1)"  LOC = "h1" | IOSTANDARD = SSTL18_II;
-NET "ddr_ad(0)"  LOC = "h2" | IOSTANDARD = SSTL18_II;
-
-NET "ddr_ba(2)"  LOC = "f1" | IOSTANDARD = SSTL18_II;
-NET "ddr_ba(1)"  LOC = "g1" | IOSTANDARD = SSTL18_II;
-NET "ddr_ba(0)"  LOC = "g3" | IOSTANDARD = SSTL18_II;
-
-NET "ddr_cas"    LOC = "k4" | IOSTANDARD = SSTL18_II;
-NET "ddr_cke"    LOC = "d2" | IOSTANDARD = SSTL18_II;
-
-NET "ddr_clk"    LOC = "h4" | IOSTANDARD = DIFF_SSTL18_II;
-NET "ddr_clkb"   LOC = "h3" | IOSTANDARD = DIFF_SSTL18_II;
-
-#NET "ddr_clk_fb"     LOC = "c3" | IOSTANDARD = SSTL18_II;
-#NET "ddr_clk_fb_out" LOC = "e4" | IOSTANDARD = SSTL18_II;
-
-NET "ddr_dm(1)"  LOC = "m3" | IOSTANDARD = SSTL18_II; 
-NET "ddr_dm(0)"  LOC = "l4" | IOSTANDARD = SSTL18_II;
-
-NET  "ddr_dq(0)"                           LOC = "N3" ;
-NET  "ddr_dq(10)"                          LOC = "R3" ;
-NET  "ddr_dq(11)"                          LOC = "R1" ;
-NET  "ddr_dq(12)"                          LOC = "U3" ;
-NET  "ddr_dq(13)"                          LOC = "U1" ;
-NET  "ddr_dq(14)"                          LOC = "V2" ;
-NET  "ddr_dq(15)"                          LOC = "V1" ;
-NET  "ddr_dq(1)"                           LOC = "N1" ;
-NET  "ddr_dq(2)"                           LOC = "M2" ;
-NET  "ddr_dq(3)"                           LOC = "M1" ;
-NET  "ddr_dq(4)"                           LOC = "J3" ;
-NET  "ddr_dq(5)"                           LOC = "J1" ;
-NET  "ddr_dq(6)"                           LOC = "K2" ;
-NET  "ddr_dq(7)"                           LOC = "K1" ;
-NET  "ddr_dq(8)"                           LOC = "P2" ;
-NET  "ddr_dq(9)"                           LOC = "P1" ;
-
-#NET "ddr_dqsn(1)"  LOC = "t1" | IOSTANDARD = DIFF_SSTL18_II;
-#NET "ddr_dqsn(0)"  LOC = "l1" | IOSTANDARD = DIFF_SSTL18_II;
-
-#NET "ddr_dqs(1)"   LOC = "t2" | IOSTANDARD = DIFF_SSTL18_II;
-#NET "ddr_dqs(0)"   LOC = "l3" | IOSTANDARD = DIFF_SSTL18_II;
-
-#NET "ddr_dqsn(1)"   LOC = "t1" | IOSTANDARD = SSTL18_II;
-#NET "ddr_dqsn(0)"   LOC = "l1" | IOSTANDARD = SSTL18_II;
-
+NET "ddr_ad(13)"   LOC = "g6" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(12)"   LOC = "d1" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(11)"   LOC = "c1" | IOSTANDARD = SSTL18_II; 
+NET "ddr_ad(10)"   LOC = "g4" | IOSTANDARD = SSTL18_II; 
+NET "ddr_ad(9)"    LOC = "e1" | IOSTANDARD = SSTL18_II; 
+NET "ddr_ad(8)"    LOC = "e3" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(7)"    LOC = "h6" | IOSTANDARD = SSTL18_II; 
+NET "ddr_ad(6)"    LOC = "j4" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(5)"    LOC = "k3" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(4)"    LOC = "f3" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(3)"    LOC = "k6" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(2)"    LOC = "h5" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(1)"    LOC = "h1" | IOSTANDARD = SSTL18_II;
+NET "ddr_ad(0)"    LOC = "h2" | IOSTANDARD = SSTL18_II;
+                   
+NET "ddr_ba(2)"    LOC = "f1" | IOSTANDARD = SSTL18_II;
+NET "ddr_ba(1)"    LOC = "g1" | IOSTANDARD = SSTL18_II;
+NET "ddr_ba(0)"    LOC = "g3" | IOSTANDARD = SSTL18_II;
+NET "ddr_cas"      LOC = "k4" | IOSTANDARD = SSTL18_II;
+NET "ddr_cke"      LOC = "d2" | IOSTANDARD = SSTL18_II;
+NET "ddr_csn"      LOC = "c3" | IOSTANDARD = SSTL18_II;
+NET "ddr_clk"      LOC = "h4" | IOSTANDARD = DIFF_SSTL18_II;
+NET "ddr_clkb"     LOC = "h3" | IOSTANDARD = DIFF_SSTL18_II;
+NET "ddr_dm(1)"    LOC = "m3" | IOSTANDARD = SSTL18_II; 
+NET "ddr_dm(0)"    LOC = "l4" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(0)"    LOC = "N3" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(10)"   LOC = "R3" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(11)"   LOC = "R1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(12)"   LOC = "U3" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(13)"   LOC = "U1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(14)"   LOC = "V2" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(15)"   LOC = "V1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(1)"    LOC = "N1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(2)"    LOC = "M2" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(3)"    LOC = "M1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(4)"    LOC = "J3" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(5)"    LOC = "J1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(6)"    LOC = "K2" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(7)"    LOC = "K1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(8)"    LOC = "P2" | IOSTANDARD = SSTL18_II;
+NET "ddr_dq(9)"    LOC = "P1" | IOSTANDARD = SSTL18_II;
+NET "ddr_dqsn(1)"  LOC = "t1" | IOSTANDARD = DIFF_SSTL18_II;
+NET "ddr_dqsn(0)"  LOC = "l1" | IOSTANDARD = DIFF_SSTL18_II;
 NET "ddr_dqs(1)"   LOC = "t2" | IOSTANDARD = DIFF_SSTL18_II;
 NET "ddr_dqs(0)"   LOC = "l3" | IOSTANDARD = DIFF_SSTL18_II;
-
 NET "ddr_odt"      LOC = "j6" | IOSTANDARD = SSTL18_II;
 NET "ddr_ras"      LOC = "k5" | IOSTANDARD = SSTL18_II;
 NET "ddr_we"       LOC = "f2" | IOSTANDARD = SSTL18_II;
-
-NET  "ddr_rzq"     LOC = "k7" |  IOSTANDARD = SSTL18_II;
-NET  "ddr_zio"     LOC = "d5" |  IOSTANDARD = SSTL18_II;
+NET "ddr_rzq"      LOC = "k7" | IOSTANDARD = SSTL18_II;
+NET "ddr_zio"      LOC = "d5" | IOSTANDARD = SSTL18_II;
 
 # RMII Ethernet Interface, to 10/100/1000 RGMII PHY, U3
 # on I/O BANK1 => 3.3V logic 
 # dedicated 25MHz clock is generated by crystal locally to PHY
 # Optionally PHY can generate 125MHz output clock as input to FPGA
 
-NET "clk125" LOC = "m20" | IOSTANDARD =LVCMOS33;
+NET "clk125" LOC = "m20"  | IOSTANDARD =LVCMOS33;
 
 NET "emdc"    LOC = "j16" | IOSTANDARD =LVCMOS33;
 NET "emdint"  LOC = "l15" | IOSTANDARD =LVCMOS33;
 NET "emdio"   LOC = "h18" | IOSTANDARD =LVCMOS33;
 
-NET "erx_dv"  LOC = "k16" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
+NET "erx_dv"   LOC = "k16" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
 NET "erx_clk"  LOC = "k19" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
 
 NET "erxd(0)" LOC = "h19" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
@@ -236,12 +199,12 @@ NET "erxd(1)" LOC = "k17" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
 NET "erxd(2)" LOC = "n16" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
 NET "erxd(3)" LOC = "m17" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
 
-NET "etx_en"  LOC = "m18" | IOSTANDARD =LVTTL | FAST | DRIVE=24; 
-NET "etx_clk" LOC = "m19" | IOSTANDARD =LVTTL | SLOW | DRIVE=12;
-NET "etxd(0)" LOC = "p17" | IOSTANDARD =LVTTL | FAST | DRIVE=24;
-NET "etxd(1)" LOC = "m16" | IOSTANDARD =LVTTL | FAST | DRIVE=24;
-NET "etxd(2)" LOC = "n19" | IOSTANDARD =LVTTL | FAST | DRIVE=24;
-NET "etxd(3)" LOC = "n20" | IOSTANDARD =LVTTL | FAST | DRIVE=24;
+NET "etx_en"  LOC = "m18" | IOSTANDARD =LVTTL | FAST; 
+NET "etx_clk" LOC = "m19" | IOSTANDARD =LVTTL | SLOW;
+NET "etxd(0)" LOC = "p17" | IOSTANDARD =LVTTL | FAST;
+NET "etxd(1)" LOC = "m16" | IOSTANDARD =LVTTL | FAST;
+NET "etxd(2)" LOC = "n19" | IOSTANDARD =LVTTL | FAST;
+NET "etxd(3)" LOC = "n20" | IOSTANDARD =LVTTL | FAST;
 
 
 # I2C interface conecting to Monitor via DVI-I connector J4

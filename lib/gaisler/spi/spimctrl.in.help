@@ -11,7 +11,7 @@ CONFIG_SPIMCTRL_SDCARD
 
 Read command
 CONFIG_SPIMCTRL_READCMD
-  Read instruction for SPI memory device
+  Read instruction for SPI memory device (hex).
 
 Dummy byte
 CONFIG_SPIMCTRL_DUMMYBYTE
@@ -20,6 +20,10 @@ CONFIG_SPIMCTRL_DUMMYBYTE
 Dual output
 CONFIG_SPIMCTRL_DUALOUTPUT
   Memory device supports dual output when reading data.
+
+Address offset
+CONFIG_SPIMCTRL_OFFSET
+  Offset that will be added by core on SPI memory address (hex).
 
 Clock scaler
 CONFIG_SPIMCTRL_SCALER

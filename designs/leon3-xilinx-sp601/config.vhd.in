@@ -14,8 +14,4 @@ package config is
 
 #include "config.vhd.h"
 
-
--- Xilinx MIG DDR2 controller
-  constant CFG_MIG_DDR2 : integer := CONFIG_MIG_DDR2;
-
 end;

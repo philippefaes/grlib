@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -316,7 +316,6 @@ begin
   ahbso.hirq    <= (others => '0');
   ahbso.hindex  <= hindex;
   ahbso.hsplit  <= (others => '0');
-  ahbso.hcache  <= '1';
 
   apbo.pindex  <= pindex;
   apbo.pconfig <= pconfig;
@@ -396,7 +395,6 @@ begin
     ahbmi.hresp <= "00";
     ahbmi.hgrant <= (others => '1');
     ahbmi.hready <= r2.hready;
-    ahbmi.hcache <= '0';
     ahbmi.hirq <= (others => '0');
     ahbmi.testen <= '0';
     ahbmi.testrst <= '0';

@@ -5,6 +5,34 @@ CONFIG_PROC_NUM
   up to 4 LEON3 processor cores. Use 1 unless you know what you are
   doing ...
 
+Force values from example configuration
+CONFIG_LEON3_MIN
+  If you select any other value than Custom-configuration then the
+  configuration choices will be forced to settings corresponding to
+  the selected example configuration. The example configurations are
+  described in the document LEON/GRLIB Design and Configuration Guide
+  located at doc/guide.pdf.
+
+  Due to limitations in the configuration tool it is not possible to
+  update all choices without first saving the configuration and
+  restarting the tool. Perform the steps below to set the processor
+  configuration to example configuration values: 
+
+  1. Select example configuration (MIN, GP, HP). This will result
+     in most processor configuration menus being disabled.
+  2. Go back to the main menu and select Save and Exit
+  3. Start the xconfig tool again
+  4. Go into processor configuration and select Custom-configuration.
+     All configuration values can now be changed again and have been
+     initialized to example configuration that was selected earlier.
+  5. Make any changes and then quit xconfig via Save and Exit
+
+  Some options set from the example configuration may need to be changed.
+  One such setting is the FPU multiplier, if the FPU is enabled, where
+  timing is improved for several FPGA technologies by selecting the
+  technology specific multiplier and where the DW multiplier is generally
+  a good choice for ASIC.
+
 Number of SPARC register windows
 CONFIG_IU_NWINDOWS
   The SPARC architecture (and LEON) allows 2 - 32 register windows.
@@ -407,11 +435,10 @@ CONFIG_IUFT_NONE
   sparing, 7-bit BCH and TMR.
 
 FPU Register file protection
-CONFIG_FPUFT_EN
+CONFIG_FPUFT_NONE
   Say Y to enable SEU protection of the FPU register file.
-  The GRFPU will be protected using 8-bit parity without restart, while
-  the GRFPU-Lite will be protected with 4-bit parity with restart. If
-  disabled the FPU register file will be implemented using flip-flops.
+  The GRFPU-Lite will be protected with parity, PDMR and TMR.
+  The GRFPU can use PDMR or TMR only.
 
 Cache memory error injection
 CONFIG_RF_ERRINJ

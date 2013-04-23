@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ use spw.spwcomp.all;
 
 entity grspw2_gen is
   generic(
-    rmap         : integer range 0 to 1  := 0;
+    rmap         : integer range 0 to 2  := 0;
     rmapcrc      : integer range 0 to 1  := 0;
     fifosize1    : integer range 4 to 32 := 32;
     fifosize2    : integer range 16 to 64 := 64;
@@ -48,7 +48,10 @@ entity grspw2_gen is
     rxtx_sameclk : integer range 0 to 1 := 0;
     ft           : integer range 0 to 2 := 0;
     techfifo     : integer range 0 to 1 := 1;
-    memtech      : integer := 0);
+    memtech      : integer := 0;
+    nodeaddr     : integer range 0 to 255 := 254;
+    destkey      : integer range 0 to 255 := 0
+    );
   port(
     rst          : in  std_ulogic;
     clk          : in  std_ulogic;
@@ -58,11 +61,11 @@ entity grspw2_gen is
     txclkn       : in  std_ulogic;
     --ahb mst in
     hgrant       : in  std_ulogic;
-    hready       : in  std_ulogic;   
+    hready       : in  std_ulogic;
     hresp        : in  std_logic_vector(1 downto 0);
-    hrdata       : in  std_logic_vector(31 downto 0); 
+    hrdata       : in  std_logic_vector(31 downto 0);
     --ahb mst out
-    hbusreq      : out  std_ulogic;        
+    hbusreq      : out  std_ulogic;
     hlock        : out  std_ulogic;
     htrans       : out  std_logic_vector(1 downto 0);
     haddr        : out  std_logic_vector(31 downto 0);
@@ -71,7 +74,7 @@ entity grspw2_gen is
     hburst       : out  std_logic_vector(2 downto 0);
     hprot        : out  std_logic_vector(3 downto 0);
     hwdata       : out  std_logic_vector(31 downto 0);
-    --apb slv in 
+    --apb slv in
     psel	 : in   std_ulogic;
     penable	 : in   std_ulogic;
     paddr	 : in   std_logic_vector(31 downto 0);
@@ -96,13 +99,14 @@ entity grspw2_gen is
     timeout      : out  std_logic_vector(7 downto 0);
     --irq
     irq          : out  std_logic;
-    --misc     
+    --misc
     clkdiv10     : in   std_logic_vector(7 downto 0);
     linkdis      : out  std_ulogic;
     testrst      : in   std_ulogic := '0';
     testen       : in   std_ulogic := '0';
     --rmapen
     rmapen       : in   std_ulogic;
+    rmapnodeaddr : in   std_logic_vector(7 downto 0);
     --parallel rx data out
     rxdav        : out  std_ulogic;
     rxdataout    : out  std_logic_vector(8 downto 0);
@@ -116,21 +120,21 @@ architecture rtl of grspw2_gen is
   constant rfifo        : integer := 5 + log2(rmapbufs);
 
   signal rxclki, nrxclki, rxclko : std_logic_vector(1 downto 0);
-  
+
   --rx ahb fifo
   signal rxrenable    : std_ulogic;
   signal rxraddress   : std_logic_vector(4 downto 0);
   signal rxwrite      : std_ulogic;
   signal rxwdata      : std_logic_vector(31 downto 0);
   signal rxwaddress   : std_logic_vector(4 downto 0);
-  signal rxrdata      : std_logic_vector(31 downto 0);    
+  signal rxrdata      : std_logic_vector(31 downto 0);
   --tx ahb fifo
   signal txrenable    : std_ulogic;
   signal txraddress   : std_logic_vector(4 downto 0);
   signal txwrite      : std_ulogic;
   signal txwdata      : std_logic_vector(31 downto 0);
   signal txwaddress   : std_logic_vector(4 downto 0);
-  signal txrdata      : std_logic_vector(31 downto 0);    
+  signal txrdata      : std_logic_vector(31 downto 0);
   --nchar fifo
   signal ncrenable    : std_ulogic;
   signal ncraddress   : std_logic_vector(5 downto 0);
@@ -152,7 +156,7 @@ architecture rtl of grspw2_gen is
 
   attribute syn_netlist_hierarchy : boolean;
   attribute syn_netlist_hierarchy of rtl : architecture is false;
-  
+
 begin
 
   testin <= testen & "000";
@@ -171,7 +175,9 @@ begin
       tech         => tech,
       input_type   => input_type,
       output_type  => output_type,
-      rxtx_sameclk => rxtx_sameclk)
+      rxtx_sameclk => rxtx_sameclk,
+      nodeaddr     => nodeaddr,
+      destkey      => destkey)
     port map(
       rst          => rst,
       clk          => clk,
@@ -194,21 +200,21 @@ begin
       hburst       => hburst,
       hprot        => hprot,
       hwdata       => hwdata,
-      --apb slv in 
-      psel	   => psel,
-      penable	   => penable,
-      paddr	   => paddr,
-      pwrite	   => pwrite,
-      pwdata	   => pwdata,
+      --apb slv in
+      psel         => psel,
+      penable      => penable,
+      paddr        => paddr,
+      pwrite	    => pwrite,
+      pwdata	    => pwdata,
       --apb slv out
-      prdata	   => prdata,
+      prdata       => prdata,
       --spw in
       d            => d,
       dv           => dv,
       dconnect     => dconnect,
       --spw out
       do           => do,
-      so           => so, 
+      so           => so,
       --time iface
       tickin       => tickin,
       tickinraw    => tickinraw,
@@ -218,11 +224,12 @@ begin
       tickoutraw   => tickoutraw,
       timeout      => timeout,
       --irq
-      irq          => irq, 
-      --misc     
+      irq          => irq,
+      --misc
       clkdiv10     => clkdiv10,
       --rmapen
       rmapen       => rmapen,
+      rmapnodeaddr => rmapnodeaddr,
       --rx ahb fifo
       rxrenable    => rxrenable,
       rxraddress   => rxraddress,
@@ -269,20 +276,20 @@ begin
     port map(clk, rxrenable, rxraddress(fabits1-1 downto 0),
       rxrdata, clk, rxwrite,
       rxwaddress(fabits1-1 downto 0), rxwdata, testin);
-  
+
     --receiver nchar FIFO
     rx_ram1 : syncram_2p generic map(memtech*techfifo, fabits2, 10)
     port map(clk, ncrenable, ncraddress(fabits2-1 downto 0),
       ncrdata, clk, ncwrite,
       ncwaddress(fabits2-1 downto 0), ncwdata, testin);
-    
+
     --transmitter FIFO
     tx_ram0 : syncram_2p generic map(memtech*techfifo, fabits1, 32)
     port map(clk, txrenable, txraddress(fabits1-1 downto 0),
       txrdata, clk, txwrite, txwaddress(fabits1-1 downto 0), txwdata, testin);
 
     --RMAP Buffer
-    rmap_ram : if (rmap = 1) generate
+    rmap_ram : if (rmap /= 0) generate
       ram0 : syncram_2p generic map(memtech, rfifo, 8)
       port map(clk, rmrenable, rmraddress(rfifo-1 downto 0),
         rmrdata, clk, rmwrite, rmwaddress(rfifo-1 downto 0),
@@ -296,25 +303,25 @@ begin
     port map(clk, rxrenable, rxraddress(fabits1-1 downto 0),
       rxrdata, clk, rxwrite,
       rxwaddress(fabits1-1 downto 0), rxwdata, open, testin);
-  
+
     --receiver nchar FIFO
     rx_ram1 : syncram_2pft generic map(memtech*techfifo, fabits2, 10, 0, 0, 2*techfifo)
     port map(clk, ncrenable, ncraddress(fabits2-1 downto 0),
       ncrdata, clk, ncwrite,
       ncwaddress(fabits2-1 downto 0), ncwdata, open, testin);
-    
+
     --transmitter FIFO
     tx_ram0 : syncram_2pft generic map(memtech*techfifo, fabits1, 32, 0, 0, ft*techfifo)
     port map(clk, txrenable, txraddress(fabits1-1 downto 0),
       txrdata, clk, txwrite, txwaddress(fabits1-1 downto 0), txwdata, open, testin);
 
     --RMAP Buffer
-    rmap_ram : if (rmap = 1) generate
+    rmap_ram : if (rmap /= 0) generate
       ram0 : syncram_2pft generic map(memtech, rfifo, 8, 0, 0, 2)
       port map(clk, rmrenable, rmraddress(rfifo-1 downto 0),
         rmrdata, clk, rmwrite, rmwaddress(rfifo-1 downto 0),
         rmwdata, open, testin);
     end generate;
   end generate;
- 
+
 end architecture;

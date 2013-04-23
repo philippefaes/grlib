@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,8 @@ use techmap.alltap.all;
 
 entity scanregi is
   generic (
-    tech : integer := 0
+    tech : integer := 0;
+    intesten: integer := 1
     );
   port (
     pad     : in std_ulogic;
@@ -52,15 +53,22 @@ signal d1, d2, q1, q2, m3i, o1o : std_ulogic;
 begin
 
   gen0: if tech = 0 generate
-    x: scanregi_inf port map (pad,core,tck,tdi,tdo,bsshft,bscapt,bsupd,bsdrive,bshighz);
+    x: scanregi_inf generic map (intesten) port map (pad,core,tck,tdi,tdo,bsshft,bscapt,bsupd,bsdrive,bshighz);
   end generate;
   map0: if tech /= 0 generate
-    m1 : grmux2 generic map (tech) port map (pad, q1, bsdrive, core);
-    m2 : grmux2 generic map (tech) port map (q1, q2, bsupd, d1);
+    iten: if intesten /= 0 generate
+      m1 : grmux2 generic map (tech) port map (pad, q1, bsdrive, core);
+      f1 : grdff  generic map (tech) port map (tck, d1, q1);
+      m2 : grmux2 generic map (tech) port map (q1, q2, bsupd, d1);
+    end generate;
+    itdis: if intesten = 0 generate
+      core <= pad;
+      q1 <= '0';
+      d1 <= '0';
+    end generate;
     m3 : grmux2 generic map (tech) port map (m3i, tdi, bsshft, d2);
     m4 : grmux2 generic map (tech) port map (q2, o1o, bscapt, m3i);
     o1 : gror2  generic map (tech) port map (pad, bshighz, o1o);
-    f1 : grdff  generic map (tech) port map (tck, d1, q1);
     f2 : grdff  generic map (tech) port map (tck, d2, q2);
     tdo <= q2;
   end generate;
@@ -162,7 +170,7 @@ begin
       end generate;
     end generate;
     nohz : if hzsup = 0 generate
-      padoen <= '0';
+      padoen <= padoenx;
     end generate;
 
 end;
@@ -178,7 +186,8 @@ entity scanregio is
   generic (
     tech : integer := 0;
     hzsup: integer range 0 to 1 := 1;
-    oepol: integer range 0 to 1 := 1
+    oepol: integer range 0 to 1 := 1;
+    intesten: integer range 0 to 1 := 1
     );
   port (
     pado    : out std_ulogic;
@@ -205,12 +214,12 @@ begin
 
   gen0: if tech = 0 generate
     x: scanregio_inf
-      generic map (hzsup)
+      generic map (hzsup,intesten)
       port map (pado,padoen,padi,coreo,coreoen,corei,tck,tdi,tdo,
                 bsshft,bscapt,bsupdi,bsupdo,bsdrive,bshighz);
   end generate;
   map0: if tech /= 0 generate
-    x0: scanregi generic map (tech) 
+    x0: scanregi generic map (tech,intesten)
 	port map (padi, corei, tck, tdo1, tdo, bsshft, bscapt, bsupdi, bsdrive, bshighz);
     x1: scanregto generic map (tech, hzsup, oepol)
 	port map (pado, padoen, coreo, coreo, coreoen, 

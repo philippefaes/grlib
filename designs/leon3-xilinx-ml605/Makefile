@@ -1,15 +1,18 @@
 include .config
 GRLIB=../..
 TOP=leon3mp
+DESIGN=leon3-xilinx-ml605
 BOARD=xilinx-ml605-xc6vlx240t
 include $(GRLIB)/boards/$(BOARD)/Makefile.inc
 DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 #UCF=$(GRLIB)/boards/$(BOARD)/$(TOP).ucf
 UCF=$(TOP).ucf
+UCF_PLANAHEAD=$(TOP)_mig39.ucf
+
 #ISEMAPOPT=-timing
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=high
-XSTOPT="-uc leon3mp.xcf"
+XSTOPT=-uc leon3mp.xcf
 SYNPOPT="set_option -pipe 1; set_option -retiming 0; set_option -enable_prepacking 1;\
 set_option -write_apr_constraint 0;set_option -resource_sharing 1; set_option -symbolic_fsm_compiler 1"
 VHDLOPTSYNFILES= \
@@ -64,6 +67,14 @@ VHDLOPTSYNFILES= \
 	mig_37/user_design/rtl/ui/ui_rd_data.vhd \
 	mig_37/user_design/rtl/ui/ui_top.vhd \
 	mig_37/user_design/rtl/ui/ui_wr_data.vhd
+VERILOGOPTSYNFILES= \
+	mig/user_design/rtl/controller/*.v \
+	mig/user_design/rtl/ecc/*.v \
+	mig/user_design/rtl/ip_top/*.v \
+	mig/user_design/rtl/phy/*.v \
+	mig/user_design/rtl/phy/*.v \
+	mig/user_design/rtl/ui/*.v \
+	$$XILINX/verilog/src/glbl.v
 VHDLSYNFILES= \
 	ahb2mig_ml605.vhd config.vhd ahbrom.vhd \
 	svga2ch7301c.vhd gtxclk.vhd leon3mp.vhd
@@ -73,13 +84,16 @@ SDCFILE=default.sdc
 BITGEN=$(GRLIB)/boards/$(BOARD)/default.ut
 CLEAN=soft-clean
 TECHLIBS = secureip unisim
+VLOGOPT= +define+x1Gb +define+sg187E +define+x16
+VSIMOPT= -gdisas=1 -gDEBUG=0 -i -do preload_ddr3_dimm.do -t ps -novopt +notimingchecks -L secureip_ver -L xilinxcorelib_ver -L unisims_ver glbl $(SIMTOP)
+EXTRA_SOFT = gen_hex_dim16
 
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	tmtc openchip ihp gleichmann usbhc spw gsi cypress hynix \
+	tmtc openchip ihp usbhc spw gsi cypress hynix \
 	spansion
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
-	usb grusbhc spacewire ata haps coremp7 ascs slink spi hcan \
-	leon4 leon4b64 l2cache pwm gr1553b iommu ac97
+DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci ambatest can \
+	usb grusbhc spacewire ascs slink spi hcan \
+	leon4 leon4v0 l2cache pwm gr1553b iommu ac97
 FILESKIP = grcan.vhd ddr2.v mobile_ddr.v
 GRLIB_CONFIG = grlib_config.vhd
 
@@ -94,3 +108,13 @@ mig_37 mig:
 
 migclean:
 	-rm -rf mig_37* tmp coregen.log
+
+mig39:
+	coregen -b mig39.xco -p mig39.cgp
+	patch -p1 < mig_patch.txt
+	patch -p1 < mig_iodelay_ctrl_patch.txt
+	patch -p1 < mig_infrastructure_patch.txt
+	patch -p1 < mig_ucf_patch.txt
+
+mig39clean:
+	-rm -rf mig tmp coregen.log

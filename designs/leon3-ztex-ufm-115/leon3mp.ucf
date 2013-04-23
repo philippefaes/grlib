@@ -30,9 +30,13 @@ NET "dsuact" IOSTANDARD=LVTTL;
 
 ##### DDR SDRAM
 
-#NET "*/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL" TIG;
-NET "*/memc3_wrapper_inst/memc3_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
-NET "*/c3_pll_lock" TIG;
+# --- MIG37 ---
+NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
+NET "mig_gen.ddrc/MCB_inst/c?_pll_lock" TIG;
+NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG; ## This path exists for DDR2 only
+
+# --- MIG39 ---
+INST "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;
 
 CONFIG VCCAUX=2.5; # Valid values are 2.5 and 3.3
 #CONFIG MCB_PERFORMANCE= STANDARD;

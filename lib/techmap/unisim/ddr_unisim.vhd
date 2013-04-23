@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -169,6 +169,7 @@ use techmap.gencomp.all;
 -- pragma translate_off
 library unisim;
 use unisim.oddr;
+use unisim.oddr2;
 use unisim.FDDRRSE;
 --pragma translate_on
 
@@ -207,6 +208,28 @@ architecture rtl of unisim_oddr_reg is
   end component;
   attribute BOX_TYPE of
     ODDR : component is "PRIMITIVE";
+
+  component ODDR2
+	generic
+	(
+		DDR_ALIGNMENT : string := "NONE";
+		INIT : bit := '0';
+		SRTYPE : string := "SYNC"
+	);
+	port
+	(
+		Q : out std_ulogic;
+		C0 : in std_ulogic;
+		C1 : in std_ulogic;
+		CE : in std_ulogic;
+		D0 : in std_ulogic;
+		D1 : in std_ulogic;
+		R : in std_ulogic;
+		S : in std_ulogic
+	);
+  end component;
+  attribute BOX_TYPE of
+    ODDR2 : component is "PRIMITIVE";
 
   component FDDRRSE
 --    generic ( INIT : bit := '0');
@@ -252,7 +275,7 @@ begin
          S => S);
   end generate;
 
-  V2 : if tech = virtex2 or tech = spartan3 or tech = spartan6 generate
+  V2 : if tech = virtex2 or tech = spartan3 generate
 
       d2reg : process (C1, D2, R)
       begin
@@ -276,6 +299,33 @@ begin
           S => S);
   end generate;
       
+
+  s6 : if tech = spartan6 generate
+
+      d2reg : process (C1, D2, R)
+      begin
+        if R='1' then --asynchronous reset, active high
+          preD2 <= '0';
+        elsif C1'event and C1='1' then --Clock event - posedge
+          preD2 <= D2;
+        end if;
+      end process;
+          
+       c_dm : component ODDR2  
+          port map ( 
+             Q => Q, 
+             C0 => C1, 
+             C1 => C2, 
+             CE => CE, 
+             D0 => D1, 
+             D1 => preD2, 
+             R => R, 
+             S => R
+             );
+
+          
+  end generate;
+
 
 end ;
 

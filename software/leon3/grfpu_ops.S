@@ -649,8 +649,8 @@ fpu_chkft:
        cmp     %o2, %g0               
        beq     1f                     
        mov     0, %o0                 
-       cmp     %o2, 3                 
-       beq     1f                     
+       cmp     %o2, 2                 
+       bge     1f                     
  	set	c2, %o1                      
 	ldd	[%o1], %f0             
 	ldd	[%o1 + 8], %f2         

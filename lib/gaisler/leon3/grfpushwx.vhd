@@ -16,7 +16,8 @@ use gaisler.leon3.all;
 entity grfpushwx is
   generic (mul    : integer              := 0;
            nshare : integer range 0 to 8 := 0;
-           tech   : integer);
+           tech   : integer;
+           arb    : integer range 0 to 2 := 1);
   port(
     clk     : in  std_logic;
     reset   : in  std_logic;
@@ -31,7 +32,8 @@ architecture rtl of grfpushwx is
 component grfpushw
   generic (mul    : integer range 0 to 3 := 0;
            nshare : integer range 0 to 8 := 0;
-           tech   : integer);
+           tech   : integer;
+           arb    : integer range 0 to 2 := 1);
   port(
     clk     : in  std_logic;
     reset   : in  std_logic;
@@ -169,7 +171,7 @@ end component;
 
 begin
 
-  x0 : grfpushw generic map ((mul mod 4), nshare, tech)
+  x0 : grfpushw generic map ((mul mod 4), nshare, tech, arb)
     port map (
       clk  ,
       reset ,

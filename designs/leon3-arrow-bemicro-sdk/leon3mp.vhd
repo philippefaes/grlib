@@ -1,10 +1,10 @@
 ------------------------------------------------------------------------------
 --  LEON3 Demonstration design
---  Copyright (C) 2011 Jan Andersson, Aeroflex Gaisler
+--  Copyright (C) 2011 - 2012 Jan Andersson, Aeroflex Gaisler
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ use techmap.gencomp.all;
 
 library gaisler;
 use gaisler.memctrl.all;
+use gaisler.ddrpkg.all;
 use gaisler.leon3.all;
 use gaisler.uart.all;
 use gaisler.misc.all;
@@ -109,7 +110,13 @@ entity leon3mp is
     sd_dat2      : inout std_logic;
     sd_dat3      : inout std_logic;
     sd_cmd       : inout std_logic;
-    sd_clk       : inout std_logic
+    sd_clk       : inout std_logic;
+
+    -- EPCS
+    epcs_data    : in    std_ulogic;
+    epcs_dclk    : out   std_ulogic;
+    epcs_csn     : out   std_ulogic;
+    epcs_asdi    : out   std_ulogic
     
     -- Expansion connector on card edge (set as reserved in design's QSF)
     --reset_exp_n     : out   std_logic;
@@ -455,7 +462,7 @@ begin
       generic map (
         hindex     => 4,
         hirq       => 9,
-        faddr      => 16#b00#,
+        faddr      => 16#000#,
         fmask      => 16#f00#,
         ioaddr     => 16#002#,
         iomask     => 16#fff#,
@@ -467,7 +474,8 @@ begin
         dualoutput => CFG_SPIMCTRL_DUALOUTPUT,
         scaler     => CFG_SPIMCTRL_SCALER,
         altscaler  => CFG_SPIMCTRL_ASCALER,
-        pwrupcnt   => CFG_SPIMCTRL_PWRUPCNT)
+        pwrupcnt   => CFG_SPIMCTRL_PWRUPCNT,
+        offset     => CFG_SPIMCTRL_OFFSET)
       port map (
         rstn  => rstn,
         clk   => clkm,
@@ -475,34 +483,20 @@ begin
         ahbso => ahbso(4),
         spii  => spmi,
         spio  => spmo);
-
-    miso_pad : inpad generic map (tech => padtech)
-      port map (sd_dat0, spmi.miso);
-    mosi_pad : outpad generic map (tech => padtech)
-      port map (sd_cmd, spmo.mosi);
-    sck_pad  : outpad generic map (tech => padtech)
-      port map (sd_clk, spmo.sck);
-    slvsel0_pad : iopad generic map (tech => padtech)
-      port map (sd_dat3, spmo.csn, spmo.cdcsnoen, spmi.cd);
   end generate;
+
+  epcs_miso_pad : inpad generic map (tech => padtech)
+    port map (epcs_data, spmi.miso);
+  epcs_mosi_pad : outpad generic map (tech => padtech)
+    port map (epcs_asdi, spmo.mosi);
+  epcs_sck_pad  : outpad generic map (tech => padtech)
+    port map (epcs_dclk, spmo.sck);
+  epcs_slvsel0_pad : outpad generic map (tech => padtech)
+    port map (epcs_csn, spmo.csn);
 
   nospimc : if CFG_SPIMCTRL /= 1 or CFG_AHBROMEN /= 0 generate
-    spmo.mosi        <= '0';
-    spmo.mosioen     <= '1';
-    spmo.sck         <= '0';
-    spmo.csn         <= '1';
-    spmo.cdcsnoen    <= '1';
-    spmo.errorn      <= '0';
-    spmo.ready       <= '0';
-    spmo.initialized <= '0';
+    spmo <=  spimctrl_out_none;
   end generate;
-
-  -- sd_dat1 and sd_dat2 are unused
-  unuseddat1_pad : iopad generic map (tech => padtech)
-    port map (sd_dat1, gnd(0), vcc(1), open);
-  unuseddat2_pad : iopad generic map (tech => padtech)
-    port map (sd_dat2, gnd(0), vcc(1), open);
-
   
 ----------------------------------------------------------------------
 ---  APB Bridge and various periherals -------------------------------
@@ -713,6 +707,64 @@ begin
     slvsel2(0) <= '0';
   end generate;
 
+  -- SPI Memory Controller
+  -- Example on how to connect SPI memory controller to SD card. If you want to
+  -- use this then you need to disable the second SPICTRL core's connections to
+  -- the same top-level signals above.
+  --spimc: if false generate
+  --  spimctrl0 : spimctrl
+  --    generic map (
+  --      hindex     => 4,
+  --      hirq       => 9,
+  --      faddr      => 16#b00#,
+  --      fmask      => 16#f00#,
+  --      ioaddr     => 16#002#,
+  --      iomask     => 16#fff#,
+  --      spliten    => CFG_SPLIT,
+  --      oepol      => 0,
+  --      sdcard     => CFG_SPIMCTRL_SDCARD,
+  --      readcmd    => CFG_SPIMCTRL_READCMD,
+  --      dummybyte  => CFG_SPIMCTRL_DUMMYBYTE,
+  --      dualoutput => CFG_SPIMCTRL_DUALOUTPUT,
+  --      scaler     => CFG_SPIMCTRL_SCALER,
+  --      altscaler  => CFG_SPIMCTRL_ASCALER,
+  --      pwrupcnt   => CFG_SPIMCTRL_PWRUPCNT)
+  --    port map (
+  --      rstn  => rstn,
+  --      clk   => clkm,
+  --      ahbsi => ahbsi,
+  --      ahbso => ahbso(4),
+  --      spii  => spmi,
+  --      spio  => spmo);
+
+  --  miso_pad : inpad generic map (tech => padtech)
+  --    port map (sd_dat0, spmi.miso);
+  --  mosi_pad : outpad generic map (tech => padtech)
+  --    port map (sd_cmd, spmo.mosi);
+  --  sck_pad  : outpad generic map (tech => padtech)
+  --    port map (sd_clk, spmo.sck);
+  --  slvsel0_pad : iopad generic map (tech => padtech)
+  --    port map (sd_dat3, spmo.csn, spmo.cdcsnoen, spmi.cd);
+  --end generate;
+
+  --nospimc : if false generate
+  --  spmo.mosi        <= '0';
+  --  spmo.mosioen     <= '1';
+  --  spmo.sck         <= '0';
+  --  spmo.csn         <= '1';
+  --  spmo.cdcsnoen    <= '1';
+  --  spmo.errorn      <= '0';
+  --  spmo.ready       <= '0';
+  --  spmo.initialized <= '0';
+  --end generate;
+
+  
+  -- sd_dat1 and sd_dat2 are unused
+  unuseddat1_pad : iopad generic map (tech => padtech)
+    port map (sd_dat1, gnd(0), vcc(1), open);
+  unuseddat2_pad : iopad generic map (tech => padtech)
+    port map (sd_dat2, gnd(0), vcc(1), open);
+  
 -----------------------------------------------------------------------
 ---  ETHERNET ---------------------------------------------------------
 -----------------------------------------------------------------------

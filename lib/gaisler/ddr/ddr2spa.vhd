@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ use grlib.stdlib.all;
 library gaisler;
 use grlib.devices.all;
 use gaisler.memctrl.all;
+use gaisler.ddrpkg.all;
 library techmap;
 use techmap.gencomp.all;
 
@@ -81,7 +82,9 @@ entity ddr2spa is
     ft             :       integer range 0 to 1 := 0;
     ftbits         :       integer := 0;
     bigmem         :       integer range 0 to 1 := 0;
-    raspipe        :       integer range 0 to 1 := 0
+    raspipe        :       integer range 0 to 1 := 0;
+    nclk           :       integer range 1 to 3 := 3;
+    scantest       :       integer := 0
     );
   port (
     rst_ddr        : in    std_ulogic;
@@ -94,8 +97,8 @@ entity ddr2spa is
     clkddri        : in    std_ulogic;
     ahbsi          : in    ahb_slv_in_type;
     ahbso          : out   ahb_slv_out_type;
-    ddr_clk        : out   std_logic_vector(2 downto 0);
-    ddr_clkb       : out   std_logic_vector(2 downto 0);
+    ddr_clk        : out   std_logic_vector(nclk-1 downto 0);
+    ddr_clkb       : out   std_logic_vector(nclk-1 downto 0);
     ddr_clk_fb_out : out   std_logic;
     ddr_clk_fb     : in    std_logic;
     ddr_cke        : out   std_logic_vector(1 downto 0);
@@ -117,7 +120,6 @@ end;
 architecture rtl of ddr2spa is
 
 constant DDR_FREQ : integer := (clkmul * MHz) / clkdiv;
-constant FAST_AHB : integer := integer'(AHBFREQ / DDR_FREQ) + integer'((ahbbits-1)/(2*ddrbits));
 signal sdi     : sdctrl_in_type;
 signal sdo     : sdctrl_out_type;
 --signal clkread  : std_ulogic;
@@ -159,11 +161,11 @@ begin
     end if;
   end process;
       
-  ftphy: if ftbits > 0 generate
-    ddr_phy0 : ddr2phy_wrap
+  nftphy: if true generate
+    ddr_phy0 : ddr2phy_wrap_cbd
       generic map (
         tech => fabtech, MHz => MHz,
-        dbits => ddrbits, rstdelay => rstdel, clk_mul => clkmul,
+        dbits => ddrbits, rstdelay => 0, clk_mul => clkmul,
         clk_div => clkdiv,
         ddelayb0 => ddelayb0, ddelayb1 => ddelayb1, ddelayb2 => ddelayb2,
         ddelayb3 => ddelayb3, ddelayb4 => ddelayb4, ddelayb5 => ddelayb5,
@@ -171,55 +173,26 @@ begin
         cbdelayb1=> cbdelayb1, cbdelayb2=> cbdelayb2,cbdelayb3=> cbdelayb3,
         numidelctrl => numidelctrl, norefclk => norefclk, rskew => rskew,
         eightbanks => eightbanks, dqsse => dqsse,
-        cben => 1, chkbits => ftbits, ctrl2en => 0, resync => 0, custombits => 8 )
+        chkbits => ftbits*ft, padbits => ftbits*(1-ft),
+        ctrl2en => 0, resync => 0, custombits => 8,
+        nclk => nclk, scantest => scantest )
       port map (
         rst_ddr, clk_ddr, clkref200, clkddro, clkddri, clkddri, ilock,
         ddr_clk, ddr_clkb, ddr_clk_fb_out, ddr_clk_fb,
         ddr_cke, ddr_csb, ddr_web, ddr_rasb, ddr_casb,
-        ddr_dm(ddrbits/8-1 downto 0), 
-        ddr_dqs(ddrbits/8-1 downto 0),
-        ddr_dqsn(ddrbits/8-1 downto 0),
-        ddr_ad, ddr_ba, ddr_dq(ddrbits-1 downto 0), ddr_odt,
-        ddr_dm((ddrbits+ftbits)/8-1 downto ddrbits/8),
-        ddr_dqs((ddrbits+ftbits)/8-1 downto ddrbits/8),
-        ddr_dqsn((ddrbits+ftbits)/8-1 downto ddrbits/8),
-        ddr_dq((ddrbits+ftbits)-1 downto ddrbits),
+        ddr_dm, ddr_dqs, ddr_dqsn,
+        ddr_ad, ddr_ba, ddr_dq, ddr_odt,
         open, open, open, open, open,
-        sdi, sdo,
-        clkddri, "00000000", open);
-    end generate;
-
-    nftphy: if ftbits = 0 generate
-      ddr_phy0 : ddr2phy_wrap_cbd
-        generic map (
-          tech => fabtech, MHz => MHz,
-          dbits => ddrbits, rstdelay => rstdel, clk_mul => clkmul,
-          clk_div => clkdiv,
-          ddelayb0 => ddelayb0, ddelayb1 => ddelayb1, ddelayb2 => ddelayb2,
-          ddelayb3 => ddelayb3, ddelayb4 => ddelayb4, ddelayb5 => ddelayb5,
-          ddelayb6 => ddelayb6, ddelayb7 => ddelayb7, cbdelayb0=> cbdelayb0,
-          cbdelayb1=> cbdelayb1, cbdelayb2=> cbdelayb2,cbdelayb3=> cbdelayb3,
-          numidelctrl => numidelctrl, norefclk => norefclk, rskew => rskew,
-          eightbanks => eightbanks, dqsse => dqsse,
-          chkbits => 0, ctrl2en => 0, resync => 0, custombits => 8 )
-        port map (
-          rst_ddr, clk_ddr, clkref200, clkddro, clkddri, clkddri, ilock,
-          ddr_clk, ddr_clkb, ddr_clk_fb_out, ddr_clk_fb,
-          ddr_cke, ddr_csb, ddr_web, ddr_rasb, ddr_casb,
-          ddr_dm(ddrbits/8-1 downto 0), 
-          ddr_dqs(ddrbits/8-1 downto 0),
-          ddr_dqsn(ddrbits/8-1 downto 0),
-          ddr_ad, ddr_ba, ddr_dq(ddrbits-1 downto 0), ddr_odt,
-          open, open, open, open, open,
-          sdi, sdo, clkddri, "00000000", open);
-    end generate;
+        sdi, sdo, clkddri, "00000000", open,
+        ahbsi.testen, ahbsi.scanen, ahbsi.testrst, ahbsi.testoen);
+  end generate;
     
     ddrc : ddr2spax generic map (memtech => memtech, phytech => fabtech, hindex => hindex, 
       haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask, ddrbits => ddrbits,
       pwron => pwron, MHz => DDR_FREQ, TRFC => TRFC, col => col, Mbyte => Mbyte,
-      fastahb => FAST_AHB, readdly => readdly, odten => odten, octen => octen, dqsgating => dqsgating,
+      readdly => readdly, odten => odten, octen => octen, dqsgating => dqsgating,
       nosync => nosync, eightbanks => eightbanks, dqsse => dqsse, burstlen => burstlen, ahbbits => ahbbits,
-      ft => ft, ddr_syncrst => ddr_syncrst, bigmem => bigmem, raspipe => raspipe, hwidthen => 0)
+      ft => ft, ddr_syncrst => ddr_syncrst, bigmem => bigmem, raspipe => raspipe, hwidthen => 0, rstdel => rstdel)
     port map (ddr_rst, rst_ahb, clkddri, clk_ahb, ahbsi, ahbso, sdi, sdo, '0');
 
   ce <= sdo.ce;

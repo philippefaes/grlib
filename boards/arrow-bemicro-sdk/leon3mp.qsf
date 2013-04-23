@@ -5,6 +5,12 @@ set_global_assignment -name DEVICE_FILTER_PIN_COUNT 256
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 7
 set_global_assignment -name NUM_PARALLEL_PROCESSORS 2
 set_global_assignment -name SDC_FILE quartus.sdc
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_FLASH_NCE_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DCLK_AFTER_CONFIGURATION "USE AS REGULAR IO"
+
 
 # PIN LOCATION ASSIGNMENTS
 set_location_assignment PIN_T4 -to TEMP_SC
@@ -148,6 +154,11 @@ set_location_assignment PIN_M10 -to P[29]
 set_location_assignment PIN_K15 -to P[58]
 set_location_assignment PIN_J14 -to P[59]
 set_location_assignment PIN_T7 -to P[60]
+set_location_assignment PIN_H2 -to EPCS_DATA
+set_location_assignment PIN_H1 -to EPCS_DCLK
+set_location_assignment PIN_D2 -to EPCS_CSn
+set_location_assignment PIN_C1 -to EPCS_ASDI
+
 
 # PIN I/O STANDARDS
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"

@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -160,7 +160,8 @@ entity pads is
     ltck         : out std_ulogic;
     ltms         : out std_ulogic;
     ltdi         : out std_ulogic;
-    ltdo         : in std_ulogic
+    ltdo         : in  std_ulogic;
+    ltdoen       : in  std_ulogic
     
 
 	);
@@ -193,7 +194,7 @@ begin
   tck_pad : inpad generic map (tech => padtech) port map (tck, ltck);
   tms_pad : inpad generic map (tech => padtech) port map (tms, ltms);
   tdi_pad : inpad generic map (tech => padtech) port map (tdi, ltdi);
-  tdo_pad : outpad generic map (tech => padtech) port map (tdo, ltdo);
+  tdo_pad : toutpad generic map (tech => padtech, oepol => OEPOL) port map (tdo, ltdo, ltdoen);
   
   
   clk_pad : inpad generic map (tech => clkpadtech, filter => schmitt) port map (clk, clkin); 

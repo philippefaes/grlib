@@ -322,51 +322,51 @@ CONFIG PROHIBIT = B20,C13,C28,D24,F21,F25,K14,L13;
 ######################################################################################
 
 ##Site: C13 -- Bank 35
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.0.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*0*u_oserdes_cpt"
   LOC = "OLOGIC_X2Y137";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.0.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*0*u_odelay_cpt"
   LOC = "IODELAY_X2Y137";
 
 ##Site: L13 -- Bank 35
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.1.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*1*u_oserdes_cpt"
   LOC = "OLOGIC_X2Y141";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.1.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*1*u_odelay_cpt"
   LOC = "IODELAY_X2Y141";
 
 ##Site: K14 -- Bank 35
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.2.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*2*u_oserdes_cpt"
   LOC = "OLOGIC_X2Y143";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.2.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*2*u_odelay_cpt"
   LOC = "IODELAY_X2Y143";
 
 ##Site: F21 -- Bank 26
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.3.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*3*u_oserdes_cpt"
   LOC = "OLOGIC_X1Y179";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.3.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*3*u_odelay_cpt"
   LOC = "IODELAY_X1Y179";
 
 ##Site: B20 -- Bank 26
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.4.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*4*u_oserdes_cpt"
   LOC = "OLOGIC_X1Y181";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.4.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*4*u_odelay_cpt"
   LOC = "IODELAY_X1Y181";
 
 ##Site: F25 -- Bank 25
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.5.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*5*u_oserdes_cpt"
   LOC = "OLOGIC_X1Y137";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.5.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*5*u_odelay_cpt"
   LOC = "IODELAY_X1Y137";
 
 ##Site: C28 -- Bank 25
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.6.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*6*u_oserdes_cpt"
   LOC = "OLOGIC_X1Y141";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.6.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*6*u_odelay_cpt"
   LOC = "IODELAY_X1Y141";
 
 ##Site: D24 -- Bank 25
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.7.u_oserdes_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*7*u_oserdes_cpt"
   LOC = "OLOGIC_X1Y143";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt.7.u_odelay_cpt"
+INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt*7*u_odelay_cpt"
   LOC = "IODELAY_X1Y143";
 
 
@@ -484,6 +484,8 @@ NET "led(1)"                    LOC = "AC24";   ## 2   on LED DS11, 2 on J62
 NET "led(2)"                    LOC = "AE22";   ## 2   on LED DS9,  3 on J62
 NET "led(3)"                    LOC = "AE23";   ## 2   on LED DS10, 4 on J62
 NET "led(4)"                    LOC = "AB23";   ## 2   on LED DS15, 5 on J62
+NET "led(4)"                    LOC = "AB23";   ## 2   on LED DS15, 5 on J62
+NET "led(5)"                    LOC = "AG23";   ## 2   on LED DS14, 6 on J62
 #NET "GPIO_LED_5"                    LOC = "AG23";   ## 2   on LED DS14, 6 on J62
 #NET "GPIO_LED_6"                    LOC = "AE24";   ## 2   on LED DS22, 7 on J62
 #NET "GPIO_LED_7"                    LOC = "AD24";   ## 2   on LED DS21, 8 on J62
@@ -576,59 +578,6 @@ OFFSET = OUT : 12.000 : AFTER gmiiclk_p;
 #TIMESPEC "TSPLB_TFT40" = FROM "clkvga" TO "clkm" TIG;
 
 
-
-# ISE contraints when using XST instead of Synplify
-######################################################################################
-##Place CPT OSERDES and IODELAY:                                                    ##
-######################################################################################
-
-##Site: C13 -- Bank 35
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[0].u_oserdes_cpt"
-  LOC = "OLOGIC_X2Y137";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[0].u_odelay_cpt"
-  LOC = "IODELAY_X2Y137";
-
-##Site: L13 -- Bank 35
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[1].u_oserdes_cpt"
-  LOC = "OLOGIC_X2Y141";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[1].u_odelay_cpt"
-  LOC = "IODELAY_X2Y141";
-
-##Site: K14 -- Bank 35
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[2].u_oserdes_cpt"
-  LOC = "OLOGIC_X2Y143";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[2].u_odelay_cpt"
-  LOC = "IODELAY_X2Y143";
-
-##Site: F21 -- Bank 26
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[3].u_oserdes_cpt"
-  LOC = "OLOGIC_X1Y179";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[3].u_odelay_cpt"
-  LOC = "IODELAY_X1Y179";
-
-##Site: B20 -- Bank 26
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[4].u_oserdes_cpt"
-  LOC = "OLOGIC_X1Y181";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[4].u_odelay_cpt"
-  LOC = "IODELAY_X1Y181";
-
-##Site: F25 -- Bank 25
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[5].u_oserdes_cpt"
-  LOC = "OLOGIC_X1Y137";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[5].u_odelay_cpt"
-  LOC = "IODELAY_X1Y137";
-
-##Site: C28 -- Bank 25
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[6].u_oserdes_cpt"
-  LOC = "OLOGIC_X1Y141";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[6].u_odelay_cpt"
-  LOC = "IODELAY_X1Y141";
-
-##Site: D24 -- Bank 25
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[7].u_oserdes_cpt"
-  LOC = "OLOGIC_X1Y143";
-INST "ddr3ctrl/u_memc_ui_top/u_mem_intfc/phy_top0/u_phy_read/u_phy_rdclk_gen/gen_ck_cpt[7].u_odelay_cpt"
-  LOC = "IODELAY_X1Y143";
 
 ######################################################################################
 ## MMCM_ADV CONSTRAINTS                                                             ##

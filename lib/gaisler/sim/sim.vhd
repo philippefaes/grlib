@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -81,9 +81,6 @@ package sim is
         OE : in std_logic);
   end component;  
 
-  procedure hexread(L : inout line; value:out bit_vector);
-  procedure hexread(L : inout line; value:out std_logic_vector);
-  function ishex(c : character) return boolean;
   function buskeep(signal v : in std_logic_vector) return std_logic_vector;
   function buskeep(signal c : in std_logic) return std_logic;
 
@@ -121,47 +118,6 @@ package sim is
       mdc      : in std_logic;
       gtx_clk  : in std_logic
       );
-  end component;
-
-  type ata_in_type is record 			--signals from host to device
-    csel : std_logic;				--cable select
-    cs   : std_logic_vector(1 downto 0); 		--chip select
-    --dd   : std_logic_vector(15 downto 0);		--data bus
-    dasp : std_logic;				--Device active / slave present
-    da   : std_logic_vector(2 downto 0); 	        --device adress
-    dmack: std_logic;				--DMA acknowledge
-    dior : std_logic;				--I/O read strobe
-    diow : std_logic;				--I/O write strobe
-    reset: std_logic;				--Reset
-  end record;
-
-  constant ATAI_RESET_VECTOR : ata_in_type := ('0',(others=>'0'),'0',
-    (others=>'0'),'0','0','0','0');
-
-  type ata_out_type is record 			--signals from device to host
-    dmarq: std_logic;				--DMA request
-    intrq: std_logic;				--Interrupt request
-    iordy: std_logic;				--I/O ready
-    pdiag: std_logic;				--Passed diagnostics
-  end record;
-
-  constant ATAO_RESET_VECTOR : ata_out_type := ('0','0','1','0');
-
-  component ata_device is
-  generic(sector_length: integer :=512; --in bytes
-        disk_size: integer :=32; --in sectors
-        log2_size : integer :=14; --Log2(sector_length*disk_size), abits
-        Tlr : time := 35 ns;
-        sramfile : string := "disk.srec"
-        );
-  port(
-  --for convinience, not part of ATA interface
-    clk   : in std_logic;
-    rst   : in std_logic;
-  --interface to host bus adapter
-    d     : inout std_logic_vector(15 downto 0) := (others=>'Z');
-    atai  : in  ata_in_type := ATAI_RESET_VECTOR;
-    atao  : out ata_out_type:= ATAO_RESET_VECTOR);
   end component;
 
   procedure leon3_subtest(subtest : integer);
@@ -295,7 +251,8 @@ package sim is
       );
     port(
       a : inout std_logic_vector(data_width-1 downto 0);
-      b : inout std_logic_vector(data_width-1 downto 0)
+      b : inout std_logic_vector(data_width-1 downto 0);
+      x : in std_logic_vector(data_width-1 downto 0) := (others => '0')
       );
   end component;
 
@@ -306,7 +263,8 @@ package sim is
       fname      : string  := "prom.srec";     -- File to read from
       readcmd    : integer := 16#0B#;          -- SPI memory device read command
       dummybyte  : integer := 1;
-      dualoutput : integer := 0);
+      dualoutput : integer := 0;
+      memoffset  : integer := 0);
     port (
       sck : in    std_ulogic;
       di  : inout std_logic;
@@ -330,6 +288,93 @@ package sim is
       );
   end component;
 
+  type ramback_in_type is record
+    -- Data access
+    addr: std_logic_vector(31 downto 0);
+    wr: std_logic_vector(15 downto 0);
+    din: std_logic_vector(127 downto 0);
+    -- Command strobes
+    clear,reload,dbgdump: std_logic;
+  end record;
+
+  constant ramback_in_none: ramback_in_type :=
+    ((others => '0'), (others => '0'), (others => '0'), '0', '0', '0');
+  
+  type ramback_out_type is record
+    addr: std_logic_vector(31 downto 0);
+    dout: std_logic_vector(127 downto 0);
+    cmdack: std_logic;
+  end record;
+
+  constant ramback_out_none: ramback_out_type := ((others => '0'), (others => '0'), '0');
+  
+  type ramback_in_array is array(natural range <>) of ramback_in_type;
+  type ramback_out_array is array(natural range <>) of ramback_out_type;
+  
+  component ramback
+    generic (
+      abits: integer := 16;
+      dbits: integer := 32;
+      fname: string := "dummy";
+      autoload: integer := 0;
+      pagesize: integer := 4096;
+      listsize: integer := 128;
+      rstmode: integer := 0;
+      rstdatah: integer := 16#DEAD#;
+      rstdatal: integer := 16#BEEF#;
+      nports: integer := 4
+      );
+    port (
+      bein:  in ramback_in_array(1 to nports);
+      beout: out ramback_out_array(1 to nports)
+      );
+  end component;
+
+  component zbtssram is
+    generic (
+      nohold: integer := 1;
+      flowthru: integer := 0;
+      dbits: integer := 32
+      );
+    port (
+      -- SSRAM signals
+      clk: in std_logic;
+      a: in std_logic_vector(20 downto 0);
+      bwn: in std_logic_vector(dbits/8-1 downto 0);
+      wen: in std_logic;
+      advld: in std_logic;
+      ce1n: in std_logic;
+      ce2: in std_logic;
+      ce3n: in std_logic;
+      oen: in std_logic;
+      cen: in std_logic;
+      zz: inout std_logic;
+      dq: inout std_logic_vector(dbits-1 downto 0);
+      mode: in std_logic;
+      -- Backend interface
+      be_addr: out std_logic_vector(20 downto 0);
+      be_rdd : in  std_logic_vector(dbits-1 downto 0);
+      be_wr  : out std_logic_vector(dbits/8-1 downto 0);
+      be_wrd : out std_logic_vector(dbits-1 downto 0)
+      );
+  end component;
+
+  component slavecheck is
+    generic (
+      hindex: integer := 0;
+      hbar: integer := 0;
+      ahbbits: integer := 32;
+      fname: string;
+      autoload: integer := 0
+    );
+    port (
+      rst: in std_logic;
+      clk: in std_logic;
+      ahbsi: in ahb_slv_in_type;
+      ahbso: in ahb_slv_out_type
+      );
+  end component;
+  
   procedure ps2_device (
     signal clk      : inout std_logic;
     signal data     : inout std_logic;
@@ -350,7 +395,7 @@ package sim is
     signal   start : out std_ulogic;
     signal   done  : in  std_ulogic
     );
-  
+
 end;
 
 package body sim is
@@ -392,104 +437,6 @@ package body sim is
   begin
     return(cvt_to_xlhz(c));
   end;
-
-  procedure char2hex(C: character; result: out bit_vector(3 downto 0);
-            good: out boolean; report_error: in boolean) is
-  begin
-    good := true;
-    case C is
-    when '0' => result :=  x"0"; 
-    when '1' => result :=  x"1"; 
-    when '2' => result :=  X"2"; 
-    when '3' => result :=  X"3"; 
-    when '4' => result :=  X"4"; 
-    when '5' => result :=  X"5"; 
-    when '6' => result :=  X"6"; 
-    when '7' => result :=  X"7"; 
-    when '8' => result :=  X"8"; 
-    when '9' => result :=  X"9"; 
-    when 'A' => result :=  X"A"; 
-    when 'B' => result :=  X"B"; 
-    when 'C' => result :=  X"C"; 
-    when 'D' => result :=  X"D"; 
-    when 'E' => result :=  X"E"; 
-    when 'F' => result :=  X"F"; 
-
-    when 'a' => result :=  X"A"; 
-    when 'b' => result :=  X"B"; 
-    when 'c' => result :=  X"C"; 
-    when 'd' => result :=  X"D"; 
-    when 'e' => result :=  X"E"; 
-    when 'f' => result :=  X"F"; 
-    when others =>
-      if report_error then
-        assert false report 
-	  "hexread error: read a '" & C & "', expected a hex character (0-F).";
-      end if;
-      good := false;
-    end case;
-  end;
-
-  procedure hexread(L:inout line; value:out bit_vector)  is
-                variable OK: boolean;
-                variable C:  character;
-                constant NE: integer := value'length/4;	--'
-                variable BV: bit_vector(0 to value'length-1);	--'
-                variable S:  string(1 to NE-1);
-  begin
-    if value'length mod 4 /= 0 then	--'
-      assert false report
-        "hexread Error: Trying to read vector " &
-        "with an odd (non multiple of 4) length";
-      return;
-    end if;
- 
-    loop                                    -- skip white space
-      read(L,C);
-      exit when ((C /= ' ') and (C /= CR) and (C /= HT));
-    end loop;
- 
-    char2hex(C, BV(0 to 3), OK, false);
-    if not OK then
-      return;
-    end if;
- 
-    read(L, S, OK);
---    if not OK then
---      assert false report "hexread Error: Failed to read the STRING";
---      return;
---    end if;
- 
-    for I in 1 to NE-1 loop
-      char2hex(S(I), BV(4*I to 4*I+3), OK, false);
-      if not OK then
-        return;
-      end if;
-    end loop;
-    value := BV;
-  end hexread;
-
-  procedure hexread(L:inout line; value:out std_ulogic_vector) is
-    variable tmp: bit_vector(value'length-1 downto 0);	--'
-  begin
-    hexread(L, tmp);
-    value := TO_X01(tmp);
-  end hexread;
-
-  procedure hexread(L:inout line; value:out std_logic_vector) is
-    variable tmp: std_ulogic_vector(value'length-1 downto 0);	--'
-  begin
-    hexread(L, tmp);
-    value := std_logic_vector(tmp);
-  end hexread;
-
-  function ishex(c:character) return boolean is
-  variable tmp : bit_vector(3 downto 0);
-  variable OK : boolean;
-  begin
-    char2hex(C, tmp, OK, false);
-    return OK;
-  end ishex;
 
   -----------------------------------------------------------------------------
   -- Subtest print out
@@ -572,6 +519,7 @@ package body sim is
     when 2 => print("  Loopback mode");
     when 3 => print("  AM Loopback mode");
     when 4 => print("  External device test");
+    when 5 => print("  Interrupt line test");
     when others => print("  sub-system test " & tost(subtest));
     end case;
 

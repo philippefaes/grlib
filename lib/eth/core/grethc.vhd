@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 ------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 library grlib;
 use grlib.stdlib.all;
 library eth;
@@ -53,7 +54,9 @@ entity grethc is
     enable_mdint   : integer range 0 to 1  := 0;
     multicast      : integer range 0 to 1  := 0;
     edclsepahbg    : integer range 0 to 1  := 0;
-    ramdebug       : integer range 0 to 2  := 0); 
+    ramdebug       : integer range 0 to 2  := 0;
+    mdiohold       : integer := 1;
+    maxsize        : integer := 1500);
   port(
     rst            : in  std_ulogic;
     clk            : in  std_ulogic;
@@ -143,9 +146,11 @@ entity grethc is
     --scantest
     testrst        : in   std_ulogic;
     testen         : in   std_ulogic;
+    testoen        : in   std_ulogic;
     edcladdr       : in   std_logic_vector(3 downto 0) := "0000";
     edclsepahb     : in   std_ulogic;
-    edcldisable    : in   std_ulogic
+    edcldisable    : in   std_ulogic;
+    speed          : out  std_ulogic
   );
   attribute sync_set_reset of rst : signal is "true";
 end entity;
@@ -172,7 +177,7 @@ architecture rtl of grethc is
   constant burstbits       : integer := log2(burstlength);
   constant ctrlopcode      : std_logic_vector(15 downto 0) := X"8808"; 
   constant broadcast       : std_logic_vector(47 downto 0) := X"FFFFFFFFFFFF";
-  constant maxsizetx       : integer := 1514;
+--  constant maxsizetx       : integer := 1514;
   constant index           : integer := log2(edclbufsz);
   constant receiveOK       : std_logic_vector(3 downto 0) := "0000";
   constant frameCheckError : std_logic_vector(3 downto 0) := "0100";
@@ -187,8 +192,12 @@ architecture rtl of grethc is
     conv_std_logic_vector(mdcscaler, 8);
 
   --receiver constants
-  constant maxsizerx : std_logic_vector(15 downto 0) :=
-    conv_std_logic_vector(1514, 16);
+  constant maxsizerx : unsigned(15 downto 0) :=
+    to_unsigned(maxsize + 18 - 4, 16);
+
+  --tranceiver constants
+  constant maxsizetx : unsigned(15 downto 0) :=
+    to_unsigned(maxsize + 18 - 4, 16);
 
   --edcl constants
   type szvct is array (0 to 6) of integer;
@@ -388,7 +397,7 @@ architecture rtl of grethc is
     --mdio
     mdccnt          : std_logic_vector(7 downto 0);
     mdioclk         : std_ulogic;
-    mdioclkold      : std_ulogic;
+    mdioclkold      : std_logic_vector(mdiohold-1 downto 0);
     mdio_state      : mdio_state_type;
     mdioo           : std_ulogic;
     mdioi           : std_ulogic;
@@ -497,6 +506,7 @@ begin
     variable mdioindex     : integer range 0 to 31;
     variable mclk          : std_ulogic;  --rising mdio clk edge
     variable nmclk         : std_ulogic;  --falling mdio clk edge
+    variable mclkvec       : std_logic_vector(mdiohold downto 0);
     --edcl
     variable veri          : edcl_ram_in_type;
     variable swap          : std_ulogic;
@@ -867,7 +877,7 @@ begin
      v.txstart := '0'; 
      v.txburstcnt := (others => '0'); 
      if r.txden = '1' then
-       if (conv_integer(r.txlength) > maxsizetx) or
+       if (unsigned(r.txlength) > unsigned(maxsizetx)) or
                   (conv_integer(r.txlength) = 0) then
          v.txdstate := write_result; v.tmsto.req := '1';
          v.tmsto.write := '1'; v.tmsto.addr := r.txdesc & r.txdsel & "000";
@@ -1256,7 +1266,7 @@ begin
    if (rxdone and not rxstart) = '1' then
      v.gotframe := rxo.gotframe; v.rxbytecount := rxo.byte_count;
      v.rxstatus(3 downto 0) := rxo.status;
-     if (rxo.lentype > maxsizerx) or (rxo.status /= "0000") then
+     if (unsigned(rxo.lentype) > maxsizerx) or (rxo.status /= "0000") then
        v.rxlength := rxo.byte_count;
      else
        v.rxlength := rxo.lentype(10 downto 0);
@@ -1299,9 +1309,10 @@ begin
 -------------------------------------------------------------------------------
    --mdio commands
    if enable_mdio = 1 then
-     mclk := r.mdioclk and not r.mdioclkold;
-     nmclk := r.mdioclkold and not r.mdioclk;
-     v.mdioclkold := r.mdioclk;
+     mclkvec := r.mdioclkold & r.mdioclk;
+     mclk := mclkvec(mdiohold-1) and not mclkvec(mdiohold);
+     nmclk := mclkvec(1) and not mclkvec(0);
+     v.mdioclkold := mclkvec(mdiohold-1 downto 0);
      if r.mdccnt = "00000000" then
        v.mdccnt := divisor;
        v.mdioclk := not r.mdioclk;
@@ -2124,8 +2135,8 @@ begin
   txi.len         <= r.txlength;
   
   mdc             <= r.mdioclk;
-  mdio_o          <= r.mdioo; 
-  mdio_oe         <= r.mdioen;
+  mdio_o          <= r.mdioo;
+  mdio_oe         <= testoen when (scanen/=0 and testen/='0') else r.mdioen;
   tmsto           <= r.tmsto;
   rmsto           <= r.rmsto;
   tmsto2          <= r.tmsto2;
@@ -2163,6 +2174,7 @@ begin
   ehburst         <= ahbmo2.hburst;
   ehprot          <= ahbmo2.hprot;
   ehwdata         <= ahbmo2.hwdata;
+  speed           <= r.ctrl.speed;
 
   reset 	  <= irst;
 
@@ -2211,7 +2223,8 @@ begin
       generic map(
         nsync     => nsync,
         rmii      => rmii,
-        multicast => multicast)
+        multicast => multicast,
+	      maxsize   => maxsize)
       port map(
         rst   => arst,
         clk   => rx_clk,
@@ -2224,7 +2237,8 @@ begin
       generic map(
         nsync     => nsync,
         rmii      => rmii,
-        multicast => multicast)
+        multicast => multicast,
+	      maxsize   => maxsize)
       port map(
         rst   => arst,
         clk   => rmii_clk,

@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -106,6 +106,18 @@ component clkgen_virtex5
     cgo     : out clkgen_out_type;
     clk1xu  : out std_ulogic;			-- unscaled clock
     clk2xu  : out std_ulogic);
+end component; 
+
+component clkgen_virtex7 
+  generic (
+    clk_mul  : integer := 1; 
+    clk_div  : integer := 1;
+    freq     : integer := 25000);
+  port (
+    clkin   : in  std_logic;
+    clk     : out std_logic;			-- main clock
+    cgi     : in clkgen_in_type;
+    cgo     : out clkgen_out_type);
 end component; 
 
 component clkgen_axcelerator 
@@ -305,6 +317,14 @@ component clkmux_unisim
 end component;
 
 component clkmux_ut130hbd
+  port(
+    i0, i1  :  in  std_ulogic;
+    sel     :  in  std_ulogic;
+    o       :  out std_ulogic
+  );
+end component;
+
+component clkmux_ut90nhbd
   port(
     i0, i1  :  in  std_ulogic;
     sel     :  in  std_ulogic;

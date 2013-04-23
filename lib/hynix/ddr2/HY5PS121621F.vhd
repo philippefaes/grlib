@@ -21,7 +21,7 @@ USE IEEE.STD_LOGIC_1164.all;
 use std.textio.all;
 library grlib, gaisler;
 use grlib.stdlib.all;
-use gaisler.sim.all;
+use grlib.stdio.all;
 --USE IEEE.STD_LOGIC_ARITH.all;
 --USE IEEE.STD_LOGIC_UNSIGNED.all;
 USE work.HY5PS121621F_PACK.all;
@@ -804,17 +804,17 @@ begin
       readline(fload, fline);
       read(fline, fchar);
       if fchar /= 'S' or fchar /= 's' then
-        hexread(fline, rtype);
-        hexread(fline, rlen);
+        hread(fline, rtype);
+        hread(fline, rlen);
         case rtype is 
           when "0001" =>
-            hexread(fline, raddr(15 downto 0));
+            hread(fline, raddr(15 downto 0));
             raddr(31 downto 16) := (others => '0');
           when "0010" =>
-            hexread(fline, raddr(23 downto 0));
+            hread(fline, raddr(23 downto 0));
             raddr(31 downto 24) := (others => '0');
           when "0011" =>
-            hexread(fline, raddr);
+            hread(fline, raddr);
             raddr(31 downto 24) := (others => '0');
           when others => next;
         end case;
@@ -822,7 +822,7 @@ begin
         case bbits is
           -- 64 bit bank with four 16-bit...
           when 64 => 
-            hexread(fline, rdata);
+            hread(fline, rdata);
             BkAdd := raddr(27 downto 26);
             RA := raddr(25 downto 13);
             COLA := raddr(12 downto 3);
@@ -882,7 +882,7 @@ begin
             end if;
           -- 32 bit bank with two 16-bit...
           when 32 =>
-            hexread(fline, rdata);
+            hread(fline, rdata);
             BkAdd := raddr(26 downto 25);
             RA    := raddr(24 downto 12);
             COLA  := raddr(11 downto 2);
@@ -941,7 +941,7 @@ begin
             end if;
           -- 16 bit bank with one 16-bit...
           when others =>
-            hexread(fline, rdata);
+            hread(fline, rdata);
             BkAdd := raddr(25 downto 24);
             RA    := raddr(23 downto 11);
             COLA  := raddr(10 downto 1);

@@ -23,12 +23,22 @@ OFFSET = IN : 10.000 : BEFORE etx_clk;
 #NET "mig_gen.ddrc.MCB_inst.memc?_wrapper_inst.memc?_mcb_raw_wrapper_inst.gen_term_calib.mcb_soft_calibration_top_inst.mcb_soft_calibration_inst.CKE_Train" TIG; ## This path exists for DDR2 only
 #NET "mig_gen.ddrc.i.calib_done" TIG;
 
-# XST versions of DDR2 false paths
+############################################################################
+# DDR2 requires the MCB to operate in Extended performance mode with higher Vccint
+# specification to achieve maximum frequency. Therefore, the following CONFIG constraint
+# follows the corresponding GUI option setting. However, DDR3 can operate at higher 
+# frequencies with any Vcciint value by operating MCB in extended mode. Please do not
+# remove/edit the below constraint to avoid false errors.
+############################################################################
+CONFIG MCB_PERFORMANCE= STANDARD;
+
+# --- MIG37 ---
 NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
 NET "mig_gen.ddrc/MCB_inst/c?_pll_lock" TIG;
 NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG; ## This path exists for DDR2 only
-#NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL" TIG;
-#NET "mig_gen.ddrc/i.calib_done" TIG;
+
+# --- MIG39 ---
+INST "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;
 
 
 # Avoid false paths between main clock and DDR clock
@@ -170,8 +180,8 @@ NET etxd(7)	LOC = C5  | IOSTANDARD = LVCMOS25;
 ##NET MCLK	LOC = N6  | IOSTANDARD = LVCMOS18;
 #
 ## ==== Debug UART (AHB) RS232 ====
-NET dsurx	LOC = L12 | IOSTANDARD = LVCMOS25;
-NET dsutx	LOC = K14 | IOSTANDARD = LVCMOS25;
+NET dsutx	LOC = L12 | IOSTANDARD = LVCMOS25;
+NET dsurx	LOC = K14 | IOSTANDARD = LVCMOS25;
 #
 ## ==== Flash Memory ====
 NET reset_o1    LOC = B3   | IOSTANDARD = LVCMOS25;

@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -74,6 +74,24 @@ port(
 end component;
 
 component virtex6_mul_61x61
+port(
+  A : in std_logic_vector(60 downto 0);
+  B : in std_logic_vector(60 downto 0);
+  EN :  in std_logic;
+  CLK :  in std_logic;
+  PRODUCT : out std_logic_vector(121 downto 0));
+end component;
+
+component virtex7_mul_61x61
+port(
+  A : in std_logic_vector(60 downto 0);
+  B : in std_logic_vector(60 downto 0);
+  EN :  in std_logic;
+  CLK :  in std_logic;
+  PRODUCT : out std_logic_vector(121 downto 0));
+end component;
+
+component kintex7_mul_61x61
 port(
   A : in std_logic_vector(60 downto 0);
   B : in std_logic_vector(60 downto 0);

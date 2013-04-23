@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ use techmap.gencomp.all;
 use techmap.allmem.all;
 library grlib;
 use grlib.config.all;
+use grlib.config_types.all;
 use grlib.stdlib.all;
 
 entity syncram_2pbw is
@@ -46,23 +47,25 @@ entity syncram_2pbw is
     write    : in std_logic_vector((dbits/8-1) downto 0);
     waddress : in std_logic_vector((abits-1) downto 0);
     datain   : in std_logic_vector((dbits-1) downto 0);
-    testin   : in std_logic_vector(3 downto 0) := "0000");
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
 end;
 
 architecture rtl of syncram_2pbw is
-
-  constant has_sram_2pbw : tech_ability_type := (
-    easic45 => 1, others => 0);
   
   constant nctrl : integer := abits*2 + 2 + 2*dbits/8;
   
   signal dataoutx  : std_logic_vector((dbits -1) downto 0);
   signal databp, testdata : std_logic_vector((dbits -1) downto 0);
   signal renable2 : std_logic_vector((dbits/8-1) downto 0);
-  constant SCANTESTBP : boolean := (testen = 1) and (tech /= 0);
+  constant SCANTESTBP : boolean := (testen = 1) and (tech /= 0) and (tech /= ut90);
   constant iwrfst : integer := (1-syncram_2p_write_through(tech)) * wrfst;
 
+  signal xrenable,xwrite : std_logic_vector(dbits/8-1 downto 0);
+
 begin
+
+  xrenable <= renable when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
+  xwrite <= write when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
 
   s2pbw : if has_sram_2pbw(tech) = 1 generate
     no_wrfst : if iwrfst = 0 generate
@@ -169,7 +172,7 @@ begin
         wait;
       end process;
     end generate;
-    dmsg : if grlib_debug_level >= 2 generate
+    dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
       x : process
       begin
         assert false report "syncram_2pbw: " & tost(2**abits) & "x" & tost(dbits) &

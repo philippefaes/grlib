@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@
 -- documentation for details.
 --
 -- [Post revision 2]
--- 
+--
 -- Configurable maximum word length via the maxwlen generic
 --
 -- [Revision 3]
@@ -89,8 +89,20 @@
 -- regard a transfer as finished even if SCK /= CPOL. If a new transfer was
 -- started before SCK had transitioned to CPOL the core would use the wrong
 -- edge for sampling MISO and changing MOSI. Added Mode register CITE field.
--- 
-
+--
+-- [Post revision 5]
+-- Added support for async reset
+--
+-- Fixed race condition that could result in corrupted TX word if the transmit
+-- queue was empty and a new word was written into the TX queue so that the queue
+-- was updated in the same cycle as the last bit sample within the current word.
+-- If this condition occured then transmission of the new word would begin before
+-- the transmit shift register had been loaded with the new data.
+--
+-- Core would generate one extra SCK cycle for CPHA = 1 and FACT = 1.
+--
+-- Added testoen handling for scan test
+--
 library ieee;
 use ieee.numeric_std.all;
 use ieee.std_logic_1164.all;
@@ -112,7 +124,7 @@ entity spictrlx is
     odmode    : integer range 0 to 1     := 0;  -- Support open drain mode, only
                                                 -- set if pads are i/o or od pads.
     automode  : integer range 0 to 1     := 0;  -- Enable automated transfer mode
-    acntbits  : integer range 1 to 32    := 32; -- # Bits in am period counter 
+    acntbits  : integer range 1 to 32    := 32; -- # Bits in am period counter
     aslvsel   : integer range 0 to 1     := 0;  -- Automatic slave select
     twen      : integer range 0 to 1     := 1;  -- Enable three wire mode
     maxwlen   : integer range 0 to 15    := 0;  -- Maximum word length;
@@ -120,12 +132,17 @@ entity spictrlx is
     syncram   : integer range 0 to 1     := 1;  -- Use SYNCRAM for buffers
     memtech   : integer range 0 to NTECH := 0;  -- Memory technology
     ft        : integer range 0 to 2     := 0;  -- Fault-Tolerance
-    scantest  : integer range 0 to 1     := 0   -- Scan test support
+    scantest  : integer range 0 to 1     := 0;  -- Scan test support
+    syncrst   : integer range 0 to 1     := 0;  -- Use only sync reset
+    automask0 : integer                  := 0;  -- Mask 0 for automated transfers
+    automask1 : integer                  := 0;  -- Mask 1 for automated transfers
+    automask2 : integer                  := 0;  -- Mask 2 for automated transfers
+    automask3 : integer                  := 0   -- Mask 3 for automated transfers
     );
   port (
     rstn          : in std_ulogic;
     clk           : in std_ulogic;
-    
+
     -- APB signals
     apbi_psel     : in  std_ulogic;
     apbi_penable  : in  std_ulogic;
@@ -145,6 +162,7 @@ entity spictrlx is
     spii_sck      : in  std_ulogic;
     spii_spisel   : in  std_ulogic;
     spii_astart   : in  std_ulogic;
+    spii_cstart   : in  std_ulogic;
     spio_miso     : out std_ulogic;
     spio_misooen  : out std_ulogic;
     spio_mosi     : out std_ulogic;
@@ -153,9 +171,10 @@ entity spictrlx is
     spio_sckoen   : out std_ulogic;
     spio_enable   : out std_ulogic;
     spio_astart   : out std_ulogic;
+    spio_aready   : out std_ulogic;
     slvsel        : out std_logic_vector((slvselsz-1) downto 0)
     );
-  attribute sync_set_reset of rstn : signal is "true"; 
+  attribute sync_set_reset of rstn : signal is "true";
 end entity spictrlx;
 
 architecture rtl of spictrlx is
@@ -164,10 +183,10 @@ architecture rtl of spictrlx is
   -- Constants
   -----------------------------------------------------------------------------
   constant OEPOL_LEVEL : std_ulogic := conv_std_logic(oepol = 1);
-  
+
   constant OUTPUT : std_ulogic := OEPOL_LEVEL;      -- Enable outputs
   constant INPUT : std_ulogic := not OEPOL_LEVEL;   -- Tri-state outputs
-  
+
   constant FIFO_DEPTH  : integer := 2**fdepth;
   constant SLVSEL_EN   : integer := slvselen;
   constant SLVSEL_SZ   : integer := slvselsz;
@@ -184,9 +203,9 @@ architecture rtl of spictrlx is
 
   constant APBBITS : integer := 6+3*AM_EN;
   constant APBH    : integer := 2+APBBITS-1;
-  
+
   constant CAP_ADDR    : std_logic_vector(APBH downto 2) := conv_std_logic_vector(0, APBBITS);
-  
+
   constant MODE_ADDR   : std_logic_vector(APBH downto 2) := conv_std_logic_vector(8, APBBITS);
   constant EVENT_ADDR  : std_logic_vector(APBH downto 2) := conv_std_logic_vector(9, APBBITS);
   constant MASK_ADDR   : std_logic_vector(APBH downto 2) := conv_std_logic_vector(10, APBBITS);
@@ -195,18 +214,18 @@ architecture rtl of spictrlx is
   constant RD_ADDR     : std_logic_vector(APBH downto 2) := conv_std_logic_vector(13, APBBITS);
   constant SLVSEL_ADDR : std_logic_vector(APBH downto 2) := conv_std_logic_vector(14, APBBITS);
   constant ASEL_ADDR   : std_logic_vector(APBH downto 2) := conv_std_logic_vector(15, APBBITS);
-  
+
   constant AMCFG_ADDR  : std_logic_vector(APBH downto 2) := conv_std_logic_vector(16, APBBITS);
   constant AMPER_ADDR  : std_logic_vector(APBH downto 2) := conv_std_logic_vector(17, APBBITS);
-  
+
   constant AMMSK0_ADDR : std_logic_vector(10 downto 2) := "000010100";  -- 0x050
   constant AMMSK1_ADDR : std_logic_vector(10 downto 2) := "000010101";  -- 0x054
   constant AMMSK2_ADDR : std_logic_vector(10 downto 2) := "000010110";  -- 0x058
   constant AMMSK3_ADDR : std_logic_vector(10 downto 2) := "000010111";  -- 0x05C
-  
+
   constant AMTX_ADDR   : std_logic_vector(10 downto 2) := "010000000";  -- 0x200
   constant AMRX_ADDR   : std_logic_vector(10 downto 2) := "100000000";  -- 0x40
-  
+
   constant SPICTRLCAPREG : std_logic_vector(31 downto 0) :=
     conv_std_logic_vector(SLVSEL_SZ, 8) & conv_std_logic_vector(MAX_WLEN, 4) &
     conv_std_logic_vector(TW_EN, 1) & conv_std_logic_vector(AM_EN, 1) &
@@ -221,7 +240,52 @@ architecture rtl of spictrlx is
     if MAX_WLEN = 0 then return 31; end if;
     return MAX_WLEN;
   end wlen;
-  
+
+  constant PROG_AM_MASK : boolean :=
+    AM_EN = 1 and automask0 = 0 and (automask1 = 0 or FIFO_DEPTH <= 32) and
+    (automask2 = 0 or FIFO_DEPTH <= 64) and (automask3 = 0 or FIFO_DEPTH <= 96);
+  constant AM_MASK : std_logic_vector(127 downto 0) :=
+    conv_std_logic_vector_signed(automask3,32) &
+    conv_std_logic_vector_signed(automask2,32) &
+    conv_std_logic_vector_signed(automask1,32) &
+    conv_std_logic_vector_signed(automask0,32);
+
+  function check_discont_am_mask return boolean is
+    variable foundzero : boolean;
+  begin
+    if AM_EN = 0 then
+      return false;
+    elsif PROG_AM_MASK then
+      return true;
+    else
+      foundzero := false;
+      for i in 0 to FIFO_DEPTH-1 loop
+        if AM_MASK(i) = '0' then
+          foundzero := true;
+        else
+          if foundzero then
+            return true;
+          end if;
+        end if;
+      end loop;
+      return false;
+    end if;
+  end function;
+  constant DISCONT_AM_MASK : boolean := check_discont_am_mask;
+
+  function check_am_mask_end return integer is
+    variable ret : integer;
+  begin
+    ret := 0;
+    for i in 0 to FIFO_DEPTH-1 loop
+      if AM_MASK(i) = '1' then
+        ret := i;
+      end if;
+    end loop;
+    return ret;
+  end function;
+  constant AM_MASK_END : integer := check_am_mask_end;
+
   -----------------------------------------------------------------------------
   -- Types
   -----------------------------------------------------------------------------
@@ -244,7 +308,7 @@ architecture rtl of spictrlx is
     aseldel : std_logic_vector(1 downto 0);  -- Asel delay
     tac     : std_ulogic;
     tto     : std_ulogic;  -- Three-wire mode word order
-    igsel   : std_ulogic;  -- Ignore spisel input 
+    igsel   : std_ulogic;  -- Ignore spisel input
     cite    : std_ulogic;  -- Require SCK = CPOL for TIP end
   end record;
 
@@ -258,7 +322,7 @@ architecture rtl of spictrlx is
     nf  : std_ulogic;  -- Not full
     at  : std_ulogic;  -- Automated transfer
   end record;
-  
+
   type spi_fifo is array (0 to (1-syncram)*(FIFO_DEPTH-1)) of std_logic_vector(wlen downto 0);
 
   type spi_amcfg_rec is record          -- AM config register
@@ -270,8 +334,9 @@ architecture rtl of spictrlx is
     eact   : std_ulogic;  -- Activate on external event
     erpt   : std_ulogic;  -- Repeat on external event, not on period done
     lock   : std_ulogic;  -- Lock receive registers when reading data
+    ecgc   : std_ulogic;  -- External clock gap control
   end record;
-  
+
   type spi_am_rec is record             -- Automode state
     -- Register interface
     cfg       : spi_amcfg_rec;  -- AM config register
@@ -297,17 +362,17 @@ architecture rtl of spictrlx is
     apbaddr   : std_logic_vector(FIFO_BITS-1 downto 0);
     rxsel     : std_ulogic;
   end record;
-       
+
   -- Two stage synchronizers on each input coming from off-chip
   type spi_in_local_type is record
     miso    : std_ulogic;
     mosi    : std_ulogic;
     sck     : std_ulogic;
     spisel  : std_ulogic;
-  end record;  
+  end record;
 
   type spi_in_array is array (1 downto 0) of spi_in_local_type;
-  
+
   -- Local spi out type without ssn
   type spi_out_local_type is record
     miso     : std_ulogic;
@@ -318,8 +383,16 @@ architecture rtl of spictrlx is
     sckoen   : std_ulogic;
     enable   : std_ulogic;
     astart   : std_ulogic;
+    aready   : std_ulogic;
   end record;
-  
+
+  -- Yet another subset of out type to make it easier for certain tools to
+  -- place registers near pads.
+  type spi_out_local_lb_type is record
+    mosi     : std_ulogic;
+    sck      : std_ulogic;
+  end record;
+
   type spi_reg_type is record
     -- SPI registers
     mode     : spi_mode_rec;  -- Mode register
@@ -331,8 +404,8 @@ architecture rtl of spictrlx is
     slvsel   : std_logic_vector((SLVSEL_SZ-1) downto 0);  -- Slave select register
     aslvsel  : std_logic_vector((SLVSEL_SZ-1) downto 0);  -- Automatic slave select
     --
-    uf       : std_ulogic;    -- Slave in underflow condition 
-    ov       : std_ulogic;    -- Receive overflow condition 
+    uf       : std_ulogic;    -- Slave in underflow condition
+    ov       : std_ulogic;    -- Receive overflow condition
     td_occ   : std_ulogic;    -- Transmit register occupied
     rd_free  : std_ulogic;    -- Receive register free (empty)
     txfifo   : spi_fifo;      -- Transmit data FIFO
@@ -340,7 +413,8 @@ architecture rtl of spictrlx is
     rxd      : std_logic_vector(wlen downto 0);  -- Receive shift register
     txd      : std_logic_vector(wlen downto 0);  -- Transmit shift register
     txdupd   : std_ulogic;    -- Update txd
-    toggle   : std_ulogic;    -- SCK has toggled 
+    txdbyp   : std_ulogic;    -- txd update bypass
+    toggle   : std_ulogic;    -- SCK has toggled
     samp     : std_ulogic;    -- Sample
     chng     : std_ulogic;    -- Change
     psck     : std_ulogic;    -- Previous value of SC
@@ -362,6 +436,7 @@ architecture rtl of spictrlx is
     tbitcnt  : std_logic_vector(log2(wlen+1)-1 downto 0);  -- Current transmit bit
     divcnt   : unsigned(9 downto 0);   -- Clock scaler
     cgcnt    : unsigned(5 downto 0);   -- Clock gap counter
+    cgcntblock: std_ulogic;
     aselcnt  : unsigned(1 downto 0);   -- ASEL delay
     cgasel   : std_ulogic;             -- ASEL when entering CG
     --
@@ -373,15 +448,19 @@ architecture rtl of spictrlx is
     spii     : spi_in_array;
     -- Output
     spio     : spi_out_local_type;
+    spiolb   : spi_out_local_lb_type;
     --
     astart   : std_ulogic;
+    cstart   : std_ulogic;
+    txdupd2  : std_ulogic;
+    twdir2   : std_ulogic;
   end record;
 
   -----------------------------------------------------------------------------
   -- Sub programs
   -----------------------------------------------------------------------------
   -- Returns a vector containing the character length - 1 in bits as selected
-  -- by the Mode field LEN. 
+  -- by the Mode field LEN.
   function spilen (
     len : std_logic_vector(3 downto 0))
     return std_logic_vector is
@@ -392,7 +471,7 @@ architecture rtl of spictrlx is
       return "0" & len;
     end if;
   end spilen;
-  
+
   -- Write clear
   procedure wc (
     reg_o : out std_ulogic;
@@ -412,7 +491,7 @@ architecture rtl of spictrlx is
     for i in data'range loop
       rdata(i) := data(i);
     end loop;
-    return rdata; 
+    return rdata;
   end function reverse;
 
   -- Performs a HWORD swap if len /= 0
@@ -456,11 +535,11 @@ architecture rtl of spictrlx is
       when 5 => rdata(5 downto 0) := sdata(5 downto 0);
       when 4 => rdata(4 downto 0) := sdata(4 downto 0);
       when 3 => rdata(3 downto 0) := sdata(3 downto 0);
-      when others => rdata := sdata; 
+      when others => rdata := sdata;
     end case;
     return rdata;
   end select_data;
-    
+
    -- purpose: Returns true when a slave is selected and the clock starts
   function slv_start (
     spisel   : std_ulogic;
@@ -471,32 +550,36 @@ architecture rtl of spictrlx is
   begin  -- slv_start
     if spisel = '0' then          -- Slave is selected
       if fsck_chg = '1' then      -- The clock has changed
-        return (cpol xor sck) = '1';    -- The clock is not idle 
+        return (cpol xor sck) = '1';    -- The clock is not idle
       end if;
     end if;
     return false;
   end slv_start;
-  
+
   -----------------------------------------------------------------------------
   -- Signals
   -----------------------------------------------------------------------------
-  
+
   signal r, rin : spi_reg_type;
 
   type fifo_data_vector_array is array (automode downto 0) of std_logic_vector(wlen downto 0);
   type fifo_addr_vector_array is array (automode downto 0) of std_logic_vector(fdepth-1 downto 0);
-  
+
   signal rx_di, rx_do, tx_di, tx_do : fifo_data_vector_array;
   signal rx_ra, rx_wa, tx_ra, tx_wa : fifo_addr_vector_array;
   signal rx_read, tx_read, rx_write, tx_write : std_logic_vector(automode downto 0);
-  
+
+  signal arstn : std_ulogic;
+
 begin
+
+  arstn <= apbi_testrst when (scantest = 1) and (apbi_testen = '1') else rstn;
 
   -- SPI controller, register interface and related logic
   comb: process (r, rstn, apbi_psel, apbi_penable, apbi_paddr, apbi_pwrite,
                  apbi_pwdata, apbi_testen, apbi_testrst, apbi_scanen,
                  apbi_testoen, spii_miso, spii_mosi, spii_sck, spii_spisel,
-                 spii_astart, rx_do, tx_do)
+                 spii_astart, rx_do, tx_do, spii_cstart)
     variable v        : spi_reg_type;
     variable apbaddr  : std_logic_vector(APBH downto 2);
     variable apbout   : std_logic_vector(31 downto 0);
@@ -522,12 +605,16 @@ begin
     variable rx_wr    : std_ulogic;
     variable tx_wr    : std_ulogic;
     --
-    variable tmp      : std_logic_vector(0 to 31);
-    --
     variable fsck     : std_ulogic;
     variable fsck_chg : std_ulogic;
     --
     variable spisel   : std_ulogic;
+    --
+    variable rntxd    : std_logic_vector(0 to 31);
+    variable ntxd     : std_logic_vector(wlen downto 0);
+
+    variable amask : std_logic_vector(FIFO_DEPTH-1 downto 0);
+    variable aloop : integer;
   begin  -- process comb
     v := r;  v.irq := '0';
     apbaddr := apbi_paddr(APBH downto 2); apbout := (others => '0');
@@ -535,24 +622,47 @@ begin
     v.syncsamp := r.syncsamp(0) & '0'; update := '0'; v.rxdone := '0';
     indata := '0'; sample := '0'; change := '0'; reload := '0';
     v.spio.astart := '0'; cgasel := '0'; v.ov2 := r.ov; txshift := '0';
-    tmp := (others => '0'); fsck := '0'; fsck_chg := '0';
+    fsck := '0'; fsck_chg := '0'; v.txdbyp := '0';
     spisel := r.spii(1).spisel or r.mode.igsel;
-    
+    ntxd := r.td(wlen downto 0); rntxd := reverse(r.td);
+    if r.mode.rev = '1' then ntxd := rntxd(31-wlen to 31); end if;
+
+    v.spio.aready := '0';
+
+    if AM_EN = 1 then
+      v.txdupd2 := '0';
+      v.cstart := '0';
+      if TW_EN = 1 then
+        v.twdir2 := r.twdir;
+      end if;
+    end if;
+
+    if PROG_AM_MASK then
+      amask := r.am.mask;
+      aloop := FIFO_DEPTH-1;
+    else
+      amask := AM_MASK(FIFO_DEPTH-1 downto 0);
+      aloop := AM_MASK_END;
+    end if;
+
     rx_rd := '0'; tx_rd := '0'; rx_wr := '0'; tx_wr := '0';
-    
+
     rstop1 := '0'; rstop2 := '0'; rstop3 := '0';
     tstop1 := '0'; tstop2 := '0'; tstop3 := '0';
-    
+
     astart := '0'; v.am.txwrite := '0'; v.am.txwrite := '0'; v.am.rxread := '0';
     if AM_EN = 1 then
       v.am.at := r.event.at;
       v.astart := spii_astart;
       if r.event.at = '0' then
         astart := spii_astart and (not r.astart);
-        v.am.mask := r.am.mask_shdw;
+        if PROG_AM_MASK then
+          v.am.mask := r.am.mask_shdw;
+        end if;
       end if;
+      if spii_cstart = '1' then v.cstart := '1'; end if;
     end if;
-        
+
     if (apbi_psel and apbi_penable and (not apbi_pwrite)) = '1' then
       if apbaddr = CAP_ADDR then
         apbout := SPICTRLCAPREG;
@@ -585,7 +695,7 @@ begin
         else null; end if;
       end if;
     end if;
-    
+
     -- write registers
     if (apbi_psel and apbi_penable and apbi_pwrite) = '1' then
       if apbaddr = MODE_ADDR then
@@ -600,7 +710,7 @@ begin
         v.mode.len   := apbi_pwdata(23 downto 20);
         v.mode.pm    := apbi_pwdata(19 downto 16);
         if TW_EN = 1 then v.mode.tw := apbi_pwdata(15); end if;
-        if ASEL_EN = 1 then v.mode.asel := apbi_pwdata(14); end if;          
+        if ASEL_EN = 1 then v.mode.asel := apbi_pwdata(14); end if;
         v.mode.fact  := apbi_pwdata(13);
         if OD_EN = 1 then v.mode.od := apbi_pwdata(12); end if;
         v.mode.cg    := apbi_pwdata(11 downto 7);
@@ -664,10 +774,12 @@ begin
       end if;
       if (apbi_psel and apbi_penable) = '1' then
         if apbaddr =  AMCFG_ADDR then
-          apbout := zero32(31 downto 8) & r.am.cfg.lock & r.am.cfg.erpt &
-                    r.am.cfg.seq & r.am.cfg.strict & r.am.cfg.ovtb &
-                    r.am.cfg.ovdb & r.am.active & r.am.cfg.eact;
+          apbout := zero32(31 downto 9) & r.am.cfg.ecgc & r.am.cfg.lock &
+                    r.am.cfg.erpt & r.am.cfg.seq & r.am.cfg.strict &
+                    r.am.cfg.ovtb & r.am.cfg.ovdb & r.am.active &
+                    r.am.cfg.eact;
           if apbi_pwrite = '1' then
+            v.am.cfg.ecgc := apbi_pwdata(8);
             v.am.cfg.lock := apbi_pwdata(7);
             v.am.cfg.erpt := apbi_pwdata(6);
             v.am.cfg.seq  := apbi_pwdata(5);
@@ -685,27 +797,35 @@ begin
           end if;
         elsif apbaddr = AMMSK0_ADDR then
           if FIFO_DEPTH > 32 then
-            apbout := r.am.mask(31 downto 0);
-            if apbi_pwrite = '1' then
-              v.am.mask_shdw(31 downto 0) := apbi_pwdata;
+            apbout := amask(31 downto 0);
+            if PROG_AM_MASK then
+              if apbi_pwrite = '1' then
+                v.am.mask_shdw(31 downto 0) := apbi_pwdata;
+              end if;
             end if;
           else
-            apbout(FIFO_DEPTH-1 downto 0) := r.am.mask(FIFO_DEPTH-1 downto 0);
-            if apbi_pwrite = '1' then                
-              v.am.mask_shdw(FIFO_DEPTH-1 downto 0) := apbi_pwdata(FIFO_DEPTH-1 downto 0);
+            apbout(FIFO_DEPTH-1 downto 0) := amask(FIFO_DEPTH-1 downto 0);
+            if PROG_AM_MASK then
+              if apbi_pwrite = '1' then
+                v.am.mask_shdw(FIFO_DEPTH-1 downto 0) := apbi_pwdata(FIFO_DEPTH-1 downto 0);
+              end if;
             end if;
           end if;
         elsif apbaddr = AMMSK1_ADDR then
           if AM_MSK1_EN then
             if FIFO_DEPTH > 64 then
-              apbout := r.am.mask(63 downto 32);
-              if apbi_pwrite = '1' then
-                v.am.mask_shdw(63 downto 32) := apbi_pwdata;
+              apbout := amask(63 downto 32);
+              if PROG_AM_MASK then
+                if apbi_pwrite = '1' then
+                  v.am.mask_shdw(63 downto 32) := apbi_pwdata;
+                end if;
               end if;
             else
-              apbout(FIFO_DEPTH-33 downto 0) := r.am.mask(FIFO_DEPTH-1 downto 32);
-              if apbi_pwrite = '1' then
-                v.am.mask_shdw(FIFO_DEPTH-1 downto 32) := apbi_pwdata(FIFO_DEPTH-33 downto 0);
+              apbout(FIFO_DEPTH-33 downto 0) := amask(FIFO_DEPTH-1 downto 32);
+              if PROG_AM_MASK then
+                if apbi_pwrite = '1' then
+                  v.am.mask_shdw(FIFO_DEPTH-1 downto 32) := apbi_pwdata(FIFO_DEPTH-33 downto 0);
+                end if;
               end if;
             end if;
           else
@@ -714,14 +834,18 @@ begin
         elsif apbaddr = AMMSK2_ADDR then
           if AM_MSK2_EN then
             if FIFO_DEPTH > 96 then
-              apbout := r.am.mask(95 downto 64);
-              if apbi_pwrite = '1' then
-                v.am.mask_shdw(95 downto 64) := apbi_pwdata;
+              apbout := amask(95 downto 64);
+              if PROG_AM_MASK then
+                if apbi_pwrite = '1' then
+                  v.am.mask_shdw(95 downto 64) := apbi_pwdata;
+                end if;
               end if;
             else
-              apbout(FIFO_DEPTH-65 downto 0) := r.am.mask(FIFO_DEPTH-1 downto 64);
-              if apbi_pwrite = '1' then
-                v.am.mask_shdw(FIFO_DEPTH-1 downto 64) := apbi_pwdata(FIFO_DEPTH-65 downto 0);
+              apbout(FIFO_DEPTH-65 downto 0) := amask(FIFO_DEPTH-1 downto 64);
+              if PROG_AM_MASK then
+                if apbi_pwrite = '1' then
+                  v.am.mask_shdw(FIFO_DEPTH-1 downto 64) := apbi_pwdata(FIFO_DEPTH-65 downto 0);
+                end if;
               end if;
             end if;
           else
@@ -729,9 +853,11 @@ begin
           end if;
         elsif apbaddr = AMMSK3_ADDR then
           if AM_MSK3_EN then
-            apbout(FIFO_DEPTH-97 downto 0) := r.am.mask(FIFO_DEPTH-1 downto 96);
-            if apbi_pwrite = '1' then
-              v.am.mask_shdw(FIFO_DEPTH-1 downto 96) := apbi_pwdata(FIFO_DEPTH-97 downto 0);
+            apbout(FIFO_DEPTH-97 downto 0) := amask(FIFO_DEPTH-1 downto 96);
+            if PROG_AM_MASK then
+              if apbi_pwrite = '1' then
+                v.am.mask_shdw(FIFO_DEPTH-1 downto 96) := apbi_pwdata(FIFO_DEPTH-97 downto 0);
+              end if;
             end if;
           else
             null;
@@ -773,15 +899,11 @@ begin
         end if;
       end if;
     end if;
-    
+
     -- Handle transmit FIFO
     if r.td_occ = '1' and r.tfreecnt /= 0 then
       if syncram = 0 then
-        if r.mode.rev = '0' then
-          v.txfifo(conv_integer(r.tdli)) := r.td(wlen downto 0);
-        else
-          v.txfifo(conv_integer(r.tdli)) := reverse(r.td)(31-wlen to 31);
-        end if;
+        v.txfifo(conv_integer(r.tdli)) := ntxd;
       else
         tx_wr := '1';
       end if;
@@ -789,6 +911,7 @@ begin
       v.tfreecnt := r.tfreecnt - 1;
       v.td_occ := '0';
       if r.tfreecnt = FIFO_DEPTH then
+        v.txdbyp := r.running and r.mode.ms and r.txdupd;
         v.txdupd := not r.uf;
         tx_rd := '1';
       end if;
@@ -801,7 +924,7 @@ begin
         v.am.txfifo(conv_integer(r.am.apbaddr)) := reverse(r.td)(31-wlen to 31);
       end if;
     end if;
-    
+
     -- Update receive register and FIFO
     if r.rd_free = '1' and r.rfreecnt /= FIFO_DEPTH then
       if syncram = 0 then
@@ -822,7 +945,7 @@ begin
       v.rd_free := '0';
     end if;
     if v.rd_free = '1' and r.rfreecnt /= FIFO_DEPTH then rx_rd := '1'; end if;
-    
+
     if r.mode.en = '1' then             -- Core is enabled
       -- Not full detection
       if r.tfreecnt /= 0 or r.td_occ /= '1' then
@@ -833,10 +956,10 @@ begin
       else
         v.event.nf := '0';
       end if;
-      
+
       -- Not empty detection
       if ((AM_EN = 0 or r.mode.amen = '0') and (r.rfreecnt /= FIFO_DEPTH or r.rd_free /= '1')) or
-        (AM_EN = 1 and r.mode.amen = '1' and r.am.unread /= zero32(FIFO_DEPTH-1 downto 0)) then
+        (AM_EN = 1 and r.mode.amen = '1' and r.am.unread /= zero128(FIFO_DEPTH-1 downto 0)) then
         v.event.ne := '1';
         if (r.mask.ne and not r.event.ne) = '1' then
           v.irq := '1';
@@ -856,8 +979,8 @@ begin
         v.am.active := r.spio.astart or (astart and r.am.cfg.eact);
         v.am.cfg.act := v.am.active;
         v.am.rfreecnt := 0;
-        for i in 0 to FIFO_DEPTH-1 loop
-          if r.am.mask(i) = '1' then
+        for i in 0 to aloop loop
+          if amask(i) = '1' then
             v.am.rfreecnt := v.am.rfreecnt+1;
           end if;
         end loop;
@@ -866,8 +989,8 @@ begin
         v.event.at := v.am.active;
         v.tdfi := (others => '0');
         -- Check mask to see which word in the FIFO to start with.
-        for i in 0 to FIFO_DEPTH-1 loop
-          if r.am.mask(i) = '1' then
+        for i in 0 to aloop loop
+          if amask(i) = '1' then
             if tstop1 = '0' then
               v.tdfi := conv_std_logic_vector(i, r.tdfi'length);
             end if;
@@ -875,45 +998,46 @@ begin
           end if;
         end loop;
         if v.am.active = '1' then
-          v.txdupd := '1'; tx_rd := '1';
+          v.txdupd2 := '1'; tx_rd := '1';
           v.tfreecnt := FIFO_DEPTH;
-          for i in 0 to FIFO_DEPTH-1 loop
-            if r.am.mask(i) = '1' then
+          for i in 0 to aloop loop
+            if amask(i) = '1' then
               v.tfreecnt := v.tfreecnt-1;
             end if;
           end loop;
         end if;
         v.rdli := (others => '0');
-        for i in 0 to FIFO_DEPTH-1 loop
+        for i in 0 to aloop loop
           if rstop1 = '0' then
-            if r.am.mask(i) = '0' then
+            if amask(i) = '0' then
               v.rdli := v.rdli + 1;
             else
               rstop1 := '1';
             end if;
           end if;
         end loop;
+        v.cstart := v.am.active;
       else
         -- Receive fifo handling
         if r.am.rxfull = '1' then           -- AM RX fifo is filled
           -- Move to receive queue if the queue is empty or if there is no
           -- requirement on sequential transfers and the queue is not locked.
-          if (r.event.ne and (v.am.lock or r.am.cfg.seq)) = '0' then 
+          if (r.event.ne and (v.am.lock or r.am.cfg.seq)) = '0' then
             -- Queue is empty
             if syncram = 0 then
               v.rxfifo := r.am.rxfifo;
             else
               v.am.rxsel := not r.am.rxsel;
-            end if;  
+            end if;
             v.rdfi := (others => '0');
             v.rfreecnt := r.am.rfreecnt;
             v.rd_free := '0';
             v.am.rxfull := '0';
-            for i in 0 to FIFO_DEPTH-1 loop
-              if r.am.mask(i) = '1' then
+            for i in 0 to aloop loop
+              if amask(i) = '1' then
                 v.am.unread(i) := '1';
               end if;
-            end loop;            
+            end loop;
           end if;
           if r.event.tip = '0' and r.am.at = '1' then
             v.event.at := '0';
@@ -932,12 +1056,12 @@ begin
             end if;
             if (not v.am.rxfull or (r.am.cfg.strict and not r.am.cfg.ovtb)) = '1' then
               -- Start transfer. Initialize indexes and fifo counter
-              v.txdupd := '1'; tx_rd := '1';
+              v.txdupd2 := '1'; tx_rd := '1';
               v.am.cnt := unsigned(r.am.per);
               v.rdli := (others => '0');
-              for i in 0 to FIFO_DEPTH-1 loop
+              for i in 0 to aloop loop
                 if rstop2 = '0' then
-                  if r.am.mask(i) = '0' then
+                  if amask(i) = '0' then
                     v.rdli := v.rdli + 1;
                   else
                     rstop2 := '1';
@@ -946,16 +1070,16 @@ begin
               end loop;
               v.tfreecnt := FIFO_DEPTH;
               v.am.rfreecnt := 0;
-              for i in 0 to FIFO_DEPTH-1 loop
-                if r.am.mask(i) = '1' then
+              for i in 0 to aloop loop
+                if amask(i) = '1' then
                   v.am.rfreecnt := v.am.rfreecnt+1;
                   v.tfreecnt := v.tfreecnt-1;
                 end if;
               end loop;
               v.tdfi := (others => '0');
               -- Check mask to see which word in the FIFO to start with.
-              for i in 0 to FIFO_DEPTH-1 loop
-                if r.am.mask(i) = '1' then
+              for i in 0 to aloop loop
+                if amask(i) = '1' then
                   if tstop2 = '0' then
                     v.tdfi := conv_std_logic_vector(i, r.tdfi'length);
                   end if;
@@ -967,14 +1091,15 @@ begin
               if v.am.skipdata = '0' then
                 -- Clear AM receive fifo if we will overwrite it.
                 v.am.rfreecnt := FIFO_DEPTH;
-                for i in 0 to FIFO_DEPTH-1 loop
-                  if r.am.mask(i) = '0' then
+                for i in 0 to aloop loop
+                  if amask(i) = '0' then
                     v.am.rfreecnt := v.am.rfreecnt-1;
                   end if;
                 end loop;
                 v.am.rxfull := '0';
               end if;
               v.event.at := '1';
+              v.cstart := astart and r.am.cfg.erpt;
             end if;
           end if;
         else
@@ -1004,7 +1129,7 @@ begin
     elsif r.mode.en = '1' then
       v.psck := r.spii(1).sck;
     end if;
-      
+
     ---------------------------------------------------------------------------
     -- SPI bus control
     ---------------------------------------------------------------------------
@@ -1021,7 +1146,7 @@ begin
         else
           v.spio.mosioen := INPUT;
         end if;
-        v.spio.sckoen := OUTPUT; 
+        v.spio.sckoen := OUTPUT;
         if TW_EN = 1 then v.twdir := OUTPUT xor r.mode.tto; end if;
       else
         if (spisel or r.mode.tw) = '0' then
@@ -1039,7 +1164,7 @@ begin
       end if;
       if ((((AM_EN = 0 or r.mode.amen = '0') or
             (AM_EN = 1 and r.mode.amen = '1' and r.am.active = '1')) and
-           r.mode.ms = '1' and r.tfreecnt /= FIFO_DEPTH and r.txdupd = '0') or 
+           r.mode.ms = '1' and r.tfreecnt /= FIFO_DEPTH and r.txdupd = '0' and (AM_EN = 0 or r.txdupd2 = '0')) or
           slv_start(spisel, r.mode.cpol, fsck, fsck_chg)) then
         -- Slave underrun detection
         if r.tfreecnt = FIFO_DEPTH then
@@ -1074,12 +1199,20 @@ begin
           end if;
         end if;
       end if;
-      
+
       -- samp and chng should not be changed on b2b
       if spisel /= '0' then
         v.samp := not r.mode.cpha;
         v.chng := r.mode.cpha;
         v.psck := r.mode.cpol;
+      end if;
+    end if;
+
+    if AM_EN = 0 or r.mode.amen = '0' or r.am.cfg.ecgc = '0' then
+      v.cgcntblock := '0';
+    else
+      if r.cstart = '1' then
+        v.cgcntblock := '0';
       end if;
     end if;
 
@@ -1099,16 +1232,15 @@ begin
       -- if div16 is set the clock is divided by 16*(2*([PM]+1)).
       --
       -- The generated clock's duty cycle is always 50%.
-      -- 
       if r.divcnt = 0 then
-        -- Do not toggle if in automatic slave select delay slot
         if ASEL_EN = 0 or r.aselcnt = 0 then
           -- Toggle SCK unless we are in a clock gap
-          if r.cgcnt = 0 or r.spio.sck /= r.mode.cpol then
-            v.spio.sck := not r.spio.sck;
+          if (r.cgcnt = 0 and (AM_EN = 0 or r.cgcntblock = '0')) or
+            r.spiolb.sck /= r.mode.cpol then
+            v.spio.sck := not r.spiolb.sck;
             v.toggle := r.running;
           end if;
-          if r.cgcnt /= 0 then
+          if r.cgcnt /= 0 and (AM_EN = 0 or r.cgcntblock = '0') then
             v.cgcnt := r.cgcnt - 1;
             if ASEL_EN /= 0 and r.cgcnt = 1 then
               cgasel := r.mode.tac;
@@ -1143,7 +1275,7 @@ begin
         end if;
       end if;
     end if;
-    
+
     ---------------------------------------------------------------------------
     -- Handle master operation.
     ---------------------------------------------------------------------------
@@ -1159,7 +1291,7 @@ begin
         v.chng := not r.chng;
         change := r.chng;
       end if;
-      
+
       -- Detect multiple-master errors (mode-fault)
       if spisel = '0' then
         v.mode.en := '0';
@@ -1177,14 +1309,14 @@ begin
 
       -- Select input data
       if r.mode.loopb = '1' then
-        indata := r.spio.mosi;
+        indata := r.spiolb.mosi;
       elsif TW_EN = 1 and r.mode.tw = '1' then
         indata := r.spii(1).mosi;
       else
         indata := r.spii(1).miso;
       end if;
     end if;
-    
+
     ---------------------------------------------------------------------------
     -- Handle slave operation
     ---------------------------------------------------------------------------
@@ -1221,7 +1353,7 @@ begin
         sample := not r.mode.ms or r.mode.loopb;
         v.syncsamp(0) := not sample;
       end if;
-      if r.rbitcnt = len(log2(wlen+1)-1 downto 0) then  
+      if r.rbitcnt = len(log2(wlen+1)-1 downto 0) then
         v.rbitcnt := (others => '0');
         if TW_EN = 1 then
           v.twdir := r.twdir xor not r.mode.loopb;
@@ -1237,16 +1369,27 @@ begin
           if r.mode.cpha = '0' then
             v.cgcnt := unsigned(r.mode.cg & '0');
             if ASEL_EN /= 0 then v.cgasel := r.mode.tac; end if;
+            if AM_EN = 1 and r.mode.amen = '1' and r.am.cfg.ecgc = '1' then
+              v.cgcntblock := '1';
+            end if;
           end if;
           v.ov := '0';
-          if v.tfreecnt = FIFO_DEPTH then
+          if r.tfreecnt = FIFO_DEPTH then
             v.running := '0';
+            -- When running with with SCK freq. at half the system freq. we are
+            -- past the last edge here and SCK has transitioned from CPOL.
+            -- Force controller into idle state, only applies to master mode.
+            if (r.toggle and v.toggle) = '1' then
+              v.toggle := '0';
+              v.spio.sck := r.mode.cpol;
+              v.chng := r.chng;
+            end if;
           end if;
           v.uf := '0';
         end if;
       else
         v.rbitcnt := r.rbitcnt + 1;
-      end if;      
+      end if;
     end if;
 
     -- Sample data line and put into shift register.
@@ -1264,15 +1407,17 @@ begin
         -- Check mask, maybe we need to skip next word in fifo
         v.rdli := r.rdli + 1;
         v.am.rfreecnt := v.am.rfreecnt - 1;
-        for i in 0 to FIFO_DEPTH-1 loop
-          if i > conv_integer(r.rdli) and rstop3 = '0' then
-            if r.am.mask(i) = '0' then
-              v.rdli := v.rdli + 1;
-            else
-              rstop3 := '1';
+        if DISCONT_AM_MASK then
+          for i in 0 to aloop loop
+            if i > conv_integer(r.rdli) and rstop3 = '0' then
+              if amask(i) = '0' then
+                v.rdli := v.rdli + 1;
+              else
+                rstop3 := '1';
+              end if;
             end if;
-          end if;
-        end loop;
+          end loop;
+        end if;
       else
         v.rdli := r.rdli + 1;
         v.rfreecnt := v.rfreecnt - 1;
@@ -1291,6 +1436,17 @@ begin
         if AM_EN = 1 then v.am.rxfull := r.am.active; end if;
       end if;
     end if;
+    if AM_EN = 1 and r.mode.amen = '1' then
+      if TW_EN = 0 or r.mode.tw = '0' or r.mode.tto = '0' then
+        if r.rxdone = '1' then
+          v.spio.aready := '1';
+        end if;
+      else
+        if r.twdir = '1' and r.twdir2 = '0' then
+          v.spio.aready := '1';
+        end if;
+      end if;
+    end if;
 
     -- Special case to put data in receive queue for automatic
     -- transfer while in three wire mode with tto = 1
@@ -1299,7 +1455,7 @@ begin
       r.mode.tto = '1' and r.twdir = INPUT and r.mode.ms = '1' then
       v.am.rxfull := r.am.active;
     end if;
-    
+
     -- Advance transmit queue
     if change = '1' then
       if TW_EN = 1 and r.mode.tw = '1' then
@@ -1313,6 +1469,9 @@ begin
           if r.mode.cpha = '1' then
             v.cgcnt := unsigned(r.mode.cg & '0');
             if ASEL_EN /= 0 then v.cgasel := r.mode.tac; end if;
+            if AM_EN = 1 and r.mode.amen = '1' and r.am.cfg.ecgc = '1' then
+              v.cgcntblock := '1';
+            end if;
           end if;
         end if;
         if (TW_EN = 0 or r.mode.tw = '0' or r.mode.loopb = '1' or r.twdir = OUTPUT) then
@@ -1326,43 +1485,57 @@ begin
         v.tbitcnt := r.tbitcnt + 1;
       end if;
       if v.uf = '0' and (TW_EN = 0 or r.mode.tw = '0' or r.mode.loopb = '1' or r.twdir = OUTPUT) then
-        txshift := '1';
+        txshift := v.running;
       end if;
     end if;
 
     if txshift = '1' then
       v.txd := '1' & r.txd(wlen downto 1);
     end if;
-    
+
+    if AM_EN = 1 then
+      if r.txdupd2 = '1' then
+        tx_rd := '1';
+        v.txdupd := '1';
+      end if;
+    end if;
     if r.txdupd = '1' then
       tx_rd := '1';
-      if syncram = 0 then
-        if AM_EN = 1 and r.mode.amen = '1' then
-          v.txd := r.am.txfifo(conv_integer(r.tdfi));
+      if r.txdbyp = '0' then
+        if syncram = 0 then
+          if AM_EN = 1 and r.mode.amen = '1' then
+            v.txd := r.am.txfifo(conv_integer(r.tdfi));
+          else
+            v.txd := r.txfifo(conv_integer(r.tdfi));
+          end if;
         else
-          v.txd := r.txfifo(conv_integer(r.tdfi));
+          -- The first FIFO is always used when using syncrams, even in AM mode
+          v.txd := tx_do(0);
         end if;
-      else
-        -- The first FIFO is always used when using syncrams, even in AM mode
-        v.txd := tx_do(0);
+      end if;
+      -- Data written to TD, bypass
+      if v.txdbyp = '1' then
+       v.txd := ntxd;
       end if;
       if r.tfreecnt /= FIFO_DEPTH then
         if AM_EN = 0 or r.mode.amen = '0' then
           v.tdfi := v.tdfi + 1;
         else
           -- Check mask, might need to skip next word
-          for i in 0 to FIFO_DEPTH-1 loop
-            if tstop3 = '0' and i > conv_integer(v.tdfi) then
-              if r.am.mask(i) = '0' then
-                v.tdfi := v.tdfi + 1;
-              else
-                tstop3 := '1';
+          if DISCONT_AM_MASK then
+            for i in 0 to aloop loop
+              if tstop3 = '0' and i > conv_integer(v.tdfi) then
+                if amask(i) = '0' then
+                  v.tdfi := v.tdfi + 1;
+                else
+                  tstop3 := '1';
+                end if;
               end if;
-             end if;
-          end loop;
+            end loop;
+          end if;
           v.tdfi := v.tdfi + 1;
         end if;
-      else
+      elsif v.txdbyp = '0' then
         -- Bus idle value
         v.txd(0) := '1';
       end if;
@@ -1389,7 +1562,7 @@ begin
         end if;
       end if;
     end if;
-    
+
     -- Transfer in progress interrupt generation
     if (not r.running and (r.ov2 or (r.rxdone2 or (not r.mode.ms and r.mode.tw)))) = '1' then
       if r.mode.ms = '0' or r.mode.cite = '0' or r.divcnt = 0 then
@@ -1406,7 +1579,7 @@ begin
       v.event.lt := '1'; v.lst := '0';
       if (r.mask.lt and not r.event.lt) = '1' then v.irq := '1'; end if;
     end if;
-    
+
     ---------------------------------------------------------------------------
     -- Automatic slave select, only in master mode
     ---------------------------------------------------------------------------
@@ -1415,8 +1588,8 @@ begin
         if ((not r.running and v.running) or  -- Transfer start or
             (r.event.tip and not v.event.tip) or  -- transfer end or
             (v.running and (cgasel or   -- End or start of CG
-            (r.cgasel and not (r.spio.sck xor r.mode.cpol))))) = '1'
-        then  
+            (r.cgasel and not (r.spiolb.sck xor r.mode.cpol))))) = '1'
+        then
           v.slvsel := r.aslvsel;
           v.aslvsel := r.slvsel;
           v.cgasel := '0';
@@ -1430,14 +1603,14 @@ begin
         v.aselcnt := (others => '0');
       end if;
     end if;
-    
+
     -- Do not toggle outputs in loopback mode
     if (r.mode.loopb = '1' or
         (r.mode.tw = '1' and TW_EN = 1 and r.twdir = INPUT)) then
       v.spio.mosioen := INPUT; v.spio.misooen := INPUT;
     end if;
     if r.mode.loopb = '1' then v.spio.sckoen  := INPUT; end if;
-    
+
     -- When driving in OD mode, always drive low.
     if OD_EN = 1 and (r.mode.od and not r.mode.loopb) = '1' then
       v.spio.miso := v.spio.miso and not r.mode.od;
@@ -1463,9 +1636,11 @@ begin
       end if;
       v.spio.miso := '1';
       v.spio.mosi := '1';
-      v.spio.misooen := INPUT;
-      v.spio.mosioen := INPUT;
-      v.spio.sckoen  := INPUT;
+      if syncrst = 1 or (r.mode.en = '0') then
+        v.spio.misooen := INPUT;
+        v.spio.mosioen := INPUT;
+        v.spio.sckoen  := INPUT;
+      end if;
       if AM_EN = 1 then
         v.event.at := '0';
       end if;
@@ -1506,7 +1681,9 @@ begin
       if AM_EN = 1 then
         v.event.at := '0';
         v.mask.at := '0';
-        v.am.mask_shdw := (others=>'1');
+        if PROG_AM_MASK then
+          v.am.mask_shdw := (others=>'1');
+        end if;
         v.am.per := (others=>'0');
         v.am.cfg.seq := '0';
         v.am.cfg.strict := '0';
@@ -1514,22 +1691,26 @@ begin
         v.am.cfg.ovdb := '0';
         v.am.cfg.erpt := '0';
         v.am.cfg.lock := '0';
+        v.am.cfg.ecgc := '0';
         v.am.rxread  := '0';
         v.am.txwrite := '0';
         v.am.txread  := '0';
         v.am.apbaddr := (others => '0');
         v.am.rxsel := '0';
-      end if;      
+        v.cgcntblock := '0';
+      end if;
       v.lst := '0';
-      v.slvsel := (others => '1');
+      if syncrst = 1 then
+        v.slvsel := (others => '1');
+      end if;
       v.cgcnt := (others => '0');
       v.rbitcnt := (others => '0'); v.tbitcnt := (others => '0');
       v.txd := (others => '0'); v.txd(0) := '1';
     end if;
-    
+
     -- Drive unused bit if open drain mode is not supported
     if OD_EN = 0 then v.mode.od := '0'; end if;
-    
+
     -- Drive unused bits if automode is not supported
     if AM_EN = 0 then
       v.mode.amen := '0';
@@ -1547,11 +1728,10 @@ begin
       v.am.rxfull := '0';
       v.am.rfreecnt := 0;
       v.event.at := '0';
-      v.am.mask := (others=>'0');
-      v.am.mask_shdw := (others=>'0');
       v.am.unread := (others=>'0');
       v.am.cfg.erpt := '0';
       v.am.cfg.lock := '0';
+      v.am.cfg.ecgc := '0';
       v.am.cnt := (others=>'0');
       v.am.rxread  := '0';
       v.am.txwrite := '0';
@@ -1559,6 +1739,12 @@ begin
       v.am.apbaddr := (others => '0');
       v.am.rxsel := '0';
       v.mask.at := '0';
+      v.cstart := '0';
+    end if;
+
+    if AM_EN = 0 or not PROG_AM_MASK then
+      v.am.mask := (others=>'0');
+      v.am.mask_shdw := (others=>'0');
     end if;
 
     -- Drive unused bits if automatic slave select is not enabled
@@ -1577,10 +1763,17 @@ begin
       v.mode.tto := '0';
       v.twdir := INPUT;
     end if;
-    
+    if TW_EN = 0 or AM_EN = 0 then
+      v.twdir2 := INPUT;
+    end if;
+
+    if SLVSEL_EN = 0 then
+      v.slvsel := (others => '1');
+    end if;
+
     -- Propagate core enable bit
     v.spio.enable := r.mode.en;
-    
+
     -- Synchronize inputs coming from off-chip
     v.spii(0) := (spii_miso, spii_mosi, spii_sck, spii_spisel);
     v.spii(1) := r.spii(0);
@@ -1598,11 +1791,8 @@ begin
     else
       -- TX RAM(s) write
       -- TX RAM(s) are either written from TX register or AM TX area
-      tmp := reverse(r.td);
       for i in 0 to automode loop
-        tx_di(i) <= r.td(wlen downto 0);
---        if r.mode.rev = '1' then tx_di(i) <= reverse(r.td)(31-wlen to 31); end if;
-        if r.mode.rev = '1' then tx_di(i) <= tmp(31-wlen to 31); end if;
+        tx_di(i) <= ntxd;
       end loop;
       for i in 0 to automode loop
         tx_wa(i) <= r.tdli;
@@ -1675,16 +1865,19 @@ begin
         tx_read <= (others => '0'); tx_write <= (others => '0');
       end if;
     end if;
-    
+
+    v.spiolb.mosi := v.spio.mosi;
+    v.spiolb.sck := v.spio.sck;
+
     -- Update registers
     rin <= v;
 
     -- Update outputs
     apbo_prdata <= apbout;
     apbo_pirq <= r.irq;
-    
+
     slvsel <= r.slvsel;
-    
+
     spio_miso    <= r.spio.miso;
     spio_misooen <= r.spio.misooen;
     spio_mosi    <= r.spio.mosi;
@@ -1693,7 +1886,14 @@ begin
     spio_sckoen  <= r.spio.sckoen;
     spio_enable  <= r.spio.enable;
     spio_astart  <= r.spio.astart;
-    
+    spio_aready  <= r.spio.aready;
+
+    if scantest = 1 and apbi_testen = '1' then
+      spio_misooen <= apbi_testoen;
+      spio_mosioen <= apbi_testoen;
+      spio_sckoen  <= apbi_testoen;
+    end if;
+
   end process comb;
 
   -- FIFOs
@@ -1783,7 +1983,7 @@ begin
   end generate;
 
   -- Registers
-  reg: process (clk)
+  reg: process (clk, arstn)
   begin  -- process reg
     if rising_edge(clk) then
       r <= rin;
@@ -1794,6 +1994,14 @@ begin
         r.spio.sck <= rin.spio.sck;
         r.rbitcnt <= rin.rbitcnt;
 	r.tbitcnt <= rin.tbitcnt;
+      end if;
+    end if;
+    if syncrst = 0 and arstn = '0' then
+      r.spio.misooen  <= INPUT;
+      r.spio.mosioen  <= INPUT;
+      r.spio.sckoen   <= INPUT;
+      if SLVSEL_EN /= 0 then
+        r.slvsel <= (others => '1');
       end if;
     end if;
   end process reg;

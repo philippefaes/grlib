@@ -74,6 +74,7 @@
   constant CFG_DEFMST  	  : integer := CONFIG_AHB_DEFMST;
   constant CFG_RROBIN  	  : integer := CONFIG_AHB_RROBIN;
   constant CFG_SPLIT   	  : integer := CONFIG_AHB_SPLIT;
+  constant CFG_FPNPEN  	  : integer := CONFIG_AHB_FPNPEN;
   constant CFG_AHBIO   	  : integer := 16#CONFIG_AHB_IOADDR#;
   constant CFG_APBADDR 	  : integer := 16#CONFIG_APB_HADDR#;
   constant CFG_AHB_MON 	  : integer := CONFIG_AHB_MON;
@@ -170,6 +171,7 @@
   constant CFG_SPIMCTRL_SCALER     : integer := CONFIG_SPIMCTRL_SCALER;
   constant CFG_SPIMCTRL_ASCALER    : integer := CONFIG_SPIMCTRL_ASCALER;
   constant CFG_SPIMCTRL_PWRUPCNT   : integer := CONFIG_SPIMCTRL_PWRUPCNT;
+  constant CFG_SPIMCTRL_OFFSET     : integer := 16#CONFIG_SPIMCTRL_OFFSET#;
 
 -- SPI controller
   constant CFG_SPICTRL_ENABLE  : integer := CONFIG_SPICTRL_ENABLE;
@@ -184,6 +186,9 @@
   constant CFG_SPICTRL_MAXWLEN : integer := CONFIG_SPICTRL_MAXWLEN;
   constant CFG_SPICTRL_SYNCRAM : integer := CONFIG_SPICTRL_SYNCRAM;
   constant CFG_SPICTRL_FT      : integer := CONFIG_SPICTRL_FT;
+
+-- AMBA System ACE Interface Controller
+  constant CFG_GRACECTRL : integer := CONFIG_GRACECTRL;
 
 -- GRLIB debugging
   constant CFG_DUART    : integer := CONFIG_DEBUG_UART;

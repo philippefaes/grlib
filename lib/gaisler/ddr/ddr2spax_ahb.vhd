@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ use grlib.amba.all;
 use grlib.devices.all;
 library gaisler;
 use gaisler.memctrl.all;
+use gaisler.ddrpkg.all;
 
 entity ddr2spax_ahb is
    generic (
@@ -44,7 +45,9 @@ entity ddr2spax_ahb is
       burstlen   : integer := 8;
       nosync     : integer := 0;
       ahbbits    : integer := ahbdw;
-      revision   : integer := 0
+      revision   : integer := 0;
+      devid      : integer := GAISLER_DDR2SP;
+      ddrbits    : integer := 32
    );
    port (
       rst      : in  std_ulogic;
@@ -53,7 +56,7 @@ entity ddr2spax_ahb is
       ahbso    : out ahb_slv_out_type;
       request  : out ddr_request_type;
       start_tog: out std_logic;
-      done_tog : in std_logic;
+      response : in ddr_response_type;
       wbwaddr   : out std_logic_vector(log2(burstlen) downto 0);
       wbwdata   : out std_logic_vector(ahbbits-1 downto 0);
       wbwrite   : out std_logic;
@@ -73,7 +76,7 @@ architecture rtl of ddr2spax_ahb is
   constant ramwt: integer := 0;
   
   constant hconfig : ahb_config_type := (
-    0 => ahb_device_reg ( VENDOR_GAISLER, GAISLER_DDR2SP, 0, REVISION, 0),
+    0 => ahb_device_reg ( VENDOR_GAISLER, DEVID, 0, REVISION, 0),
     4 => ahb_membar(haddr, '1', '1', hmask),
     5 => ahb_iobar(ioaddr, iomask),
     others => zero32);  
@@ -86,6 +89,7 @@ architecture rtl of ddr2spax_ahb is
 
   constant l2blen: integer := log2(burstlen)+log2(32);
   constant l2ahbw: integer := log2(ahbbits);
+  constant l2ddrw: integer := log2(2*ddrbits);
   
   -- Write buffer dimensions
   -- Write buffer is addressable down to 32-bit level on write (AHB) side.
@@ -105,6 +109,10 @@ architecture rtl of ddr2spax_ahb is
     req       : ddr_request_type;
     -- Posted write following current request
     nreq      : ddr_request_type;
+    -- Read flow control
+    rctr_lin  : std_logic_vector(3 downto 0);
+    endpos    : std_logic_vector(7 downto log2(ddrbits/4));
+    block_read: std_logic_vector(1 downto 0);
     -- Current AHB control signals
     haddr     : std_logic_vector(31 downto 0);
     haddr_nonseq: std_logic_vector(9 downto 0);
@@ -115,18 +123,19 @@ architecture rtl of ddr2spax_ahb is
     -- AHB slave outputs
     so_hready : std_logic;
     -- From DDR layer
-    done1,done2: std_logic;
+    resp1,resp2: ddr_response_type;
   end record;
 
   signal ar,nar    : ahb_reg_type;
 
 begin
 
-  ahbcomb : process(ahbsi,rst,ar,done_tog,rbrdata)
+  ahbcomb : process(ahbsi,rst,ar,response,rbrdata)
     variable av: ahb_reg_type;
     variable va2d: ddr_request_type;
     variable so: ahb_slv_out_type;
     variable vdone: std_logic;
+    variable vresp: ddr_response_type;
     variable bigsize,midsize,canburst: std_logic;
     variable inc_ramaddr: std_logic;
     variable row: std_logic_vector(14 downto 0);
@@ -135,13 +144,17 @@ begin
     variable wbw,wbwb: std_logic;
     variable rbra: std_logic_vector(rbuf_rabits-1 downto 0);
     variable ha0: std_logic_vector(31 downto 0);
+    variable rend,nrend: std_logic_vector(7 downto log2(ddrbits/4));
+    variable datavalid, writedone: std_logic;
+    variable rctr_gray: std_logic_vector(3 downto 0);
+    variable tog_start: std_logic;
   begin
     ha0 := ahbsi.haddr;
     ha0(31 downto 20) := ha0(31 downto 20) and not std_logic_vector(to_unsigned(hmask,12));
 
     av := ar;
     so := (hready => ar.so_hready, hresp => HRESP_OKAY, hrdata => (others => '0'),
-           hsplit => (others => '0'), hcache => not ar.hio, hirq => (others => '0'),
+           hsplit => (others => '0'), hirq => (others => '0'),
            hconfig => hconfig, hindex => hindex);
     wbw := '0';
     wbwb := '0';
@@ -175,7 +188,7 @@ begin
     if ar.hio='1' then
       canburst := '0';
     end if;
-
+    
     if ahbsi.hready='1' and ahbsi.hsel(hindex)='1' and ahbsi.htrans(1)='1' then
       av.haddr := ha0;
       av.ramaddr := ha0(log2(4*burstlen)-1 downto 2);
@@ -190,12 +203,62 @@ begin
 
     
     -- Synchronize from DDR domain
-    av.done1:=done_tog; av.done2:=ar.done1;
-    vdone := ar.done2;
-    if nosync /= 0 then vdone := done_tog; end if;
+    av.resp1:=response; av.resp2:=ar.resp1;
+    vresp := ar.resp2;
+    if nosync /= 0 then vresp := response; end if;
+    vdone := vresp.done_tog;
 
+    -- Determine whether we can read more data in burst
+    datavalid := '0';
+    writedone := '0';
+    if ar.start_tog=vdone then
+      datavalid := '1';
+      writedone := '1';
+    end if;
+
+    if ar.rctr_lin="0000" then rend:=ar.haddr(7 downto l2ddrw-3); else rend:=ar.endpos; end if;
+    nrend := std_logic_vector(unsigned(rend)+1);
+    
+    rctr_gray := lin2gray(ar.rctr_lin);
+    if ar.start_tog/=vdone and rctr_gray /= vresp.rctr_gray and ar.block_read(0)='0' then
+      av.rctr_lin := std_logic_vector(unsigned(ar.rctr_lin)+1);
+      av.endpos := nrend;
+      rend := nrend;
+    end if;
+    
+    if 2*ddrbits > ahbbits then
+      if rend /= ar.haddr(7 downto log2(ddrbits/4)) then
+        datavalid := '1';
+      end if;
+    else
+      if rend(7 downto log2(ahbbits/8)) /= ar.haddr(7 downto log2(ahbbits/8)) then
+        datavalid := '1';
+      end if;
+      if 2*ddrbits < ahbbits and ahbbits > 32 then
+        if ar.hsize="010" or ar.hsize="001" or ar.hsize="000" then
+          if rend(log2(ahbbits/8)-1 downto log2(ddrbits/4)) /=
+            ar.haddr(log2(ahbbits/8)-1 downto log2(ddrbits/4)) then
+            datavalid := '1';
+          end if;
+        end if;
+      end if;
+    end if;
+
+    if ar.block_read(1)='1' or (ar.start_tog/=vdone and ar.block_read(0)='1') then
+      datavalid := '0';
+      writedone := '0';
+    end if;
+    
+    if ar.block_read(1)='1' and ar.start_tog/=vdone then
+      av.block_read(1) := '0';
+    end if;
+    if ar.block_read(1)='0' and vresp.rctr_gray="0000" then
+      av.block_read(0) := '0';
+    end if;
+    
     -- FSM
     inc_ramaddr := '0';
+    tog_start := '0';
     case ar.s is
       when asnormal =>
         -- Idle and memory read state
@@ -213,17 +276,20 @@ begin
           if ahbsi.hwrite='0' then
             if ahbsi.htrans(0)='0' or canburst='0' then
               av.so_hready := '0';
-              av.start_tog := not ar.start_tog;
-            else
+              tog_start := '1';
+            elsif datavalid='1' then
               inc_ramaddr := '1';
+            else
+              av.so_hready := '0';
+              -- grlib.testlib.print("Going to waitstate!");
             end if;
           else
             av.s := asw1;
           end if;
           
-        end if;        
+        end if;
         
-        if ar.so_hready='0' and ar.start_tog=vdone then
+        if ar.so_hready='0' and datavalid='1' then
           av.so_hready := '1';
           inc_ramaddr := '1';
         end if;
@@ -243,11 +309,11 @@ begin
               av.so_hready := '0';
               av.s := aswr;
             end if;
-            av.start_tog := not ar.start_tog;
+            tog_start := '1';
           end if;
         else
           av.s := asw2;
-          av.start_tog := not ar.start_tog;
+          tog_start := '1';
         end if;
 
 
@@ -262,7 +328,7 @@ begin
             av.so_hready := '0';
             av.s := aswr;
           end if;
-        elsif ar.start_tog=vdone then
+        elsif writedone='1' then
           av.s := asnormal;          
         end if;
 
@@ -296,9 +362,9 @@ begin
         if ahbsi.hready='1' and ahbsi.hsel(hindex)='1' and ahbsi.htrans(1)='1' then
           av.so_hready := '0';
           av.s := aswwx;
-        elsif ar.start_tog=vdone then
+        elsif writedone='1' then
           av.req := ar.nreq;
-          av.start_tog := not ar.start_tog;
+          tog_start := '1';
           av.s := asw2;
         end if;
 
@@ -306,7 +372,7 @@ begin
         -- Read request following ongoing write request
         -- HREADY is low in this state
         av.so_hready := '0';
-        if ar.start_tog=vdone then
+        if writedone='1' then
           av.req := (startaddr => ar.haddr(31 downto 10) & ar.haddr_nonseq(9 downto 0),
                      endaddr   => ar.haddr(9 downto 0),
                      hsize     => ar.hsize,
@@ -315,7 +381,7 @@ begin
                      burst     => ar.hburst0,
                      maskdata  => '0', maskcb => '0');
           av.hwrite := '0';
-          av.start_tog := not ar.start_tog;
+          tog_start := '1';
           av.s := asnormal;
         end if;
 
@@ -323,8 +389,8 @@ begin
         -- Write ongoing + write posted + another AHB request (read or write)
         -- Keep HREADY low
         av.so_hready := '0';
-        if ar.start_tog=vdone then
-          av.start_tog := not ar.start_tog;
+        if writedone='1' then
+          tog_start := '1';
           av.req := ar.nreq;
           if ar.hwrite='1' then
             av.nreq := (startaddr => ar.haddr(31 downto 10) & ar.haddr_nonseq(9 downto 0),
@@ -344,6 +410,15 @@ begin
         
     end case;
 
+    if tog_start='1' then
+      av.start_tog := not ar.start_tog;
+      av.rctr_lin := "0000";
+      if ar.start_tog /= vdone then
+        av.block_read(1) := '1';
+      end if;
+      av.block_read(0) := '1';
+    end if;
+      
     if inc_ramaddr='1' then
       if bigsize='1' then
         av.ramaddr(log2(4*burstlen)-1 downto log2(ahbbits/8)) :=
@@ -364,10 +439,15 @@ begin
 
     if rst='0' then
       av.s := asnormal;
+      av.block_read := "00";
       av.start_tog := '0';
       av.so_hready := '1';
       so.hready := '1';
-      so.hresp := HRESP_OKAY;
+      so.hresp := HRESP_OKAY;      
+    end if;
+
+    if l2blen-l2ddrw < 4 then
+      av.rctr_lin(3 downto l2blen-l2ddrw) := (others => '0');
     end if;
     
     nar        <= av;

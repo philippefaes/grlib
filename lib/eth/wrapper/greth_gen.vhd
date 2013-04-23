@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -57,7 +57,9 @@ entity greth_gen is
     enable_mdint   : integer range 0 to 1  := 0;
     multicast      : integer range 0 to 1  := 0;
     edclsepahbg    : integer range 0 to 1  := 0;
-    ramdebug       : integer range 0 to 2  := 0); 
+    ramdebug       : integer range 0 to 2  := 0;
+    maxsize        : integer
+    ); 
   port(
     rst            : in  std_ulogic;
     clk            : in  std_ulogic;
@@ -124,9 +126,11 @@ entity greth_gen is
     --scantest
     testrst        : in   std_ulogic;
     testen         : in   std_ulogic;
+    testoen        : in   std_ulogic;
     edcladdr       : in   std_logic_vector(3 downto 0);
     edclsepahb     : in   std_ulogic;
-    edcldisable    : in   std_ulogic
+    edcldisable    : in   std_ulogic;
+    speed          : out  std_ulogic
   );
 end entity;
   
@@ -199,7 +203,8 @@ begin
       enable_mdint   => enable_mdint,
       multicast      => multicast,
       edclsepahbg    => edclsepahbg,
-      ramdebug       => ramdebug)
+      ramdebug       => ramdebug,
+      maxsize        => maxsize)
     port map(
       rst            => rst,
       clk            => clk,
@@ -289,9 +294,11 @@ begin
       --scantest     
       testrst        => testrst,
       testen         => testen,
+      testoen        => testoen,
       edcladdr       => edcladdr,
       edclsepahb     => edclsepahb,
-      edcldisable    => edcldisable);
+      edcldisable    => edcldisable,
+      speed          => speed);
 
 -------------------------------------------------------------------------------
 -- FIFOS ----------------------------------------------------------------------

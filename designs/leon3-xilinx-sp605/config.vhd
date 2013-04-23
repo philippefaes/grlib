@@ -1,6 +1,8 @@
 
 
 
+
+
 -----------------------------------------------------------------------------
 -- LEON3 Demonstration design test bench configuration
 -- Copyright (C) 2009 Aeroflex Gaisler
@@ -84,6 +86,7 @@ package config is
   constant CFG_DEFMST : integer := (0);
   constant CFG_RROBIN : integer := 1;
   constant CFG_SPLIT : integer := 0;
+  constant CFG_FPNPEN : integer := 0;
   constant CFG_AHBIO : integer := 16#FFF#;
   constant CFG_APBADDR : integer := 16#800#;
   constant CFG_AHB_MON : integer := 0;
@@ -184,6 +187,9 @@ package config is
   constant CFG_SPICTRL_MAXWLEN : integer := 0;
   constant CFG_SPICTRL_SYNCRAM : integer := 0;
   constant CFG_SPICTRL_FT : integer := 0;
+
+-- AMBA System ACE Interface Controller
+  constant CFG_GRACECTRL : integer := 1;
 
 -- GRLIB debugging
   constant CFG_DUART : integer := 0;

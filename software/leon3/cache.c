@@ -214,42 +214,44 @@ long long int getdw();
 
 	/**** INSTRUCTION CACHE TESTS ****/
 
-	for (i=0;i<ISETS;i++) {
-	  line[i]();
-	}	
+      if (((cachectrl >> ITE_BIT) & 3) == 0) { // skip test during err. injection
+	  for (i=0;i<ISETS;i++) {
+	    line[i]();
+	  }	
 	
-	cachectrl = rsysreg(0); wsysreg(0, cachectrl & ~0x03); /* disable icache */
+	  cachectrl = rsysreg(0); wsysreg(0, cachectrl & ~0x03); /* disable icache */
 	/* check tags */
-	tmp = 0;
-	for (i=0;i<ISETS;i++) { 
- 	  for (j=0;j<ISETS;j++) { 
-	    tag = getitag((int) line[i], j);
-	    if ( ((tag & IVALMSK) == IVALMSK) && ((tag & ITAGAMSK) == (((int) line[i]) & ITAGAMSK)) )
-	      tmp++;
+	  tmp = 0;
+	  for (i=0;i<ISETS;i++) { 
+ 	    for (j=0;j<ISETS;j++) { 
+	      tag = getitag((int) line[i], j);
+	      if ( ((tag & IVALMSK) == IVALMSK) && ((tag & ITAGAMSK) == (((int) line[i]) & ITAGAMSK)) )
+	        tmp++;
+	    }
 	  }
-	}
-	cachectrl = rsysreg(0); wsysreg(0, cachectrl | 3); /* enable icache */
-	if (tmp == 0) fail(1);
+	  cachectrl = rsysreg(0); wsysreg(0, cachectrl | 3); /* enable icache */
+	  if (tmp == 0) fail(1);
 
-      if (((cachectrl >> ITE_BIT) & 3) == 0) {
 	/* iparity checks */
 	if ((cachectrl >> CPP_CONF_BIT) & CPP_CONF_MASK) {
 	  cachectrl = rsysreg(0); wsysreg(0, cachectrl & ~0x3fc0);
 	  line2();
-	  wsysreg(0, cachectrl | CPTB_MASK);
+	  wsysreg(0, (cachectrl | CPTB_MASK) & ~3);
 	  for (i=0;i<ISETS;i++) { 
 	    setidata((int) line2, i, 0);
 	  }
+	  wsysreg(0, (cachectrl | CPTB_MASK));
 	  line2();
 	  cachectrl = rsysreg(0);
 	  if (((cachectrl >> IDE_BIT) & 3) != 1) fail(2);
+	  do cachectrl = rsysreg(0); while(cachectrl & (CCTRL_IFP | CCTRL_DFP));
 	  
 	  asm("nop;");
+	  wsysreg(0, cachectrl & ~3);
 	  setitag((int) line2, 0, 0);
 	  asm("nop;");
-	  cachectrl = rsysreg(0); wsysreg(0, cachectrl & ~CPTB_MASK);
+	  cachectrl = rsysreg(0); wsysreg(0, (cachectrl & ~CPTB_MASK) | 3);
 	  asm("nop;");
-	  //setidata((int) line2, 0, 0);
 	  line2();
 	  cachectrl = rsysreg(0);
 	  if (((cachectrl >> ITE_BIT) & 3) != 1) fail(3);
@@ -304,6 +306,7 @@ long long int getdw();
 	  cachectrl = rsysreg(0);
 	  if (((cachectrl >> DDE_BIT) & 3) != 1) fail(12);
 	  cachectrl = rsysreg(0); wsysreg(0, cachectrl & ~CPTB_MASK);
+	  do cachectrl = rsysreg(0); while(cachectrl & (CCTRL_IFP | CCTRL_DFP));
 	  setddata(&mrx[0],0,0);
 	  cachectrl = rsysreg(0); wsysreg(0, cachectrl | CPTB_MASK);
 	  do cachectrl = rsysreg(0); while (!(cachectrl & CPTB_MASK));
@@ -318,6 +321,7 @@ long long int getdw();
 //	  if ((getdtag(mrx,1) & DTAGMASK) != (1 <<((((int) mrx)>>2)&(DLINESZ-1)))) fail(16);
 	  *((volatile long long int *) &dw) = 0x0000001100000055LL;
 	  cachectrl = rsysreg(0); wsysreg(0, (cachectrl | CPTB_MASK) & ~DDE_MASK);
+	  do cachectrl = rsysreg(0); while(cachectrl & (CCTRL_IFP | CCTRL_DFP));
 	  getdw(&dw);
 	  for (i=0;i<DSETS;i++) {
 	    setddata(((int)&dw)+4,i,0x00000055);
@@ -325,9 +329,11 @@ long long int getdw();
 	  if (getdw(&dw) != 0x0000001100000055LL) fail(16);
 	  cachectrl = rsysreg(0); if (((cachectrl >> DDE_BIT) & 3) != 1) fail(16);	  
 	  wsysreg(0, cachectrl & (~CE_CLEAR & ~CPTB_MASK));
+	  do cachectrl = rsysreg(0); while(cachectrl & (CCTRL_IFP | CCTRL_DFP));
 	}
 
 	/* check that tag is properly replaced */
+	mr[0] = mr[1];
 	mr[0] = 5; mr[1] = 1; mr[2] = 2; mr[3] = 3;
 	mr[DTAGS*DLINESZ] = 0xbbbbbbbb;
 
@@ -350,32 +356,32 @@ long long int getdw();
       }
 	/* check partial word access */
 
-	mr[8] = 0x01234567;
-	mr[9] = 0x89abcdef;
-	if (mrc[32] != 0x01) fail(26);
-	if (mrc[33] != 0x23) fail(27);
-	if (mrc[34] != 0x45) fail(28);
-	if (mrc[35] != 0x67) fail(29);
-	if (mrc[36] != 0x89) fail(30);
-	if (mrc[37] != 0xab) fail(31);
-	if (mrc[38] != 0xcd) fail(32);
-	if (mrc[39] != 0xef) fail(33);
-	if (mrh[16] != 0x0123) fail(34);
-	if (mrh[17] != 0x4567) fail(35);
-	if (mrh[18] != 0x89ab) fail(36);
-	if (mrh[19] != 0xcdef) fail(37);
-	mrc[32] = 0x30; if (mr[8] != 0x30234567) fail(39);
-	mrc[33] = 0x31; if (mr[8] != 0x30314567) fail(40);
-	mrc[34] = 0x32; if (mr[8] != 0x30313267) fail(41);
-	mrc[35] = 0x33; if (mr[8] != 0x30313233) fail(42);
-	mrc[36] = 0x34; if (mr[9] != 0x34abcdef) fail(43);
-	mrc[37] = 0x35; if (mr[9] != 0x3435cdef) fail(44);
-	mrc[38] = 0x36; if (mr[9] != 0x343536ef) fail(45);
-	mrc[39] = 0x37; if (mr[9] != 0x34353637) fail(46);
-	mrh[16] = 0x4041; if (mr[8] != 0x40413233) fail(47);
-	mrh[17] = 0x4243; if (mr[8] != 0x40414243) fail(48);
-	mrh[18] = 0x4445; if (mr[9] != 0x44453637) fail(49);
-	mrh[19] = 0x4647; if (mr[9] != 0x44454647) fail(50);
+      mr[8] = 0x01234567;
+      mr[9] = 0x89abcdef;
+      if (mrc[32] != 0x01) fail(26);
+      if (mrc[33] != 0x23) fail(27);
+      if (mrc[34] != 0x45) fail(28);
+      if (mrc[35] != 0x67) fail(29);
+      if (mrc[36] != 0x89) fail(30);
+      if (mrc[37] != 0xab) fail(31);
+      if (mrc[38] != 0xcd) fail(32);
+      if (mrc[39] != 0xef) fail(33);
+      if (mrh[16] != 0x0123) fail(34);
+      if (mrh[17] != 0x4567) fail(35);
+      if (mrh[18] != 0x89ab) fail(36);
+      if (mrh[19] != 0xcdef) fail(37);
+      mrc[32] = 0x30; if (mr[8] != 0x30234567) fail(39);
+      mrc[33] = 0x31; if (mr[8] != 0x30314567) fail(40);
+      mrc[34] = 0x32; if (mr[8] != 0x30313267) fail(41);
+      mrc[35] = 0x33; if (mr[8] != 0x30313233) fail(42);
+      mrc[36] = 0x34; if (mr[9] != 0x34abcdef) fail(43);
+      mrc[37] = 0x35; if (mr[9] != 0x3435cdef) fail(44);
+      mrc[38] = 0x36; if (mr[9] != 0x343536ef) fail(45);
+      mrc[39] = 0x37; if (mr[9] != 0x34353637) fail(46);
+      mrh[16] = 0x4041; if (mr[8] != 0x40413233) fail(47);
+      mrh[17] = 0x4243; if (mr[8] != 0x40414243) fail(48);
+      mrh[18] = 0x4445; if (mr[9] != 0x44453637) fail(49);
+      mrh[19] = 0x4647; if (mr[9] != 0x44454647) fail(50);
 
 	/*
 	if (((lr->leonconf >> 2) & 3) == 3) { dma((int)&mr[0], 9, 1); }
@@ -383,13 +389,14 @@ long long int getdw();
 	*/
 
 	/* write data to the memory */
-	flush();
-	for (i=0;i<DSETS;i++) { 
-	  for (j=0;j<DLINESZ;j++) {
-	    mr[j+(i<<dsetbits)] = ((i<<16) | j); 
-	  } 
+      flush();
+      for (i=0;i<DSETS;i++) { 
+	for (j=0;j<DLINESZ;j++) {
+	  mr[j+(i<<dsetbits)] = ((i<<16) | j); 
 	} 
+      } 
 	
+      if (((cachectrl >> ITE_BIT) & 3) == 0) { // skip test during err. injection
 	/* check that write miss does not allocate line */
 	do cachectrl = rsysreg(0); while(cachectrl & (CCTRL_DFP));
 	for (i=0;i<DSETS;i++) {
@@ -424,8 +431,9 @@ long long int getdw();
 	setdtag(0,3,0x44444444);*/
 	
 	cachectrl = rsysreg(0); wsysreg(0, cachectrl | 0xf); 
+      } 
 	
-	return(0);
+      return(0);
 
 /* to be tested: diag access during flush, diag byte/halfword access,
    write error, cache freeze operation */

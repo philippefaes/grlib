@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -59,7 +59,8 @@ entity spimctrl is
     scaler      : integer range 1 to 512 := 1; -- SCK scaler
     altscaler   : integer range 1 to 512 := 1; -- Alternate SCK scaler 
     pwrupcnt    : integer  := 0;               -- System clock cycles to init
-    maxahbaccsz : integer range 0 to 256 := AHBDW -- Max AHB access size 
+    maxahbaccsz : integer range 0 to 256 := AHBDW; -- Max AHB access size
+    offset      : integer := 0
     );
   port (
     rstn    : in  std_ulogic;
@@ -210,44 +211,14 @@ architecture rtl of spimctrl is
   -- Main FSM states
   type spimstate_type is (IDLE, AHB_RESPOND, USER_SPI, BUSY);
   
---   subtype spimstate_type is std_logic_vector(1 downto 0);
-
---   constant IDLE        : std_logic_vector(spimstate_type'range) := "00";
---   constant AHB_RESPOND : std_logic_vector(spimstate_type'range) := "01";
---   constant USER_SPI    : std_logic_vector(spimstate_type'range) := "10";
---   constant BUSY        : std_logic_vector(spimstate_type'range) := "11";
-  
   -- SPI device FSM states
  type spistate_type is (SPI_PWRUP,  SPI_READY, SPI_READ, SPI_ADDR, SPI_DATA);
-  
---   subtype spistate_type is std_logic_vector(2 downto 0);
-
---   constant SPI_PWRUP : std_logic_vector(spistate_type'range) := "000";
---   constant SPI_READY : std_logic_vector(spistate_type'range) := "001";
---   constant SPI_READ  : std_logic_vector(spistate_type'range) := "010";
---   constant SPI_ADDR  : std_logic_vector(spistate_type'range) := "011";
---   constant SPI_DATA  : std_logic_vector(spistate_type'range) := "100";
-  
+    
   -- SD FSM states
   type sdstate_type is (SD_CHECK_PRES, SD_PWRUP0, SD_PWRUP1, SD_INIT_IDLE,
                         SD_ISS_ACMD41, SD_CHECK_CMD16, SD_READY,
                         SD_CHECK_CMD17, SD_CHECK_TOKEN, SD_HANDLE_DATA,
                         SD_SEND_CMD, SD_GET_RESP);
-
---   subtype sdstate_type is std_logic_vector(3 downto 0);
-
---   constant SD_CHECK_PRES   : std_logic_vector(sdstate_type'range) := "0000";
---   constant SD_PWRUP0       : std_logic_vector(sdstate_type'range) := "0001";
---   constant SD_PWRUP1       : std_logic_vector(sdstate_type'range) := "0010";
---   constant SD_INIT_IDLE    : std_logic_vector(sdstate_type'range) := "0011";
---   constant SD_ISS_ACMD41   : std_logic_vector(sdstate_type'range) := "0100";
---   constant SD_CHECK_CMD16  : std_logic_vector(sdstate_type'range) := "0101";
---   constant SD_READY        : std_logic_vector(sdstate_type'range) := "0110";
---   constant SD_CHECK_CMD17  : std_logic_vector(sdstate_type'range) := "0111";
---   constant SD_CHECK_TOKEN  : std_logic_vector(sdstate_type'range) := "1000";
---   constant SD_HANDLE_DATA  : std_logic_vector(sdstate_type'range) := "1001";
---   constant SD_SEND_CMD     : std_logic_vector(sdstate_type'range) := "1010";
---   constant SD_GET_RESP     : std_logic_vector(sdstate_type'range) := "1011";
   
   -----------------------------------------------------------------------------
   -- Types
@@ -827,7 +798,11 @@ begin  -- rtl
               v.bcnt := "011";
             end if;
             v.ar := (others => '0');
-            v.ar(r.haddr'range) := r.haddr;
+            if offset /= 0 then
+              v.ar(r.haddr'range) := r.haddr + cslv(offset, req_addr_bits);
+            else
+              v.ar(r.haddr'range) := r.haddr;
+            end if;
             v.spio.ready := '0';
             v.sreg := cslv(readcmd, 8);
           end if;
@@ -1050,7 +1025,6 @@ begin  -- rtl
     end if;
     ahbso.hrdata  <= ahbdrivedata(hrdata);
     ahbso.hconfig <= HCONFIG;
-    ahbso.hcache  <= '0';
     ahbso.hirq    <= ahbirq;
     ahbso.hindex  <= hindex;
     ahbso.hsplit  <= hsplit;

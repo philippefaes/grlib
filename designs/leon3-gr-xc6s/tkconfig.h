@@ -72,6 +72,18 @@
 #define CONFIG_SYN_TECH virtex5
 #elif defined CONFIG_SYN_VIRTEX6
 #define CONFIG_SYN_TECH virtex6
+#elif defined CONFIG_SYN_VIRTEX7
+#define CONFIG_SYN_TECH virtex7
+#elif defined CONFIG_SYN_KINTEX7
+#define CONFIG_SYN_TECH kintex7
+#elif defined CONFIG_SYN_ARTIX7
+#define CONFIG_SYN_TECH artix7
+#elif defined CONFIG_SYN_ZYNQ7000
+#define CONFIG_SYN_TECH zynq7000
+#elif defined CONFIG_SYN_ARTIX77
+#define CONFIG_SYN_TECH artix7
+#elif defined CONFIG_SYN_ZYNQ7000
+#define CONFIG_SYN_TECH zynq7000
 #elif defined CONFIG_SYN_RH_LIB18T
 #define CONFIG_SYN_TECH rhlib18t
 #elif defined CONFIG_SYN_SMIC13
@@ -143,6 +155,8 @@
 #define CFG_CLK_TECH actfus
 #elif defined CONFIG_CLK_CLKDLL
 #define CFG_CLK_TECH virtex
+#elif defined CONFIG_CLK_CLKPLLE2
+#define CFG_CLK_TECH CONFIG_SYN_TECH
 #elif defined CONFIG_CLK_DCM
 #define CFG_CLK_TECH CONFIG_SYN_TECH
 #elif defined CONFIG_CLK_LIB18T
@@ -527,6 +541,10 @@
 #ifdef CONFIG_MMU_I32
 #define CONFIG_ITLBNUM 32
 #endif
+#ifdef CONFIG_MMU_I64
+#define CONFIG_ITLBNUM 64
+#endif
+
 
 #define CONFIG_DTLBNUM 2
 #ifdef CONFIG_MMU_D2
@@ -548,6 +566,10 @@
 #ifdef CONFIG_MMU_D32
 #undef CONFIG_DTLBNUM
 #define CONFIG_DTLBNUM 32
+#endif
+#ifdef CONFIG_MMU_D64
+#undef CONFIG_DTLBNUM
+#define CONFIG_DTLBNUM 64
 #endif
 #ifdef CONFIG_MMU_FASTWB
 #define CFG_MMU_FASTWB 1
@@ -615,14 +637,14 @@
 #define CONFIG_RF_ERRINJ 0
 #endif
 
-#ifndef CONFIG_FPUFT_EN
-#define CONFIG_FPUFT 0
-#else
-#ifdef CONFIG_FPU_GRFPU
-#define CONFIG_FPUFT 2
-#else
+#if defined CONFIG_FPUFT_PAR
 #define CONFIG_FPUFT 1
-#endif
+#elif defined CONFIG_FPUFT_DMR
+#define CONFIG_FPUFT 2
+#elif defined CONFIG_FPUFT_TMR
+#define CONFIG_FPUFT 4
+#else
+#define CONFIG_FPUFT 0
 #endif
 
 #ifndef CONFIG_CACHE_FT_EN
@@ -694,20 +716,6 @@
 #define CONFIG_DSU_JTAG 0
 #endif
 
-#ifndef CONFIG_GRUSB_DCL
-#define CONFIG_GRUSB_DCL 0
-#endif
-
-#if defined CONFIG_GRUSB_DCL_UTMI16
-#define CONFIG_GRUSB_DCL_UIFACE 0
-#define CONFIG_GRUSB_DCL_DW 16
-#elif defined CONFIG_GRUSB_DCL_UTMI8
-#define CONFIG_GRUSB_DCL_UIFACE 0
-#define CONFIG_GRUSB_DCL_DW 8
-#else
-#define CONFIG_GRUSB_DCL_UIFACE 1
-#define CONFIG_GRUSB_DCL_DW 8
-#endif
 #ifndef CONFIG_DSU_ETH
 #define CONFIG_DSU_ETH 0
 #endif
@@ -887,6 +895,34 @@
 #ifndef CONFIG_DDR2SP_FTWIDTH
 #define CONFIG_DDR2SP_FTWIDTH 0
 #endif
+
+#ifndef CONFIG_MIG_DDR3
+#define CONFIG_MIG_DDR3 0
+#endif
+
+#ifndef CONFIG_MIG_DDR2
+#define CONFIG_MIG_DDR2 0
+#endif
+
+#ifndef CONFIG_MIG_RANKS
+#define CONFIG_MIG_RANKS 1
+#endif
+
+#ifndef CONFIG_MIG_COLBITS
+#define CONFIG_MIG_COLBITS 10
+#endif
+
+#ifndef CONFIG_MIG_ROWBITS
+#define CONFIG_MIG_ROWBITS 13
+#endif
+
+#ifndef CONFIG_MIG_BANKBITS
+#define CONFIG_MIG_BANKBITS 2
+#endif
+
+#ifndef CONFIG_MIG_HMASK
+#define CONFIG_MIG_HMASK F00
+#endif
 #ifndef CONFIG_AHBSTAT_ENABLE
 #define CONFIG_AHBSTAT_ENABLE  0
 #endif
@@ -962,25 +998,6 @@
 #define CFG_GRETH_FIFO 8
 #endif
 
-#ifndef CONFIG_ATA_ENABLE
-#define CONFIG_ATA_ENABLE 0
-#endif
-
-#ifndef CONFIG_ATAIO
-#define CONFIG_ATAIO 0
-#endif
-
-#ifndef CONFIG_ATAIRQ
-#define CONFIG_ATAIRQ 0
-#endif
-
-#ifndef CONFIG_ATA_MWDMA
-#define CONFIG_ATA_MWDMA 0
-#endif
-
-#ifndef CONFIG_ATA_FIFO
-#define CONFIG_ATA_FIFO 8
-#endif
 #ifndef CONFIG_CAN_ENABLE
 #define CONFIG_CAN_ENABLE 0
 #endif
@@ -1009,129 +1026,6 @@
 #define CONFIG_CAN_FT 0
 #endif
 
-#ifndef CONFIG_GRUSBDC_ENABLE
-#define CONFIG_GRUSBDC_ENABLE 0
-#endif
-
-#ifndef CONFIG_GRUSBDC_AIFACE
-#define CONFIG_GRUSBDC_AIFACE 0
-#endif
-
-#if defined CONFIG_GRUSBDC_UTMI16
-#define CONFIG_GRUSBDC_UIFACE 0
-#define CONFIG_GRUSBDC_DW 16
-#elif defined CONFIG_GRUSBDC_UTMI8
-#define CONFIG_GRUSBDC_UIFACE 0
-#define CONFIG_GRUSBDC_DW 8
-#else
-#define CONFIG_GRUSBDC_UIFACE 1
-#define CONFIG_GRUSBDC_DW 8
-#endif
-
-#ifndef CONFIG_GRUSBDC_NEPI
-#define CONFIG_GRUSBDC_NEPI 1
-#endif
-
-#ifndef CONFIG_GRUSBDC_NEPO
-#define CONFIG_GRUSBDC_NEPO 1
-#endif
-
-#ifndef CONFIG_GRUSBDC_I0
-#define CONFIG_GRUSBDC_I0 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I1
-#define CONFIG_GRUSBDC_I1 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I2
-#define CONFIG_GRUSBDC_I2 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I3
-#define CONFIG_GRUSBDC_I3 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I4
-#define CONFIG_GRUSBDC_I4 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I5
-#define CONFIG_GRUSBDC_I5 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I6
-#define CONFIG_GRUSBDC_I6 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I7
-#define CONFIG_GRUSBDC_I7 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I8
-#define CONFIG_GRUSBDC_I8 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I9
-#define CONFIG_GRUSBDC_I9 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I10
-#define CONFIG_GRUSBDC_I10 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I11
-#define CONFIG_GRUSBDC_I11 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I12
-#define CONFIG_GRUSBDC_I12 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I13
-#define CONFIG_GRUSBDC_I13 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I14
-#define CONFIG_GRUSBDC_I14 1024
-#endif
-#ifndef CONFIG_GRUSBDC_I15
-#define CONFIG_GRUSBDC_I15 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O0
-#define CONFIG_GRUSBDC_O0 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O1
-#define CONFIG_GRUSBDC_O1 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O2
-#define CONFIG_GRUSBDC_O2 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O3
-#define CONFIG_GRUSBDC_O3 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O4
-#define CONFIG_GRUSBDC_O4 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O5
-#define CONFIG_GRUSBDC_O5 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O6
-#define CONFIG_GRUSBDC_O6 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O7
-#define CONFIG_GRUSBDC_O7 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O8
-#define CONFIG_GRUSBDC_O8 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O9
-#define CONFIG_GRUSBDC_O9 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O10
-#define CONFIG_GRUSBDC_O10 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O11
-#define CONFIG_GRUSBDC_O11 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O12
-#define CONFIG_GRUSBDC_O12 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O13
-#define CONFIG_GRUSBDC_O13 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O14
-#define CONFIG_GRUSBDC_O14 1024
-#endif
-#ifndef CONFIG_GRUSBDC_O15
-#define CONFIG_GRUSBDC_O15 1024
-#endif
 #ifndef CONFIG_GRUSBHC_ENABLE
 #define CONFIG_GRUSBHC_ENABLE 0
 #endif
@@ -1542,6 +1436,10 @@
 
 #ifndef CONFIG_SPIMCTRL_PWRUPCNT
 #define CONFIG_SPIMCTRL_PWRUPCNT 0
+#endif
+
+#ifndef CONFIG_SPIMCTRL_OFFSET
+#define CONFIG_SPIMCTRL_OFFSET 0
 #endif
 #ifndef CONFIG_SPICTRL_ENABLE
 #define CONFIG_SPICTRL_ENABLE 0

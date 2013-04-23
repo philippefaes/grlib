@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -110,6 +110,7 @@ entity leon3core is
     tms         : in std_ulogic;
     tdi         : in std_ulogic;
     tdo         : out std_ulogic;
+    tdoen       : out std_ulogic;
 
     scanen     	: in  std_ulogic;
     testen     	: in  std_ulogic;
@@ -251,10 +252,10 @@ begin
   nouah : if CFG_AHB_UART = 0 generate apbo(7) <= apb_none; end generate;
 
   ahbjtaggen0 :if CFG_AHB_JTAG = 1 generate
-    ahbjtag0 : ahbjtag generic map(tech => fabtech, part => JTAG_UT699RH,
-	hindex => CFG_NCPU+CFG_AHB_UART, scantest => scantest)
+    ahbjtag0 : ahbjtag generic map(tech => fabtech, part => JTAG_EXAMPLE_PART,
+	hindex => CFG_NCPU+CFG_AHB_UART, scantest => scantest, oepol => OEPOL)
       port map(rstn, clk, tck, tms, tdi, tdo, ahbmi, ahbmo(CFG_NCPU+CFG_AHB_UART),
-               jtck, jtdi, jinst, jrst, jcapt, jshft, jupd, jtdo, trst, open);
+               jtck, jtdi, jinst, jrst, jcapt, jshft, jupd, jtdo, trst, tdoen);
   end generate;
   
 ----------------------------------------------------------------------
@@ -371,15 +372,16 @@ begin
     
     xtapgen: if CFG_AHB_JTAG = 0 generate
       t0: tap
-        generic map (tech => fabtech, irlen => 6)
+        generic map (tech => fabtech, irlen => 6, scantest => scantest, oepol => OEPOL)
         port map (trst,tck,tms,tdi,tdo,
-                  jtck,jtdi,jinst,jrst,jcapt,jshft,jupd,open,open,'1',jtdo,'0');                    
+                  jtck,jtdi,jinst,jrst,jcapt,jshft,jupd,open,open,'1',jtdo,'0',testen,testrst,testoen,tdoen);
     end generate;
     
     bc0: bscanctrl
       port map (
         trst,jtck,jtdi,jinst,jrst,jcapt,jshft,jupd,jtdo,
-        chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
+        chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz,
+        gnd(0), testen, testrst);
       
     chain_tck <= jtck;
 

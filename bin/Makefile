@@ -1,15 +1,16 @@
-VER=$(VNAME)1.1.0
-BID=4113
-GVER=1100
+VER=$(VNAME)1.2.2
+BID=4123
 CC=gcc
 SED=sed
 DISTLIB=~/vhdl
 
 ASICLIBS = ihp25 sgb25vrh ut025crh virage rh_lib18t rh_lib18t_io2 \
 	atc18 artisan umc18 virage90 tsmc90 dare nextreme atc18rha_cell smic13 \
-	tm65gplus st65lp st65gp cmos9sf nextreme2 gtech
-FPGALIBS = apa proasic3 axcelerator ec fusion unisim secureip altera altera_mf stratixii \
-	eclipsee cycloneiii stratixiii synplify simprim stratixiv proasic3e proasic3l
+	tm65gplus st65lp st65gp cmos9sf nextreme2 gf65g
+FPGALIBS = apa proasic3 axcelerator ec fusion unisim secureip altera altera_mf \
+	 stratixii eclipsee cycloneiii stratixiii synplify simprim stratixiv \
+	proasic3e proasic3l
+
 ifeq ("$(TECHLIBS)","")
 TECHLIBS=$(FPGALIBS) $(ASICLIBS)
 endif
@@ -35,351 +36,6 @@ RMFTLIBSX = $(RMFTLIBS:%=lib/techmap/%) $(RMFTLIBS:%=lib/tech/%)
 RMCOMLIBSX = $(RMCOMLIBS:%=lib/techmap/%) $(RMCOMLIBS:%=lib/tech/%)
 RMFPGALIBSX = $(ASICLIBS:%=lib/techmap/%) $(ASICLIBS:%=lib/tech/%)
 
-HAPSFILES = lib/gaisler/haps doc/haps.pdf boards/hardi* designs/leon3-hardi*
-
-L3FTNET = leon3ft_grfpu_unisim.vhd leon3ft_grfpul_unisim.vhd
-#V2NET =
-#V4NET =
-#V5NET =
-GRFPWNET = grfpw_0_unisim.vhd
-GRFPW4NET = grfpw4_0_unisim.vhd
-
-GRSPWFILES = lib/spw/source_dist
-GRSPWCORE  = lib/spw/core
-
-GR1553BFILES = lib/gaisler/gr1553b/core lib/gaisler/gr1553b/test \
-	lib/gaisler/gr1553b/wrap verification/gr1553b verification/ahbmst2
-
-GRFPC = lib/gaisler/leon3/libfpu.vhd lib/gaisler/leon3/grfpc.vhd \
-	lib/gaisler/leon3/grfpw.vhd lib/gaisler/leon3/grfpwsh.vhd \
-	lib/gaisler/leon3ft/libfpuft.vhd lib/gaisler/leon3ft/grfpcft.vhd \
-	lib/gaisler/leon3ft/grfpwft.vhd \
-	lib/gaisler/leon3ftv2/libfpuft.vhd lib/gaisler/leon3ftv2/grfpcft.vhd \
-	lib/gaisler/leon3ftv2/grfpwft.vhd \
-	lib/gaisler/leon4b64/libfpu4.vhd lib/gaisler/leon4b64/grfpc4.vhd \
-	lib/gaisler/leon4b64/grfpw4.vhd lib/gaisler/leon4b64/grfpwx4.vhd
-
-GRLFPC = lib/gaisler/leon3/libgrlfpc.vhd lib/gaisler/leon3/grlfpc.vhd \
-	lib/gaisler/leon3/grlfpc2.vhd lib/gaisler/leon3/grlfpw.vhd \
-	lib/gaisler/leon3ft/grlfpcft.vhd lib/gaisler/leon3ft/grlfpc2ft.vhd \
-	lib/gaisler/leon3ft/grlfpwft.vhd \
-	lib/gaisler/leon3ftv2/grlfpcft.vhd lib/gaisler/leon3ftv2/grlfpc2ft.vhd \
-	lib/gaisler/leon3ftv2/grlfpwft.vhd \
-	lib/gaisler/leon4b64/grlfpc24.vhd lib/gaisler/leon4b64/grlfpw4.vhd \
-	lib/gaisler/leon4b64/grlfpwx4.vhd lib/gaisler/leon4b64/grfpwsh4.vhd
-
-FPC = $(GRFPC) $(GRLFPC)
-GRFPU = lib/gaisler/grfpu
-FPU = $(FPC) $(GRFPU)
-
-TMTC = lib/tmtc software/ccsds verification/grtm verification/grtc \
-	verification/grctm verification/rs232 verification/spwcuc \
-	verification/pw verification/grpulse verification/grtimer \
-	doc/tmtc/tmtc.pdf
-
-SKIPTMTC1 = lib/tmtc/grtm/grtm_pahb.vhd lib/tmtc/grtm/grtm_desc.vhd \
-	lib/tmtc/grtm/geffe.vhd lib/tmtc/grtm/grtm_clcwmux.vhd \
-	lib/tmtc/grtm/grtm_clcwrx.vhd lib/tmtc/grtm/grtm_vc.vhd \
-	lib/tmtc/grtm/grtm_pw.vhd lib/tmtc/grtc/grtc_uart.vhd \
-	lib/tmtc/grtc/grtc_hw.vhd lib/tmtc/grtc/grtc_clcwtx.vhd
-
-SKIPTMTC2 = lib/tmtc/grtm/grtmrx.vhd lib/tmtc/grtc/grtctx.vhd
-
-PRAESUM = \
-	lib/praesum designs/basic_passthru
-
-INTFILES =  TODO.txt \
-	bin/etools_create_project \
-	boards/*/doc \
-	doc/guide \
-	doc/crypto doc/companion-core doc/design-reuse doc/esa \
-	doc/gr1553 doc/greth doc/grspw \
-	lib/actel/*/source \
-	lib/esa/leon2* lib/gaisler/fpu \
-	lib/gaisler/leon3ft lib/gaisler/pcif lib/gaisler/satcan \
-	lib/gaisler/hcan \
-	lib/gaisler/pwm \
-	lib/gaisler/crypto lib/ihp* \
-	lib/gaisler/slink \
-	$(RMFTLIBSX) lib/tech/nextreme/cells \
-	lib/topnet lib/tmtc \
-	designs/suidemo \
-	designs/*esa* designs/leon3-ft-a* designs/leon3-ft-d* \
-	designs/leon3-ft-r* designs/leon3-ft-m* \
-	designs/leon3-ft-*flex designs/leon3-celeno designs/leon3ihp-tbench \
-	designs/*flexody* designs/*/rhlib* \
-	designs/*-cosim designs/leon2-gr-cpci-xc4v \
-	designs/leon2* \
-	designs/ethspw designs/leon3ihp designs/pcispw \
-	designs/leon3-1553 \
-	designs/gr701-pci-1553-bridge \
-	designs/rasta-if-board designs/leon3-bsd \
-	verification/ahb2ahb/multi_ahb2ahb.py \
-	verification/ahbctrl \
-	verification/ahbram \
-	verification/at \
-	verification/ddrspa \
-	verification/ddr2spa \
-	verification/ddr2phy \
-	verification/b1553brm \
-	verification/dma2ahb verification/esa_spw \
-	verification/grfpw \
-	verification/grfpw4 \
-	verification/grhcan \
-	verification/grslink verification/grspw \
-	verification/spimctrl \
-	verification/grpwm \
-	verification/tb_msp \
-	verification/gf4_e1 \
-	verification/rs_gf4_e1 \
-	verification/rs_gf4_e2 \
-	verification/pw \
-	verification/rs232 \
-	verification/grctm \
-	verification/tmtc \
-	verification/grfifo \
-	verification/crypto \
-	verification/gradcdac \
-	verification/ahb2pp \
-	verification/grpulse \
-	verification/grtimer \
-	verification/grtc \
-	verification/grtm \
-	verification/grtmtc \
-	verification/grascs \
-	verification/sdctrl \
-	verification/svgactrl \
-	verification/l2c \
-	verification/grfpu \
-	verification/ahbjtag \
-	verification/techmap \
-	verification/pci \
-	lib/spansion/flash/s29gl128p.vhd lib/spansion/flash/s29gl128p_vhd.ftm \
-	lib/techmap/*/grusbhc_*_*.vhd netlists/xilinx/spartan3/grspwc2.ngo\
-	lib/techmap/*/corepcif_* lib/actel/corePCIF/netlist \
-	lib/tech/atc18/cells lib/tech/atc18rha_cell\
-	lib/techmap/*/pci_arb_* lib/gaisler/ascs \
-	software/leon3/grslink.c software/leon3/grascs.c \
-	software/ccsds \
-	lib/tech/*/doc lib/gaisler/haps/ddr2_1x2* \
-	lib/tech/tsmc90/tci lib/tech/smic13 lib/techmap/smic13 \
-	lib/actel/*/netlist/primitives.vhd \
-	lib/gaisler/spacewire/grspw_codec.vhd \
-	lib/gaisler/spacewire/grspwrouter.vhd \
-	lib/gaisler/spacewire/grspw2_dma.vhd \
-	lib/gaisler/spacewire/grspw2_fifo.vhd \
-	lib/gaisler/spacewire/sim \
-	lib/gaisler/leon4ft \
-	verification/grspw* \
-	$(GR1553BFILES) \
-	lib/gaisler/misc/memscrub.* verification/memscrub \
-	lib/gaisler/iommu verification/griommu \
-	lib/tech/cmos9sf lib/techmap/cmos9sf \
-	lib/tech/tm65gplus lib/techmap/tm65gplus \
-	lib/tech/ut130hbd lib/techmap/ut130hbd \
-	verification/spwcuc designs/ftproa3 \
-	lib/tech/nextreme2 lib/techmap/nextreme2 \
-	lib/techmap/ut90nhbd lib/tech/ut90nhbd \
-	lib/gaisler/leon3ftv2 projects $(GRSPWFILES) \
-	lib/gaisler/l2cachev1 \
-	software/ccsds/*aes* \
-	verification/memperf \
-	software/mil1553 
-
-#	lib/tech/secureip lib/tech/unisim/ise/G* \
-#	lib/tech/unisim/ise/MCB.vhd
-
-FTFILES =  \
-	doc/reedsolomon doc/tmtc \
-	designs/leon3-rtax* designs/leon3-ft* \
-	designs/ft* designs/ut699rh-evab boards/ut699rh-evab verification/ft* \
-	lib/actel \
-	lib/gaisler/*/ft* lib/gaisler/misc/ft* \
-	lib/gaisler/sim/*ft* \
-	lib/gaisler/b1553 lib/gr1553 \
-	lib/gaisler/spacewire/grspw2_phy.vhd \
-	lib/grlib/ftlib \
-	lib/micron/sdram/ft* \
-	lib/techmap/maps/*ft* \
-	lib/techmap/unisim/*ft* \
-	lib/spw/core \
-	lib/techmap/*/grspwc_*_*.vhd \
-	lib/techmap/*/grspwc2_*_*.vhd \
-	lib/techmap/*/leon3ft*_*.vhd \
-	lib/techmap/*/ftmctrl_*_*.vhd \
-	software/leon3/*ft* software/leon3/bch* \
-	software/leon3/brm.c
-
-PROA3TMAP = \
-	lib/tech*/fusion* lib/tech*/proasic* lib/tech*/apa \
-	boards/gr-mcc-c designs/leon3-gr-mcc-c designs/*actel* \
-
-USBHCFILES = \
-	verification/grusbhc lib/gaisler/usb/hc lib/techmap/*/grusbhc_*_*.vhd
-
-USBDCFILES = \
-	verification/grusbdc lib/gaisler/usb/dc \
-	verification/grusb_dcl lib/gaisler/usb/dcl
-
-USBFILES = $(USBHCFILES) $(USBDCFILES)
-
-GBITFILES = \
-	verification/greth/*gbit* \
-	lib/eth/core/*gbit*
-
-T1FILES = lib/sun designs/t1*
-
-COREMP7FILES = lib/gaisler/coremp7 designs/coremp7-actel-proasic3
-
-LEON4FILES = \
-	lib/gaisler/leon4 lib/gaisler/leon4b64 lib/gaisler/l2cache \
-	designs/leon4* \
-	lib/techmap/maps/grfpw4* lib/techmap/maps/grlfpw4* \
-	netlists/*/*/*4* verification/leon4-clk2x verification/grfpw4 \
-	verification/l2c
-
-#	software/leon3/base_test4.c software/leon3/griommu.c \
-#	software/leon3/leon4_test.c software/leon3/memscrub_test.c
-
-COMFILES = \
-	designs/leon3-clk2x designs/*spw* \
-	verification/ahbbridge verification/ahb2ahb \
-	verification/greth verification/spictrl verification/i2c \
-	verification/pci verification/can_oc \
-	verification/mobile_ddr_sdr \
-	verification/grcan \
-	lib/grlib/amba/ahbmon.vhd lib/grlib/amba/apbmon.vhd \
-	lib/grlib/amba/ambamon.vhd lib/grlib/amba/ahbctrl_mb.vhd \
-	lib/gaisler/misc/ahb2ahb.vhd lib/gaisler/misc/ahbbridge.vhd \
-	lib/gaisler/leon3/*2x*  lib/gaisler/memctrl/ssrctrl.vhd \
-	lib/gaisler/misc/grfifo* \
-	lib/gaisler/misc/gradcdac* \
-	lib/gaisler/can/can_oc_core.vhd lib/gaisler/can/grcan.vhd \
-	lib/opencores/can/can_top_core_sync.vhd lib/opencores/can/can_top_sync.vhd \
-	lib/gaisler/sim/ulpi.vhd lib/gaisler/sim/utmi.vhd \
-	lib/techmap/inferred/tap_inferred.vhd \
-	lib/gaisler/leon4* lib/gaisler/l2c* \
-	lib/gaisler/leon3/irqamp.vhd \
-	lib/tech*/axcelerator \
-	designs/leon3-gr-cpci-ax \
-	lib/gaisler/jtag/bscanctrl.vhd lib/techmap/inferred/scanreg_inferred.vhd \
-	designs/leon3-asic/bsdl \
-	lib/gaisler/pci/grpci2 \
-	lib/eth/core/1000basex_pcs_layer.vhd \
-	lib/grlib/atf \
-	$(USBFILES) $(RMCOMLIBSX) $(GBITFILES)
-
-INTFTFPGAFILES = \
-	verification/greth verification/greth/*gbit* \
-	designs/leon3-clk2x lib/gaisler/greth/*gbit* \
-	lib/grlib/amba/ahbctrl_mb.vhd \
-	lib/gaisler/misc/ahb2ahb.vhd lib/gaisler/misc/ahbbridge.vhd \
-	lib/gaisler/leon3/*2x* lib/gaisler/memctrl/ssrctrl.vhd \
-	lib/gaisler/greth/*gbit* \
-	lib/gaisler/memctrl/ftsrctrl-v1.* \
-	lib/gleichmann lib/openchip \
-	lib/tech/altera lib/techmap/altera \
-	lib/tech/cycloneiii lib/techmap/cycloneiii \
-	lib/tech/stratixiii lib/techmap/stratixiii \
-	lib/tech/altera_mf lib/techmap/altera_mf \
-	lib/tech/stratixii lib/techmap/stratixii \
-	lib/tech/apa lib/techmap/apa \
-	lib/tech/ec lib/techmap/ec \
-	designs/leon3-altera* designs/leon3-avnet* designs/leon3-clock-gate \
-	designs/leon3-jopdesign-ep1c12 designs/leon3-ge-* \
-	designs/leon3-memec-v2mb1000 \
-	designs/ut699rh-evab \
-	designs/leon3-asic designs/leon3-wildcard-xcv300e \
-	designs/leon3-ft-terasic-de2-115 designs/leon3-arrow-bemicro-sdk \
-	designs/leon3-terasic-de2-115 designs/netcard designs/grspwrouter \
-	lib/gaisler/sim/ulpi.vhd lib/gaisler/sim/utmi.vhd \
-	designs/actel-coremp7-1000 \
-	netlists/altera netlists/xilinx/*/grfpw* \
-	verification \
-	doc/Changelog-gpl.txt doc/tmtc doc/reedsolomon \
-	lib/opencores/ac97 $(PRAESUM)
-
-INTFPGAFILES = \
-	verification/greth verification/greth/*gbit* \
-	designs/leon3-clk2x lib/gaisler/greth/*gbit* \
-	lib/grlib/amba/ahbctrl_mb.vhd \
-	lib/gaisler/misc/ahb2ahb.vhd lib/gaisler/misc/ahbbridge.vhd \
-	lib/gaisler/leon3/*2x* lib/gaisler/memctrl/ssrctrl.vhd \
-	lib/gaisler/greth/*gbit* \
-	lib/gaisler/memctrl/ftsrctrl-v1.* \
-	lib/gleichmann lib/openchip \
-	designs/leon3-jopdesign-ep1c12 \
-	designs/leon3-clock-gate \
-	designs/leon3-asic \
-	designs/leon3-ge-*
-
-EXTRAL4 = \
-	lib/gaisler/pci lib/gaisler/ata \
-	lib/gaisler/can  \
-	lib/opencores/ac97 lib/techmap/inferred/ddr* \
-	lib/tech*/eclipsee
-
-GRLIB2FILES = \
-	designs2 cfg bin/make.grlib2 make.grlib2 doc/grip2 doc/grlib2 \
-	lib/*/*/cfg lib/*/*/doc lib/*/*/*/cfg  lib/*/*/*/*/cfg \
-	lib/grlib/amba/ahbmon2.vhd lib/grlib/amba/apbctrl2.vhd \
-	lib/grlib/amba/rtl lib/grlib/amba/ahbctrl2.vhd \
-	software/grlib2 software/leon3/make.grlib2 \
-	bin/synplify bin/make.xconfig bin/Grlib2.class bin/make.docbook \
-	bin/Housekeeping.class bin/make.housekeeping bin/Record.class \
-	bin/make.sw bin/verify-designs.sh bin/config-tool \
-	bin/modelsim
-
-RMPROA3FILES = \
-	lib/tech/alt* lib/tech/apa lib/tech/axc* lib/tech/atc18 \
-	lib/tech/cycloneiii lib/tech/dware lib/tech/ec* lib/tech/simprim \
-	lib/tech/snps lib/tech/stra* lib/tech/tm65gplus \
-	lib/tech/umc18 lib/tech/unisim lib/tech/virage \
-	lib/contrib lib/esa/misc lib/esa/pci lib/gleichmann lib/openchip \
-	lib/opencores/ata lib/opencores/ac97 \
-	lib/techmap/alt* lib/techmap/apa lib/techmap/axc* lib/techmap/atc18 \
-	lib/techmap/cycloneiii lib/techmap/dware lib/techmap/ec* lib/techmap/simprim \
-	lib/techmap/snps lib/techmap/stra* lib/techmap/tm65gplus \
-	lib/techmap/umc18 lib/techmap/unisim lib/techmap/virage \
-	lib/gaisler/ata lib/gaisler/ddr lib/gaisler/ambatest lib/gaisler/arith \
-	lib/gaisler/leon3/* lib/gaisler/pci lib/gaisler/usb lib/gaisler/misc/ahbram* \
-	lib/gaisler/misc/wild* lib/gaisler/misc/*vga* lib/gaisler/misc/char* \
-	lib/gaisler/misc/grsys* lib/gaisler/misc/*ps2* lib/gaisler/misc/grace* \
-	lib/grlib/atf lib/gaisler/memctrl/ss* lib/gaisler/can/gr* \
-	lib/techmap/maps/grf* lib/techmap/maps/grl* lib/techmap/proasic3*/*.srr \
-	lib/gaisler/sim/gru* lib/gaisler/sim/usb* lib/gaisler/sim/ata* \
-	lib/techmap/maps/mul_61x61.vhd lib/gaisler/memctrl/sdctrl64.vhd \
-	lib/techmap/maps/ringosc.vhd lib/techmap/maps/ssrctrl_net.vhd \
-	lib/techmap/maps/syncram128.vhd lib/techmap/maps/syncram256bw.vhd \
-	lib/techmap/maps/syncram128bw.vhd lib/techmap/maps/nandtree.vhd \
-	lib/techmap/maps/ddrphy.vhd lib/techmap/inferred/mul_inferred.vhd \
-	lib/techmap/inferred/ddr_inferred.vhd lib/techmap/maps/system_monitor.vhd \
-	lib/tech/gtech lib/tech/secureip \
-	lib/techmap/*/*_fpu* lib/techmap/*/grlfpw_*_* \
-	verification netlists
-
-ADDPROA3FILES = \
-	lib/techmap/proasic3/leon3ft*.vhd \
-	lib/techmap/proasic3e/leon3ft*.vhd \
-	lib/techmap/proasic3l/leon3ft*.vhd \
-	lib/techmap/proasic3/ftm*.vhd \
-	lib/techmap/proasic3e/ftm*.vhd \
-	lib/techmap/proasic3l/ftm*.vhd \
-	lib/gaisler/memctrl/ftmctrl.in* lib/gaisler/gr1553b/gr1553b.in* \
-	lib/gaisler/memctrl/ftmctrl.vhd \
-	lib/gaisler/memctrl/ftsrctrl.vhd lib/gaisler/memctrl/ftsrctrl.in* \
-	lib/gaisler/can/grcan.in* lib/gaisler/gr1553b/gr1553b_pkg.vhd \
-	lib/gaisler/gr1553b/vhdls*.txt \
-	lib/gaisler/leon3/leon3.vhd lib/gaisler/leon3/irqmp* \
-	lib/gaisler/leon3/dsu* lib/gaisler/leon3/tbuf* \
-	lib/gaisler/leon3/vhdlsyn.txt lib/gaisler/leon3/leon3.in* \
-	lib/techmap/maps/leon3* lib/techmap/maps/ft*
-
-
-ADDPROA3SPWFILES = \
-	lib/techmap/proasic3*/grspwc2*.vhd \
-	lib/gaisler/spacewire/grspw2_phy.vhd
-
 VHDLP = vhdlp -s -work
 SONATALIBSKIP = pere05
 
@@ -391,7 +47,7 @@ AVHDL = avhdl
 VLIB = vlib
 VCOM = vcom -quiet $(VCOMOPT) -93
 VLOG = vlog -quiet $(VLOGOPT)
-VSIM = vsim
+VSIM = vsim $(VSIMOPT)
 
 NCVHDL = ncvhdl -nowarn DLCPTH -NOVITALCHECK -linedebug -v93 -nocopyright -work
 NCVLOG = ncvlog -nowarn DLCPTH -nocopyright -linedebug $(NCVLOGOPT) -work
@@ -401,10 +57,9 @@ DCVLOG = analyze -f VERILOG -library
 FMVHDL = read_vhdl -r -libname
 FMVLOG = read_verilog -r -libname
 ifeq ("$(DCSCRIPT)","")
-DCSCRIPT=$(TOP).dc
+DCSCRIPT=$(TOP)_dc.tcl
 endif
 DCLIBSKIP = $(FPGALIBS) corePCIF
-#DCLIBSKIP = dware corePCIF
 DCDIRSKIP =  $(FPGALIBS) corePCIF pcif
 #DCDIRSKIP =  corePCIF pcif
 XDCLIBSKIP = $(DCLIBSKIP:%=% | ) dummy
@@ -415,11 +70,33 @@ RTLCVHDL = read_hdl -vhdl -lib
 RTLCVLOG = read_hdl
 RCSCRIPT=$(TOP).rc
 
+VIVADOVHDL = read_vhdl -library
+VIVADOVLOG = read_verilog -library
+ifeq ("$(VIVADO_SYNTH_FLOW)","")
+VIVADO_SYNTH_FLOW="Vivado Synthesis 2012"
+endif
+ifeq ("$(VIVADO_SYNTH_STRATEGY)","")
+VIVADO_SYNTH_STRATEGY="Vivado Synthesis Defaults"
+endif
+ifeq ("$(VIVADO_IMPL_STRATEGY)","")
+VIVADO_IMPL_STRATEGY="HighEffort"
+endif
+
+ifeq ("$(PLANAHEAD_SYNTH_FLOW)","")
+PLANAHEAD_SYNTH_FLOW="XST 14"
+endif
+ifeq ("$(PLANAHEAD_SYNTH_STRATEGY)","")
+PLANAHEAD_SYNTH_STRATEGY="XST Defaults"
+endif
+ifeq ("$(PLANAHEAD_IMPL_STRATEGY)","")
+PLANAHEAD_IMPL_STRATEGY="ParHighEffort"
+endif
+
 SYNPVHDL = add_file -vhdl -lib
 SYNPVLOG = add_file -verilog
 SYNPLIBSKIP = $(ASICLIBS)
-XSYNPLIBSKIP = $(SYNPLIBSKIP:%=%|) dware
-XSYNPDIRSKIP = $(SYNPLIBSKIP:%=%|) dware
+XSYNPLIBSKIP = $(SYNPLIBSKIP:%=%|) dummy
+XSYNPDIRSKIP = $(SYNPLIBSKIP:%=%|) dummy
 
 XSTVHDL = elaborate -ifmt vhdl -work_lib
 XSTVLOG = elaborate -ifmt verilog -work_lib
@@ -441,6 +118,15 @@ endif
 
 ifeq ("$(NETLISTTECH)","")
 # Some .ngo netlists are reused for other FPGA families
+ifeq ("$(TECHNOLOGY)","Virtex7")
+NETLISTTECH = Virtex4
+else
+ifeq ("$(TECHNOLOGY)","Kintex7")
+NETLISTTECH = Virtex4
+else
+ifeq ("$(TECHNOLOGY)","Artix7")
+NETLISTTECH = Virtex4
+else
 ifeq ("$(TECHNOLOGY)","Spartan6")
 NETLISTTECH = Spartan3
 else
@@ -463,6 +149,9 @@ endif
 endif
 endif
 endif
+endif
+endif
+endif
 
 PRECLIBSKIPX = $(SIMLIBS) $(ASICLIBS)
 PRECLIBSKIP =  $(PRECLIBSKIPX:%=%|) dware
@@ -472,21 +161,10 @@ PRECSKIP = dummy
 PROASIC3LIBS = proasic3 proasic3e proasic3l fusion
 XLIBEROLIBSKIP = $(ASICLIBS) $(LATTICELIBS) \
 	$(ALTERALIBS) $(XILINXLIBS) $(PROASIC3LIBS) axcelerator
-LIBEROLIBSKIP = $(XLIBEROLIBSKIP:%=%|) dware
+LIBEROLIBSKIP = $(XLIBEROLIBSKIP:%=%|) dummy
 LIBERODIRSKIPX = $(ASICLIBS) $(XILINXLIBS) $(ALTERALIBS) $(LATTICELIBS)
-LIBERODIRSKIP = $(LIBERODIRSKIPX:%=%|) dware
+LIBERODIRSKIP = $(LIBERODIRSKIPX:%=%|) dummy
 LIBEROSKIP = dummy
-
-# The paths below apply to CoreConsole v. 1.4
-ifeq ("$(CORECONSOLE)","")
-CORECONSOLE = dummy
-else
-CORECONSOLE_PATH = $(CORECONSOLE)/repository/Components/Actel/DirectCore
-COREMP7BRIDGE_PATH = $(CORECONSOLE_PATH)/CoreMP7Bridge/2.1/rtl/vhdl/o
-COREMP7BRIDGE_FILES = A7WrapMaster.vhd A7WrapSM.vhd CoreMP7Bridge_a3p.vhd Sync.vhd uj_jtag.vhd
-COREMP7_PATH = $(CORECONSOLE_PATH)/A7S/2.0/M7A3P1000-2/debug/timingshell/vhdl
-COREMP7_FILES = arm_synplify.vhd
-endif
 
 SYNPSKIP = snpsmul.vhd
 
@@ -552,7 +230,8 @@ else
 XLIBSKIP= $(LIBSKIP:%=%|) dummy
 endif
 
-YDIRSKIP=$(DIRSKIP) $(LIBSKIP)
+XXDIRSKIP=$(DIRSKIP:%=%/core)
+YDIRSKIP=$(DIRSKIP) $(XXDIRSKIP) $(LIBSKIP)
 
 ifeq ("$(YDIRSKIP)","")
 XDIRSKIP="dummy"
@@ -585,6 +264,8 @@ help:
 	@echo " make quartus-launch       : start Quartus for current project"
 	@echo " make quartus-launch-synp  : start Quartus for synplify project"
 	@echo " make synplify-launch      : start synplify"
+	@echo " make vivado-launch        : start VIVADO project navigator"
+	@echo " make planAhead-launch     : start PlanAhead project navigator"
 	@echo " make xgrlib               : start grlib GUI"
 	@echo
 	@echo " batch targets:"
@@ -607,7 +288,8 @@ help:
 	@echo " make quartus-synp    : synthesize with synplify, place&route with Quartus"
 	@echo " make precision       : synthesize design using precision"
 	@echo " make synplify        : synthesize design using synplify"
-	@echo " make import-actel-cc : import CoreMP7 files from CoreConsole library"
+	@echo " make vivado          : synthesize and place&route with Xilinx VIVADO"
+	@echo " make planAhead       : synthesize and place&route with Xilinx PlanAhead"
 	@echo " make scripts         : generate compile scripts only"
 	@echo " make clean           : remove all temporary files except scripts"
 	@echo " make distclean       : remove all temporary files"
@@ -717,19 +399,19 @@ avhdl-clean:
 
 riviera: compile.vsim
 	@cat libs.do | sed -e s/modelsim/riviera/ > rlibs.do
-	@vsimsa rlibs.do
+	@vsimsa -do "do rlibs.do; quit"
 	@make -f make.vsim
 	@vmap work riviera/work
 	@-rm -f rlibs.do
 
 riviera-run:
-	@vsim $(SIMTOP) <  $(GRLIB)/bin/runvsim.do
+	@vsim -c $(SIMTOP) -do $(GRLIB)/bin/runvsim.do
 
 riviera-launch:
 	@echo asim $(SIMTOP) > riviera.do
 	@echo run -all >> riviera.do
 	@echo abort >> riviera.do
-	@riviera riviera.do
+	@riviera -do riviera.do
 
 riviera-clean:
 	-rm -rf riviera vsimsa.cfg wave.asdb riviera.do library.cfg .riviera_project rlibs.do
@@ -743,6 +425,14 @@ make.work: compile.vsim modelsim
 	@make -f make.vsim
 	@echo "" > make.work
 	@for i in `cat libs.txt`; do vmake $$i >> make.work ; done
+	@cat make.work | sed 's/\([a-zA-Z]\)\(:[\\\/]\)/\/cygdrive\/\L\1\//' > make.work2
+	@mv make.work2 make.work
+
+# If we have paths with ':' we assume that we are running on Cygwin:
+vsim-fix:
+#	@cat make.work | sed 's/\([a-zA-Z]\)\(:\\\)/\/\1\//'  > make.work2
+	@cat make.work | sed 's/\([a-zA-Z]\)\(:[\\\/]\)/\/cygdrive\/\L\1\//' > make.work2
+	@mv make.work2 make.work
 
 modelsim: compile.vsim
 	@vsim -c -quiet -do "do libs.do; quit"
@@ -757,7 +447,11 @@ vsim-run: vsim
 	@vsim -c $(SIMTOP) <  $(GRLIB)/bin/runvsim.do
 
 vsim-launch: scripts modelsim
+ifeq ("$(VSIMOPT)","")
 	@vsim -quiet $(SIMTOP).mpf
+else
+	vsim -quiet $(VSIMOPT)
+endif
 
 vsim-mcb: scripts
 	-vlib modelsim
@@ -773,10 +467,6 @@ vsim-simprim: modelsim
 vsim-clean:
 	-rm -rf modelsim transcript *.mti stdout.log vsim.wlf \
 	$(SIMTOP).mpf.bak $(SIMTOP).mti *.mpf
-
-vsim-fix:
-	cat make.work | sed 's/\([a-zA-Z]\)\(:\\\)/\/\1\//'  > make.work2
-	mv make.work2 make.work
 
 #########   GHDL targets   ############
 
@@ -844,16 +534,28 @@ isp-clean:
 
 #########   Xilinx ISE targets   ############
 
+NUCF = $(UCF:%=-uc % )
+
 ise: $(TOP).ngc
-	$(GRLIB)/bin/route_ngc $(TOP) $(UCF) $(DEVICE) $(EFFORT) $(BITGEN) $(GRLIB)/netlists/xilinx/$(NETLISTTECH) $(ISEMAPOPT)
+	ngdbuild  $(TOP).ngc -aul $(NUCF) -p $(DEVICE) -sd $(GRLIB)/netlists/xilinx/$(NETLISTTECH)
+	map -pr b -w -ol $(EFFORT) -p $(DEVICE) $(TOP) $(ISEMAPOPT)
+	par -ol $(EFFORT) -w $(TOP) $(TOP).ncd
+	trce -v 5 $(TOP).ncd $(TOP).pcf
+	bitgen $(TOP) -d -m -w -f $(BITGEN)
 
 ise-synp: $(TOP)_synplify.prj synplify/$(TOP).edf
-	$(GRLIB)/bin/route $(TOP) $(UCF) $(DEVICE) $(EFFORT) $(BITGEN) synplify \
-	$(GRLIB)/netlists/xilinx/$(NETLISTTECH) $(ISEMAPOPT)
+	ngdbuild  synplify/$(TOP).edf -aul $(NUCF) -p $(DEVICE) -sd $(GRLIB)/netlists/xilinx/$(NETLISTTECH)
+	map -pr b -w -ol $(EFFORT) -p $(DEVICE) $(TOP) $(ISEMAPOPT)
+	par -ol $(EFFORT) -w $(TOP) $(TOP).ncd
+	trce -v 5 $(TOP).ncd $(TOP).pcf
+	bitgen $(TOP) -d -m -w -f $(BITGEN)
 
 ise-prec: $(TOP).psp precision/$(TOP).edf
-	$(GRLIB)/bin/route $(TOP) $(UCF) $(DEVICE) $(EFFORT) $(BITGEN) precision \
-	$(GRLIB)/netlists/xilinx/$(NETLISTTECH)  $(ISEMAPOPT)
+	ngdbuild   precision/$(TOP).edf -aul $(NUCF) -p $(DEVICE) -sd $(GRLIB)/netlists/xilinx/$(NETLISTTECH)
+	map -pr b -w -ol $(EFFORT) -p $(DEVICE) $(TOP) $(ISEMAPOPT)
+	par -ol $(EFFORT) -w $(TOP) $(TOP).ncd
+	trce -v 5 $(TOP).ncd $(TOP).pcf
+	bitgen $(TOP) -d -m -w -f $(BITGEN)
 
 ise-launch8 xst-launch: $(TOP).npl $(TOP)_ise.tcl
 	ise $(TOP).npl>& ise.err&
@@ -884,12 +586,16 @@ ise-launch-synp: $(TOP).npl $(TOP)_synplify.prj synplify/$(TOP).edf $(TOP)_synpl
 
 $(TOP).xst: compile.xst
 	@touch $(TOP).xst; rm $(TOP).xst
+	@for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do \
+		if test -r $$i; then \
+		  echo verilog work $$i >> $(TOP)_files.prj ; \
+		fi; \
+	done
 	@for i in $(VHDLOPTSYNFILES) $(VHDLSYNFILES); do \
 		if test -r $$i; then \
 		  echo vhdl work $$i >> $(TOP)_files.prj ; \
 		fi; \
 	done
-#	@for i in $(VERILOGSYNFILES); do $(GRLIB)/bin/xstverilog $ii >> $(TOP).xst; done
 	@$(GRLIB)/bin/xstrun $(TOP) $(TOP).vhd  $(DEVICE) >> $(TOP).xst
 	@echo -ofn $(TOP) $(XSTOPT) -define {XSTDUMMY $(SYNPVLOGDEFS)} -sd $(GRLIB)/netlists/xilinx/$(NETLISTTECH) >> $(TOP).xst
 	@echo  $(TOP).xst
@@ -898,20 +604,15 @@ ise-xstmod :
 	$(GRLIB)/bin/xstmod $(CORE) $(CORE).vhd $(DEVICE) vhdl  > tmp.xst
 	xst -ifn tmp.xst
 
-$(TOP).bit: $(TOP).ngc
-	$(GRLIB)/bin/route_ngc $(TOP) $(UCF) $(DEVICE) $(EFFORT) $(BITGEN) $(GRLIB)/netlists/xilinx/$(NETLISTTECH)
-
 ise-map xst-map ise-xst xst: $(TOP).ngc
 
 $(TOP).ngc: $(TOP).xst $(VHDLSYNFILES) $(VERILOGSYNFILES) compile.xst
 	-rm -rf xst
 	@-mkdir xst xst/projnav.tmp
-#	xst -ifn compile.xst
 	xst -ifn $(TOP).xst
 
 $(TOP).ise: $(TOP)_ise.tcl
 	@echo "Creating $(TOP).ise using xtclsh - this can take up to 20 minutes."
-	@echo "Fell free to ask Xilinx why the xtclsh runs so slowly .... "
 	xtclsh $(TOP)_ise.tcl
 
 ise-prom:
@@ -1026,7 +727,7 @@ install-secureip: install-unisim
 	  cp  $(XILINX)/secureip/mti/mcb_mti/*.vp  $(GRLIB)/lib/tech/secureip/ise;\
 	fi
 
-remove-secureip uninstall-secureip: 
+remove-secureip uninstall-secureip:
 	@make uninstall-unisim
 
 remove-unisim uninstall-unisim:
@@ -1055,6 +756,214 @@ install-simprim:
 	  echo  installing $(XILINX)/vhdl/src/unisims/simprim_VITAL.vhd ;\
 	fi ; \
 
+compile_xilinx_verilog_lib: 
+	@if test -d ./xilinx_lib; then \
+	echo "Xilinx library already compiled!"; else \
+	compxlib -s mti_se -l verilog -arch $(TECHNOLOGY) -lib xilinxcorelib -w -dir ./xilinx_lib ; \
+	fi;
+
+map_xilinx_verilog_lib:
+	@if test -d ./xilinx_lib; then \
+	vmap secureip_ver ./xilinx_lib/secureip ; \
+	vmap unisims_ver ./xilinx_lib/unisims_ver ; \
+	vmap xilinxcorelib_ver ./xilinx_lib/xilinxcorelib_ver ; else \
+	echo "Xilinx Verilog Library not found. Please make sure you have installed the correct version of the Xilinx Library" ; exit 1 ; \
+	fi;
+
+clean_xilinx_verilog_lib:
+	\rm -rf xilinx_lib
+	\rm -f compxlib.* .cxl.mti_se.version
+
+mig_series7_generate:
+ifeq ($(CONFIG_MIG_SERIES7),y)
+	@if test -d ./mig; then \
+	echo "Xilinx MIG already generated!"; else \
+	mkdir -p mig ; \
+	mkdir -p mig/mig ; \
+	cp $(GRLIB)/boards/$(BOARD)/mig.xco ./mig/ ; \
+	cp $(GRLIB)/boards/$(BOARD)/mig.prj ./mig/mig ; \
+	cp $(GRLIB)/boards/$(BOARD)/mig.cgp ./mig/ ; \
+	coregen -b ./mig/mig.xco -p mig/mig.cgp ; \
+	fi;
+endif
+
+mig_series7: mig_series7_generate compile_xilinx_verilog_lib map_xilinx_verilog_lib
+ifeq ($(CONFIG_MIG_SERIES7),y)
+	if [ -f mig/mig/user_design/rtl/mig.v ]; then \
+	vlog -quiet -work gaisler \
+	mig/mig/user_design/rtl/mig.v \
+	mig/mig/user_design/rtl/clocking/*.v \
+	mig/mig/user_design/rtl/controller/*.v \
+	mig/mig/user_design/rtl/ecc/*.v \
+	mig/mig/user_design/rtl/ip_top/*.v \
+	mig/mig/user_design/rtl/phy/*.v \
+	mig/mig/user_design/rtl/phy_traffic_gen/*.v \
+	mig/mig/user_design/rtl/ui/*.v ;\
+	vlog -quiet -work work $(XILINX)/verilog/src/glbl.v ;\
+	fi;
+endif
+
+mig_series7_clean:
+	\rm -rf mig
+
+#########    Xilinx PlanAhead targets   ############
+
+planAhead.tcl: compile.vivado
+	@-mkdir -p planAhead
+	@echo "# Xilinx planAhead script for Leon3mp" > ./planAhead/$(TOP)_planAhead.tcl
+	@echo "# Create a new project" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "create_project $(DESIGN) ./planAhead/$(DESIGN) -part ${DEVICE} -force" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "# Board, part and design properties" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property target_simulator ModelSim [current_project]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property top_lib work [current_fileset]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property top_arch rtl [current_fileset]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property top $(TOP) [current_fileset]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property target_language VHDL [current_project]" >> ./planAhead/$(TOP)_planAhead.tcl
+ifneq ("$(PROTOBOARD)","")
+	@echo "set_property board $(PROTOBOARD) [current_project]"  >> ./planAhead/$(TOP)_planAhead.tcl
+endif
+	@echo "source ./compile.vivado" >> ./planAhead/$(TOP)_planAhead.tcl
+	@for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do \
+	    if test -r $$i; then \
+		    echo read_verilog "-library work" $$i >> ./planAhead/$(TOP)_planAhead.tcl; \
+	    fi; \
+	done
+	@for i in $(VHDLOPTSYNFILES) $(VHDLSYNFILES); do \
+	    if test -r $$i; then \
+		    echo read_vhdl "-library work" $$i >> ./planAhead/$(TOP)_planAhead.tcl; \
+	    fi; \
+	done
+	@if test -r $(GRLIB)/netlists/xilinx/$(NETLISTTECH); then \
+		echo "import_files $(GRLIB)/netlists/xilinx/$(NETLISTTECH)" >> ./planAhead/$(TOP)_planAhead.tcl; \
+	fi
+ifeq ("$(PROTOBOARD)","zedBoard")
+	@-mkdir -p planAhead/xps_files
+	@cp -r ./edk_files/leon3_zedboard planAhead/xps_files/
+	@echo "# Add Leon3 PS Zedboard Design" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "add_files ./planAhead/xps_files/leon3_zedboard/leon3_zedboard.xmp" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "make_wrapper -files [get_files ./planAhead/xps_files/leon3_zedboard/leon3_zedboard.xmp] -top -fileset [get_filesets sources_1] -import" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "update_compile_order -fileset sources_1" >> ./planAhead/$(TOP)_planAhead.tcl
+endif
+	@echo "# Read board specific constraints" >> ./planAhead/$(TOP)_planAhead.tcl
+#ifneq ("$(UCF_PLANAHEAD)","")
+	@for i in $(UCF_PLANAHEAD); do \
+	 if test -r $$i; then \
+	  echo "read_ucf $$i" >> ./planAhead/$(TOP)_planAhead.tcl; \
+	 fi; \
+	done
+#endif
+ifeq ($(CONFIG_MIG_DDR2),y)
+	@if test -r mig/user_design/par/mig.ucf; then \
+	  echo "read_ucf mig/user_design/par/mig.ucf" >> ./planAhead/$(TOP)_planAhead.tcl; \
+	fi;
+endif
+	@echo "create_run synth_$(DESIGN) -flow {$(PLANAHEAD_SYNTH_FLOW)} -strategy {$(PLANAHEAD_SYNTH_STRATEGY)}" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property steps.xst.args.resource_sharing no [get_runs synth_1]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property steps.xst.args.equivalent_register_removal no [get_runs synth_1]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "# Elaborate design to be able to apply SDC to top level" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "launch_runs synth_1" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "wait_on_run -timeout 120 synth_1" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "# Launch place and route" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property strategy $(PLANAHEAD_IMPL_STRATEGY) [get_runs impl_1]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "set_property steps.bitgen.args.m true [get_runs impl_1]" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "launch_runs impl_1 -to_step Bitgen" >> ./planAhead/$(TOP)_planAhead.tcl
+	@echo "wait_on_run -timeout 120 impl_1" >> ./planAhead/$(TOP)_planAhead.tcl
+ifeq ("$(PROTOBOARD)","zedBoard")
+	@echo "export_hardware [get_files ./planAhead/xps_files/leon3_zedboard/leon3_zedboard.xmp] [get_runs impl_1] -bitstream" >> ./planAhead/$(TOP)_planAhead.tcl
+endif
+	@echo "exit" >> ./planAhead/$(TOP)_planAhead.tcl
+
+planAhead-launch: planAhead.tcl
+	planAhead -mode gui -source ./planAhead/$(TOP)_planAhead.tcl 
+	cp ./planAhead/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).bit .
+	cp ./planAhead/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).msk .
+
+planAhead: planAhead.tcl
+	planAhead -mode batch -source ./planAhead/$(TOP)_planAhead.tcl
+	cp ./planAhead/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).bit .
+	cp ./planAhead/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).msk .
+
+planAhead-clean:
+	-rm -rf ./planAhead planAhead.log
+
+#########    Xilinx Vivado targets   ############
+
+vivado.tcl: compile.vivado
+	@-mkdir -p vivado
+	@echo "# Xilinx Vivado script for Leon3mp" > ./vivado/$(TOP)_vivado.tcl
+	@echo "# Create a new project" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "create_project $(DESIGN) ./vivado/$(DESIGN) -part ${DEVICE} -force" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "source ./compile.vivado" >> ./vivado/$(TOP)_vivado.tcl
+	@for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do \
+	    if test -r $$i; then \
+		    echo read_verilog "-library work" $$i >> ./vivado/$(TOP)_vivado.tcl; \
+	    fi; \
+	done
+	@for i in $(VHDLOPTSYNFILES) $(VHDLSYNFILES); do \
+	    if test -r $$i; then \
+		    echo read_vhdl "-library work" $$i >> ./vivado/$(TOP)_vivado.tcl; \
+	    fi; \
+	done
+	@echo "# Read board specific constraints" >> ./vivado/$(TOP)_vivado.tcl
+ifneq ("$(XDC)","")
+	@echo "read_xdc $(XDC)" >> ./vivado/$(TOP)_vivado.tcl
+endif
+ifneq ("$(UCF)","")
+	@echo "read_ucf $(UCF)" >> ./vivado/$(TOP)_vivado.tcl
+endif
+	@echo "# Board, part and design properties" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "set_property target_simulator ModelSim [current_project]" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "set_property top_lib work [current_fileset]" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "set_property top_arch rtl [current_fileset]" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "set_property top $(TOP) [current_fileset]" >> ./vivado/$(TOP)_vivado.tcl
+ifneq ("$(PROTOBOARD)","")
+	@echo "set_property board $(PROTOBOARD) [current_project]"  >> ./vivado/$(TOP)_vivado.tcl
+endif
+ifeq ($(CONFIG_MIG_SERIES7),y)
+	@echo "import_ip -file ./mig/mig.xco -name mig" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "generate_target  {instantiation_template Synthesis} [get_files $(DESIGN)/$(DESIGN).srcs/sources_1/ip/mig/mig.xco -of_objects [get_filesets sources_1]] -force " >> ./vivado/$(TOP)_vivado.tcl
+endif
+	@if test -r $(GRLIB)/netlists/xilinx/$(NETLISTTECH); then \
+		echo "import_files $(GRLIB)/netlists/xilinx/$(NETLISTTECH)" >> ./vivado/$(TOP)_vivado.tcl; \
+	fi
+	@echo "create_fileset -simset sim_$(DESIGN)" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "create_run synth_$(DESIGN) -flow {$(VIVADO_SYNTH_FLOW)} -strategy {$(VIVADO_SYNTH_STRATEGY)}" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "# Elaborate design to be able to apply SDC to top level" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "synth_design -rtl -name rtl_1" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "# Launch synth" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "launch_runs synth_1" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "wait_on_run -timeout 120 synth_1" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "# Launch place and route" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "set_property strategy $(VIVADO_IMPL_STRATEGY) [get_runs impl_1]" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "set_property steps.write_bitstream.args.mask_file true [get_runs impl_1]" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "launch_runs impl_1" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "wait_on_run -timeout 120 impl_1" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "close_design" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "open_run impl_1" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "report_timing_summary -delay_type min_max -path_type full_clock_expanded -report_unconstrained -check_timing_verbose -max_paths 10 -nworst 1 -significant_digits 3 -input_pins -name timing_1 -file $(TOP)_post_timing.rpt" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "report_drc -file $(TOP)_drc_route.rpt" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "launch_runs impl_1 -to_step write_bitstream" >> ./vivado/$(TOP)_vivado.tcl
+	@echo "wait_on_run -timeout 120 impl_1" >> ./vivado/$(TOP)_vivado.tcl
+
+
+vivado-launch: vivado.tcl
+	vivado -mode gui -source ./vivado/$(TOP)_vivado.tcl 
+	cp ./vivado/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).bit .
+	cp ./vivado/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).msk .
+
+vivado: vivado.tcl
+	vivado -mode batch -source ./vivado/$(TOP)_vivado.tcl
+	cp ./vivado/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).bit .
+	cp ./vivado/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).msk .
+
+vivado-clean:
+	-rm -rf ./vivado vivado.log
+
+vivado-prog-fpga:
+	@echo "fpga -f ./vivado/$(DESIGN)/$(DESIGN).runs/impl_1/$(TOP).bit" > ./xmd.ini
+	@echo "exit" >> ./xmd.ini
+	xmd
+
 
 #########   Altera Quartus targets   ############
 
@@ -1081,7 +990,7 @@ quartus-synp:  $(TOP)_synplify.prj synplify/$(TOP).edf quartus-vqm
 	$(QUARTUS_CDB) --merge $(TOP)_synplify
 	$(QUARTUS_FIT) --import_settings_files=off --export_settings_files=off $(TOP)_synplify -c $(TOP)_synplify
 	$(QUARTUS_ASM) --import_settings_files=off --export_settings_files=off $(TOP)_synplify -c $(TOP)_synplify
-	$(QUARTUS_STA) $(TOP)_synplify 
+	$(QUARTUS_STA) $(TOP)_synplify
 
 quartus-launch: $(TOP).qsf quartus-vqm
 	quartus  $(TOP).qpf
@@ -1131,6 +1040,11 @@ synplify/$(TOP).edf: $(VHDLSYNFILES) $(VERILOGSYNFILES)
 
 $(TOP)_synplify.prj: compile.synp
 	@echo source compile.synp > $(TOP)_synplify.prj
+	@for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do \
+	    if test -r $$i; then \
+		echo add_file "-verilog -lib work" $$i >> $(TOP)_synplify.prj; \
+	    fi; \
+	done
 	@for i in $(VHDLOPTSYNFILES) $(VHDLSYNFILES); do \
 	    if test -r $$i; then \
 		echo add_file "-vhdl -lib work" $$i >> $(TOP)_synplify.prj; \
@@ -1143,8 +1057,8 @@ $(TOP)_synplify.prj: compile.synp
 	    fi; \
 	  done; \
 	fi
-#	@for i in $(VERILOGSYNFILES); do echo add_file "-verilog -lib work" $ii >> $(TOP)_synplify.prj; done
 	@for i in $(SDCFILE); do echo add_file "-constraint " $$i >> $(TOP)_synplify.prj; done
+	@for i in $(FDCFILE); do echo add_file "-fpga_constraint " $$i >> $(TOP)_synplify.prj; done
 	@cat $(GRLIB)/bin/synplify.prj | sed -e s/TOP/$(TOP)/ \
 	-e s/TECHNOLOGY/$(TECHNOLOGY)/ \
 	-e s/PART/$(PART)/ -e s/SPEED/$(SPEED)/ -e s/SYNFREQ/$(SYNFREQ)/ >> $(TOP)_synplify.prj
@@ -1156,6 +1070,9 @@ ifneq ("$(SYNPVLOGDEFS)","")
 endif
 ifneq ("$(SYNPVLOGINC)","")
 	@echo set_option -include_path \"$(SYNPVLOGINC)\" >> $(TOP)_synplify.prj
+endif
+ifneq ("$(SYNPVLOGSTD)","")
+	@echo set_option -vlog_std \"$(SYNPVLOGSTD)\" >> $(TOP)_synplify.prj
 endif
 	@echo $(SYNPOPT) >> $(TOP)_synplify.prj
 	@echo impl -active \"synplify\" >> $(TOP)_synplify.prj
@@ -1188,6 +1105,15 @@ libero-launch : $(TOP)_libero.prj
 	$(LIBERO) $(TOP)_libero.prj
 
 #########   Actel Designer targets    ############################
+
+# DESIGNER_LAYOUT_OPT can be overridden i template design Makefile
+ifeq ("$(DESIGNER_LAYOUT_OPT)","")
+ifeq ("$(TECHNOLOGY)","Axcelerator")
+DESIGNER_LAYOUT_OPT="-effort_level 5 -timing_driven -incremental \"OFF\""
+else
+DESIGNER_LAYOUT_OPT="-timing_driven -incremental \"OFF\""
+endif
+endif
 
 actel: $(TOP)_synplify.prj synplify/$(TOP).edf $(TOP)_designer.tcl
 	-mkdir ./actel
@@ -1229,7 +1155,6 @@ else
 	@echo "   puts \"WARNING: No PDC_EXTRA file imported.\"" >> $(TOP)_designer.tcl
 	@echo "}" >> $(TOP)_designer.tcl
 endif
-
 	@echo "if {[file exist "$(SDC)"]} {" >> $(TOP)_designer.tcl
 	@echo "   import_aux -format \"sdc\" -merge_timing \"no\" {"$(SDC)"}" >> $(TOP)_designer.tcl
 	@echo "} else {" >> $(TOP)_designer.tcl
@@ -1245,11 +1170,7 @@ else
 endif
 	@echo "save_design {"$(TOP).adb"}" >> $(TOP)_designer.tcl
 	@echo "report -type status {./actel/report_status_pre.log}" >> $(TOP)_designer.tcl
-ifeq ("$(TECHNOLOGY)","AXCELERATOR")
-	@echo "layout -effort_level 5 -timing_driven -incremental \"OFF\"" >> $(TOP)_designer.tcl
-else
-	@echo "layout -timing_driven -incremental \"OFF\"" >> $(TOP)_designer.tcl
-endif
+	@echo "layout " $(DESIGNER_LAYOUT_OPT) >> $(TOP)_designer.tcl
 	@echo "save_design {"$(TOP).adb"}" >> $(TOP)_designer.tcl
 	@echo "backannotate -dir {./actel} -name \"$(TOP)\" -format \"SDF\" -language \"VHDL93\" -netlist"  >> $(TOP)_designer.tcl
 	@echo "report -type \"timer\" -analysis \"max\" -print_summary \"yes\" -use_slack_threshold \"no\" -print_paths \"yes\" -max_paths 100 -max_expanded_paths 5 -include_user_sets \"yes\" -include_pin_to_pin \"yes\" -select_clock_domains \"no\"  {./actel/report_timer_max.txt}" >> $(TOP)_designer.tcl
@@ -1257,7 +1178,7 @@ endif
 	@echo "report -type \"pin\" -listby \"name\" {./actel/report_pin_name.log}" >> $(TOP)_designer.tcl
 	@echo "report -type \"pin\" -listby \"number\" {./actel/report_pin_number.log}" >> $(TOP)_designer.tcl
 	@echo "report -type \"datasheet\" {./actel/report_datasheet.txt}" >> $(TOP)_designer.tcl
-ifeq ("$(TECHNOLOGY)","AXCELERATOR")
+ifeq ("$(TECHNOLOGY)","Axcelerator")
 	@echo "export -format \"AFM-APS2\" -trstb_pullup \"yes\" -global_set_fuse \"reset\" -axprg_set_algo \"UMA\" {./actel/$(TOP).afm}"  >> $(TOP)_designer.tcl
 	@echo "export -format \"prb\" {./actel/$(TOP).prb}"  >> $(TOP)_designer.tcl
 else
@@ -1287,7 +1208,7 @@ dc: $(TOP)_dc.tcl
 
 $(TOP)_dc.tcl: compile.dc
 	@cp $(GRLIB)/bin/top.dc $(TOP)_dc.tcl
-	@for i in $(VERILOGSYNFILES); do \
+	@for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do \
 	 if test -r $$i; then \
 	    echo $(DCVLOG) work $$i >> $(TOP)_dc.tcl; \
 	    echo $(FMVLOG) $work $i >> fmref.tcl; \
@@ -1320,7 +1241,7 @@ $(TOP).rc: compile.rc
 	    echo "read_hdl -vhdl -lib work" $$i >> $(TOP).rc; \
 	 fi; \
 	done
-#	@for i in $(VERILOGSYNFILES); do echo "read_hdl " $$i >> $(TOP).rc; done
+#	@for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do echo "read_hdl " $$i >> $(TOP).rc; done
 	@echo elaborate $(TOP) >> $(TOP).rc
 	@echo  $(TOP).rc
 
@@ -1328,7 +1249,7 @@ rc-clean:
 	-rm -rf rtlc rc.log rc.cmd
 
 ######## easic targets   ####################
-# 
+#
 # etools-n2x-init creates a project file
 # etools-n2x-launch starts design navigator and loads the current project
 #
@@ -1358,11 +1279,11 @@ etools-n2x-clean:
 
 ########## Generation of compile scripts ###############
 
-scripts: compile.dc compile.synp compile.son compile.vsim compile.asim compile.xst compile.ncsim compile.rc \
+scripts: compile.dc compile.synp compile.vivado compile.son compile.vsim compile.asim compile.xst compile.ncsim compile.rc \
 	$(TOP)_synplify.prj $(TOP)_dc.tcl $(TOP).rc $(TOP).xst $(TOP).npl $(TOP)_ise.tcl $(TOP).qsf \
 	$(TOP)_designer.tcl $(TOP)_libero.prj compile.etools $(TOP)_etools_create.tcl $(TOP).ldf
 
-verilog.txt $(TOP)_libero.prj compile.dc compile.synp compile.son compile.vsim compile.asim compile.xst \
+verilog.txt $(TOP)_libero.prj compile.dc compile.synp compile.vivado compile.son compile.vsim compile.asim compile.xst \
 compile.ncsim compile.rc compile.ghdl $(TOP).npl $(TOP)_ise.tcl $(TOP).qsf $(TOP)_precision.tcl $(TOP).xise \
 compile.etools $(TOP).ldf :
 	@touch libs.txt; rm libs.txt;
@@ -1429,9 +1350,11 @@ compile.etools $(TOP).ldf :
 	done; \
 	cp  $(GRLIB)/bin/head.xise $(TOP).xise; \
 	echo   "  "\<files\> >> $(TOP).xise; \
-	echo "    "\<file xil_pn:name=\"$(UCF)\" xil_pn:type=\"FILE_UCF\"\> >>  $(TOP).xise; \
-	echo "      "\<association xil_pn:name=\"Implementation\"/\>  >>  $(TOP).xise; \
-	echo "    "\</file\>  >>  $(TOP).xise; \
+	for i in $(UCF); do \
+	  echo "    "\<file xil_pn:name=\"$$i\" xil_pn:type=\"FILE_UCF\"\> >>  $(TOP).xise; \
+	  echo "      "\<association xil_pn:name=\"Implementation\"/\>  >>  $(TOP).xise; \
+	  echo "    "\</file\>  >>  $(TOP).xise; \
+	done; \
 	echo puts \"Adding files to project\" >> $(TOP)_ise.tcl; \
 	cp $(GRLIB)/bin/quartus.qsf_head $(TOP).qsf; \
 	cp $(GRLIB)/bin/quartus.qsf_head $(TOP)_synplify.qsf; \
@@ -1541,7 +1464,7 @@ compile.etools $(TOP).ldf :
 		  if test -r $$k/$$l; then \
 		    echo -n " "$$l; \
 		  fi; \
-	    	  for i in vlogsyn vhdlsyn vlogsim vhdlsim ; do \
+	    	  for i in vlogsyn vhdlsyn vhdlmtie vhdlsynpe vhdldce vhdlcdse vhdlxile vlogsim vhdlsim ; do \
 		   m=$$k/$$l/$$i; \
 		   if test -r $$m.txt; then \
 		    for q in `cat $$m.txt` $(FILEADD) ; do \
@@ -1554,6 +1477,45 @@ compile.etools $(TOP).ldf :
 		      *) \
 		       if test -r $$f; then \
 			case $$i in \
+			vhdlmtie) \
+		           echo Project_File_$$nfiles = $$f >> tmp.mpf; \
+		           echo Project_File_P_$$nfiles = vhdl_novitalcheck 0 file_type VHDL group_id 0 vhdl_nodebug 1 vhdl_1164 1 vhdl_noload 0 vhdl_synth 0 folder {Top Level} last_compile 0 vhdl_disableopt 0 vhdl_vital 0 vhdl_warn1 0 vhdl_warn2 1 vhdl_explicit 0 vhdl_showsource 1 vhdl_warn3 1 vhdl_options {} vhdl_warn4 1 ood 0 vhdl_warn5 0 compile_to $$bn compile_order $$nfiles dont_compile 0 cover_stmt 1 vhdl_use93 93 >> tmp.mpf; \
+			   nfiles=`expr $$nfiles + 1`; \
+                           printf "\t$(VCOM) $(VHDLOPT) -work $$bn $$f\n" >> compile.vsim; \
+		           echo add_input_file -format VHDL -work $$bn  $$f >> $(TOP)_precision.tcl; \
+	    		   echo VALUE \"\<project\>/$$f,hdl\" >> libero_syn_files; \
+	    		   echo VALUE \"\<project\>/$$f,hdl\" >> libero_sim_files; \
+	    		   echo VALUE \"\<project\>/$$f,hdl\" >> libero_simlist; \
+	  		   echo STATE=\"utd\" >> libero_syn_files; \
+	  		   echo TIME=\"1310766027\" >> libero_syn_files; \
+	  		   echo LIBRARY=\"$$bn\" >> libero_syn_files; \
+	  		   echo ENDFILE >> libero_syn_files;; \
+			vhdlsynpe) \
+		           echo $(SYNPVHDL) $(VHDLOPT) $$bn $$f >> compile.synp; \
+		           echo VALUE \"\<project\>/$$f,hdl\" >> libero_syn_files; \
+	    		   echo VALUE \"\<project\>/$$f,hdl\" >> libero_synlist; \
+	  		   echo STATE=\"utd\" >> libero_syn_files; \
+	  		   echo TIME=\"1310766027\" >> libero_syn_files; \
+	  		   echo LIBRARY=\"$$bn\" >> libero_syn_files; \
+	  		   echo ENDFILE >> libero_syn_files;; \
+			vhdldce) \
+		           echo $(DCVHDL) $$bn $(VHDLOPT) $$f >> compile.dc;; \
+			vhdlcdse) \
+		           printf "\t$(NCVHDL) $(VHDLOPT) $$bn $$f\n" >> compile.ncsim; \
+		           echo $(RTLCVHDL) $(VHDLOPT) $$bn $$f >> compile.rc;; \
+			vhdlxile) \
+		           echo LIBFILE $$f $$bn vhdl >> tmp.npl; \
+		           echo xfile add \"$$f\" -lib_vhdl $$bn >> $(TOP)_ise.tcl; \
+		           echo puts \"$$f\" >> $(TOP)_ise.tcl; \
+			   echo "    "\<file xil_pn:name=\"$$f\" xil_pn:type=\"FILE_VHDL\"\> >>  $(TOP).xise; \
+			   echo "      "\<association xil_pn:name=\"BehavioralSimulation\"/\>  >>  $(TOP).xise; \
+			   echo "      "\<association xil_pn:name=\"Implementation\"/\>  >>  $(TOP).xise; \
+			   echo "      "\<library xil_pn:name=\"$$bn\"/\>  >>  $(TOP).xise; \
+			   echo "    "\</file\>  >>  $(TOP).xise; \
+		           echo $(XSTVHDL) $(VHDLOPT) $$bn -ifn $$f >> compile.xst; \
+		           echo vhdl $$bn  $$f >> $(TOP)_files.prj; \
+			   xfiles=`expr $$xfiles + 1`; \
+		           echo $(VIVADOVHDL) $$bn $$f >> compile.vivado;; \
 			vhdlsyn) \
 		           echo Project_File_$$nfiles = $$f >> tmp.mpf; \
 		           echo Project_File_P_$$nfiles = vhdl_novitalcheck 0 file_type VHDL group_id 0 vhdl_nodebug 0 vhdl_1164 1 vhdl_noload 0 vhdl_synth 0 folder {Top Level} last_compile 0 vhdl_disableopt 0 vhdl_vital 0 vhdl_warn1 0 vhdl_warn2 1 vhdl_explicit 0 vhdl_showsource 1 vhdl_warn3 1 vhdl_options {} vhdl_warn4 1 ood 0 vhdl_warn5 0 compile_to $$bn compile_order $$nfiles dont_compile 0 cover_stmt 1 vhdl_use93 93 >> tmp.mpf; \
@@ -1631,7 +1593,8 @@ compile.etools $(TOP).ldf :
 				 echo "    "\</file\>  >>  $(TOP).xise; \
 		                 echo $(XSTVHDL) $(VHDLOPT) $$bn -ifn $$f >> compile.xst; \
 		                 echo vhdl $$bn  $$f >> $(TOP)_files.prj; \
-			         xfiles=`expr $$xfiles + 1`;; \
+			         xfiles=`expr $$xfiles + 1`; \
+		                 echo $(VIVADOVHDL) $$bn $$f >> compile.vivado;; \
 			       esac; \
 			     esac; \
 			   esac; \
@@ -1688,6 +1651,7 @@ compile.etools $(TOP).ldf :
 		           echo xfile add \"$$f\" >> $(TOP)_ise.tcl; \
 		           echo puts \"$$f\" >> $(TOP)_ise.tcl; \
 		           echo $(SYNPVLOG) $$f >> compile.synp; \
+		           echo $(VIVADOVLOG) $$f >> compile.vivado; \
 		           echo add_input_file -format VERILOG -work $$bn  $$f >> $(TOP)_precision.tcl; \
 		           echo set_global_assignment -name VERILOG_FILE $$f -library $$bn >> $(TOP).qsf;; \
 			vhdlsim) \
@@ -1780,7 +1744,7 @@ compile.etools $(TOP).ldf :
 	 fi; \
 	done; \
 	echo "{work $$easic_lib}" >> easic.vhdl; \
-	for i in $(VERILOGSYNFILES); do \
+	for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do \
 	  echo $$i >> easic.vlog; \
 	done; \
 	echo "        "\<Source name=\"$(UCF)\" type=\"Logic Preference\" type_short=\"LPF\"\> >> $(TOP).ldf; \
@@ -1812,7 +1776,9 @@ compile.etools $(TOP).ldf :
 	echo Project_DefaultLib = work >> $(SIMTOP).mpf; \
 	echo Project_SortMethod = unused >> $(SIMTOP).mpf; \
         echo Project_Files_Count = $$nfiles >> $(SIMTOP).mpf;
-	@echo xfile add \"$(UCF)\" >> $(TOP)_ise.tcl; \
+	@for i in $(UCF); do \
+	  echo xfile add \"$$i\" >> $(TOP)_ise.tcl; \
+	done; \
 	for i in $(VHDLOPTSYNFILES) $(VHDLSYNFILES); do \
 	 if test -r $$i; then \
 	  echo add_input_file -format VHDL -work work  $$i >> $(TOP)_precision.tcl; \
@@ -1948,7 +1914,21 @@ compile.etools $(TOP).ldf :
 	echo sonata-compile: > make.son; cat compile.son >> make.son; \
 	cat compile.asim >> make.asim; \
 	printf "# Work-around for stupid secureip bug ...\n" >>  make.vsim; \
-	printf "\t@if test -r $(GRLIB)/lib/tech/secureip/ise/mcb_001.vp; then vlog -quiet -novopt -work secureip $(GRLIB)/lib/tech/secureip/ise/mcb_*.vp; fi\n" >> make.vsim; \
+	printf "\t@if test -r $(GRLIB)/lib/tech/secureip/ise/mcb_001.vp && test -r modelsim/secureip; then vlog -quiet -novopt -work secureip $(GRLIB)/lib/tech/secureip/ise/mcb_*.vp; fi\n" >> make.vsim; \
+	for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES); do \
+	 if test -r $$i; then \
+	  printf "\t$(VLOG) -work work $$i\n" >> make.vsim; \
+	  printf "\t$(ALOG) work ../../$$i\n" >> make.asim; \
+	  printf "\t$(NCVLOG) work $$i\n" >> make.ncsim; \
+	 fi; \
+	done; \
+	for i in $(VERILOGSIMFILES); do \
+	 if test -r $$i; then \
+	  printf "\t$(VLOG) -work work $$i\n" >> make.vsim; \
+	  printf "\t$(ALOG) work ../../$$i\n" >> make.asim; \
+	  printf "\t$(NCVLOG) work $$i\n" >> make.ncsim; \
+	 fi; \
+	done; \
 	for i in $(VHDLOPTSYNFILES) $(VHDLSYNFILES) $(VHDLSIMFILES); do \
 	 if test -r $$i; then \
 	  printf "\t$(VCOM) $(VHDLOPT) -work work $$i\n" >> make.vsim; \
@@ -1957,7 +1937,7 @@ compile.etools $(TOP).ldf :
 	  echo VALUE \"\<project\>/$$i,hdl\" >> libero_simlist; \
 	 fi; \
 	done; \
-	for i in $(VERILOGSYNFILES) $(VHDLOPTSYNFILES) $(VHDLSYNFILES); do \
+	for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES) $(VHDLOPTSYNFILES) $(VHDLSYNFILES); do \
 	 if test -r $$i; then \
 	  echo VALUE \"\<project\>/$$i,hdl\" >> libero_syn_files; \
 	  echo STATE=\"utd\" >> libero_syn_files; \
@@ -1976,7 +1956,7 @@ compile.etools $(TOP).ldf :
 	  echo VALUE \"\<project\>/$$i,hdl\" >> libero_sim_files; \
 	 fi; \
 	done; \
-	for i in $(VERILOGSYNFILES) $(VERILOGSIMFILES); do \
+	for i in $(VERILOGOPTSYNFILES) $(VERILOGSYNFILES) $(VERILOGSIMFILES); do \
 	 if test -r $$i; then \
 	  printf "\t$(VLOG) -work work $$i\n" >> make.vsim; \
 	  printf "\t$(ALOG) work ../../$$i\n" >> make.asim; \
@@ -2098,18 +2078,6 @@ compile.etools $(TOP).ldf :
 
 ########## Import from other libraries ###############
 
-## Import CoreMP7 files from Actel's CoreConsole IP Library
-import-actel-cc:
-	@if test -r $(CORECONSOLE); then \
-	  echo "Importing CoreMP7 files from Actel CoreConsole IP Library"; \
-	  echo " Importing $(COREMP7BRIDGE_FILES) to lib/techmap/proasic3"; \
-	  for i in $(COREMP7BRIDGE_FILES); do cp $(COREMP7BRIDGE_PATH)/$$i $(GRLIB)/lib/techmap/proasic3; done; \
-	  echo " Importing $(COREMP7_FILES) to lib/techmap/proasic3";\
-	  for i in $(COREMP7_FILES); do cp $(COREMP7_PATH)/$$i $(GRLIB)/lib/techmap/proasic3; done; \
-	else \
-	  echo "CORECONSOLE environment variable is not correctly set!"; \
-	fi
-
 ## Import eASIC RTL and IP libraries from eTools
 # tested with eTools 9. eTools 8.2.0 has ip_lib under data instead of
 # data_common, earlier versions may not have "data" directory in path
@@ -2134,13 +2102,13 @@ remove-easic-n2x:
 	@echo "Removing imported eASIC libraries"; \
 	rm -rf  "$(GRLIB)"/lib/tech/nextreme2/sim/verilog "$(GRLIB)"/lib/tech/nextreme2/msim/verilog \
 	"$(GRLIB)"/lib/tech/nextreme2/dc/*.v "$(GRLIB)"/lib/techmap/nextreme2/ip_lib \
-	"$(GRLIB)"/lib/techmap/nextreme2/n2x_phys_*_wrapper.v;
+	"$(GRLIB)"/lib/techmap/nextreme2/n2x_*_wrapper.v;
 
 ######## Common cleaning   ####################
 
 clean: $(CLEAN) vsim-clean ise-clean ncsim-clean ghdl-clean synplify-clean quartus-clean sonata-clean \
 	actel-clean dc-clean rc-clean isp-clean precision-clean vsimsa-clean avhdl-clean riviera-clean \
-	etools-n2x-clean
+	etools-n2x-clean vivado-clean planAhead-clean
 	-rm -rf verilog.txt tkparse.exe main.tk ahbrom outdata ahbrom.bin
 
 scripts-clean:
@@ -2151,9 +2119,9 @@ scripts-clean:
 	$(TOP)_designer.tcl $(TOP)_designer_act.tcl \
 	modelsim.ini \
 	alibs.do avhdl.tcl riviera.do \
-	$(TOP)_etools_create.tcl $(TOP).eprj
+	$(TOP)_etools_create.tcl $(TOP).eprj $(EXTRACLEAN)
 
-distclean: $(CLEAN) clean scripts-clean
+distclean: $(CLEAN) clean scripts-clean clean_xilinx_verilog_lib
 
 libclean:
 	-@rm work.v; \
@@ -2228,26 +2196,6 @@ config:
 
 ############ Maintenance - do not remove!   ##################
 
-docs:
-	find ./ -name '*.gif' | zip ../grdocs.zip -@
-	find ./ -name '*.html' | zip ../grdocs.zip -@
-	find ./ -name '*.pdf' | zip ../grdocs.zip -@
-	find ./ -name '*.jpg' | zip ../grdocs.zip -@
-
-usbhost:
-	tar czf ../grlib-usb-host-$(VER).tar.gz $(USBHCFILES)
-	rm -rf $(USBHCFILES)
-
-usbdevice:
-	tar czf ../grlib-usb-device-$(VER).tar.gz $(USBDCFILES)
-	rm -rf $(USBDCFILES)
-
-
-bitfiles:
-	@echo creating grlib-bitfiles-$(VER).tar.gz ;\
-	tar czf ../grlib-bitfiles-$(VER).tar.gz `find -name '*bitfiles' -print | xargs` ;\
-	rm -rf `find -name '*bitfiles' -print | xargs`
-
 cfgdep:
 	@printf "CONFDEP = "  > bin/Makefile.config
 	@for i in `find lib -name '*.in' -print | grep -v vhd | xargs`; do \
@@ -2264,734 +2212,8 @@ cfgdep:
 	done;
 	@printf "  \n" >> bin/Makefile.config
 
-clean-lib:
-	@make -f bin/Makefile cfgdep
-	@-rm `find -name '*.backup.fm' -print | xargs`
-	@-rm `find -name '*.recover.fm' -print | xargs`
-	@-rm `find -name '*.backup.book' -print | xargs`
-	@-rm `find -name '*.backup.book' -print | xargs`
-	@echo "-- pragma translate_off"   > lib/grlib/stdlib/version.vhd ;\
-	echo "use std.textio.all;"   >> lib/grlib/stdlib/version.vhd ;\
-	echo "-- pragma translate_on"   >> lib/grlib/stdlib/version.vhd ;\
-	echo "package version is"   >> lib/grlib/stdlib/version.vhd ;\
-	echo "  constant grlib_version : integer := $(GVER);" >> lib/grlib/stdlib/version.vhd ;\
-	echo "-- pragma translate_off"   >> lib/grlib/stdlib/version.vhd ;\
-	echo -n "  constant grlib_date : string := \""  >> lib/grlib/stdlib/version.vhd ;\
-	date +%Y%m%d | tr "\n" "\"" >> lib/grlib/stdlib/version.vhd ;\
-	echo ";"     >> lib/grlib/stdlib/version.vhd ;\
-	echo "-- pragma translate_on"   >> lib/grlib/stdlib/version.vhd ;\
-	echo -n "  constant grlib_build : integer := " >> lib/grlib/stdlib/version.vhd ;\
-	svn info | awk '/Revision:/ {print $$2 + 1}'  | tr "\n" ";" >> lib/grlib/stdlib/version.vhd ;\
-	echo "" >> lib/grlib/stdlib/version.vhd ;\
-	echo "end;"  >> lib/grlib/stdlib/version.vhd ;\
 
-fpunet:
-	@mv lib/gaisler/leon3/grfpwx-net.vhd lib/gaisler/leon3/grfpwx.vhd ; \
-	mv lib/gaisler/leon4b64/grfpwx4-net.vhd lib/gaisler/leon4b64/grfpwx4.vhd ; \
-	mv lib/gaisler/leon3/grlfpwx-net.vhd lib/gaisler/leon3/grlfpwx.vhd ; \
-	mv lib/gaisler/leon4b64/grlfpwx4-net.vhd lib/gaisler/leon4b64/grlfpwx4.vhd
-
-delint:
-	rm -rf $(INTFILES)
-	rm -rf $(FPU)
-	@cd doc; mv grlib/grlib.pdf grip/grip.pdf haps/haps.pdf tmtc/tmtc.pdf .; \
-	mkdir devices ;\
-	mv leon3ft-rtax/leon3ft-rtax-ag.pdf devices; \
-	mv ftfpga/ftfpga.pdf grlib-ft-fpga.pdf ; \
-	mv gr701/*.pdf devices ; \
-	rm -rf grlib grip leon3ft-rtax ftfpga gr701 haps
-	@echo creating grlib-haps-$(VER).tar.gz ;\
-	tar czf ../grlib-haps-$(VER).tar.gz $(HAPSFILES) ;\
-	rm -rf $(HAPSFILES)
-	@-rm `find -name '*.fm' -print | xargs`
-	@-rm `find -name '*.book' -print | xargs`
-	@-rm -rf designs/leon3-ft*/bitfiles designs2 designs/leon4*/bitfiles \
-		designs/t1*/bitfiles designs/*actel*/bitfiles designs/*mcc*/bitfiles
-	@make -f bin/Makefile bitfiles
-	@cd lib/gaisler; mv leon3sim leon3ft
-	make -f bin/Makefile filterhash
-
-filterhash:
-	cat lib/techmap/unisim/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/unisim/vhdlsyn.txt
-	cat lib/techmap/unisim/vhdlsim.txt | sed -e s/#// > x; mv x lib/techmap/unisim/vhdlsim.txt
-	cat lib/techmap/axcelerator/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/axcelerator/vhdlsyn.txt
-	cat lib/techmap/proasic3/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/proasic3/vhdlsyn.txt
-	cat lib/techmap/proasic3e/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/proasic3e/vhdlsyn.txt
-	cat lib/techmap/proasic3l/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/proasic3l/vhdlsyn.txt
-	cat lib/techmap/fusion/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/fusion/vhdlsyn.txt
-	cat lib/techmap/cycloneiii/vhdlsim.txt | sed -e s/#// > x; mv x lib/techmap/cycloneiii/vhdlsim.txt
-	cat lib/techmap/stratixii/vhdlsim.txt | sed -e s/#// > x; mv x lib/techmap/stratixii/vhdlsim.txt
-	cat lib/techmap/stratixiii/vhdlsim.txt | sed -e s/#// > x; mv x lib/techmap/stratixiii/vhdlsim.txt
-	cat lib/techmap/maps/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/maps/vhdlsyn.txt
-	cat netlists/xilinx/Spartan3/edifsyn.txt | sed -e s/#// > x; mv x netlists/xilinx/Spartan3/edifsyn.txt
-	cat netlists/xilinx/Virtex2/edifsyn.txt | sed -e s/#// > x; mv x netlists/xilinx/Virtex2/edifsyn.txt
-	cat netlists/xilinx/Virtex4/edifsyn.txt | sed -e s/#// > x; mv x netlists/xilinx/Virtex4/edifsyn.txt
-	cat netlists/xilinx/Virtex5/edifsyn.txt | sed -e s/#// > x; mv x netlists/xilinx/Virtex5/edifsyn.txt
-
-ft: delint fpunet
-	echo creating grlib-ft-netlists-$(VER).tar.gz ;\
-	tar czf ../grlib-ft-netlists-$(VER).tar.gz netlists ;\
-	rm -rf lib/techmap/*/gr*fp*_*_*
-	rm -rf $(USBFILES) $(COREMP7FILES) $(T1FILES)
-	@cd lib/actel/core1553brm; mv dirs_netlist.txt dirs.txt
-	@make -f bin/Makefile cfgdep
-	@for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done
-	@xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-ftfpga: delint fpunet
-	@cd lib/tech; rm -rf $(ASICLIBS)
-	@cd lib/techmap; rm -rf $(ASICLIBS)
-	@cd lib/spw; rm -rf core
-	@cd boards; rm -rf ge-* altera* jop* ut699rh*
-	@cp -r designs/ft*/* designs; rm -rf designs/ft*
-	rm -rf $(INTFTFPGAFILES) $(USBFILES) $(COREMP7FILES) $(T1FILES) \
-		$(GRLIB2FILES) designs2 cfg boards/avnet* \
-		$(LEON4FILES)  $(GBITFILES)
-	@cd lib/actel/core1553brm; mv dirs_netlist.txt dirs.txt
-ifneq ("$(EXTRA)","")
-	  for i in $(EXTRA); do cp -rp $(GRLIB)/$$i `dirname $$i`; done
+ifneq ("$(GRLIB)","")
+-include $(GRLIB)/bin/Makefile.dist
+-include $(GRLIB)/bin/Makefile.test
 endif
-ifneq ("$(REMOVE)","")
-	  for i in $(REMOVE); do rm -rf $$i; done
-endif
-	@make -f bin/Makefile cfgdep
-#	@make -f bin/Makefile filterhash
-	@for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done
-	@xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-fpga: delft
-	@cd lib/tech; rm -rf $(ASICLIBS)
-	@cd lib/techmap; rm -rf $(ASICLIBS)
-	@cd boards; rm -rf ge-* jop*
-	@rm -rf $(INTFPGAFILES) ;\
-	rm -rf $(COMFILES) $(GRLIB2FILES)  $(T1FILES) $(LEON4FILES)  $(GBITFILES) ;
-ifneq ("$(EXTRA)","")
-	  for i in $(EXTRA); do cp -rp $(GRLIB)/$$i `dirname $$i`; done
-endif
-ifneq ("$(REMOVE)","")
-	  for i in $(REMOVE); do rm -rf $$i; done
-endif
-	for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done
-	make -f bin/Makefile cfgdep
-#	make -f bin/Makefile filterhash
-	xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-ftfpgamda: delint fpunet
-	@cd lib/tech; rm -rf $(ASICLIBS)
-	@cd lib/techmap; rm -rf $(ASICLIBS)
-	@cd lib/spw; rm -rf core
-	@cd boards; rm -rf ge-* altera* jop* ut699rh*
-	-rm -rf designs/* $(ALTERAFILES) \
-		$(INTFTFPGAFILES) $(USBFILES) $(COREMP7FILES) $(T1FILES) \
-		lib/gaisler/leon* lib/techmap/*/leon* \
-		lib/gaisler/b1553  lib/techmap/*/grspw*16* \
-		lib/gr1553 software lib/spw lib/gaisler/spacewire \
-		lib/gaisler/usb lib/gaisler/ata lib/gaisler/l2cache \
-		lib/gaisler/can  lib/gaisler/*/doc lib/grlib/amba/doc \
-		lib/techmap/maps/doc lib/techmap/unisim/*_0_* \
-		$(GRLIB2FILES) designs2 cfg netlists boards/avnet* \
-		boards/digi* boards/memec* boards/nuho* boards/xili* \
-		lib/gaisler/net lib/gaisler/greth lib/eth \
-		lib/tmtc/grtm/grtmrx.vhd lib/tmtc/grtc/grtctx.vhd \
-		lib/opencores/ac97 lib/actel \
-		lib/tmtc/grctm/grctm-generics.xls \
-		lib/tmtc/grctm/spacewirecuc.vhd \
-		lib/tmtc/grctm/spwcuc.vhd
-	svn export ~/vhdl/PROJECTS/grlib/mda designs/mda
-	mv designs/mda/* designs
-	rmdir designs/mda
-	cp -rp $(GRLIB)/lib/grlib/atf lib/grlib/amba
-	-mkdir software
-	cp -rp $(GRLIB)/software/ccsds software
-	cp -rp $(GRLIB)/lib/tmtc lib
-	-mkdir lib/ihp
-	cp -rp $(GRLIB)/lib/ihp/aes128_256 lib/ihp
-	cp -rp $(GRLIB)/lib/ihp/dirs.txt lib/ihp
-	cp -rp $(GRLIB)/lib/gaisler/gr1553b lib/gaisler
-	-mkdir verification
-	cp -rp $(GRLIB)/verification/grtm verification
-	cp -rp $(GRLIB)/verification/grtc verification
-	cp -rp $(GRLIB)/verification/gr1553b verification
-	cp  -rp $(GRLIB)/lib/gaisler/leon3 lib/gaisler
-	rm -rf lib/gaisler/leon3/*.vhd lib/gaisler/leon3/doc
-	cp  -rp $(GRLIB)/lib/gaisler/leon3/leon3.vhd lib/gaisler/leon3
-	cp  -rp $(GRLIB)/lib/gaisler/leon3/irqmp.vhd lib/gaisler/leon3
-	cp  -rp $(GRLIB)/lib/gaisler/crypto lib/gaisler
-	rm -rf lib/gaisler/crypto/*.vhd
-	cp  -rp $(GRLIB)/lib/gaisler/crypto/crypto.vhd lib/gaisler/crypto
-	cp  -rp $(GRLIB)/lib/gaisler/crypto/graes_dma.vhd lib/gaisler/crypto
-	-mkdir verification/crypto
-	cp -rp $(GRLIB)/verification/crypto/Makefile verification/crypto
-	cp -rp $(GRLIB)/verification/crypto/graes_dma_tb.vhd verification/crypto
-	rm -rf /lib/tmtc/grtm/grtmrx.vhd /lib/tmtc/grtc/grtctx.vhd
-	@make -f bin/Makefile cfgdep
-	@for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done
-	@xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-delftl4: delint
-	@if test -r .svn; then echo .svn found, exiting; exit; fi;
-	@-rm netlists/*/*/*ft*
-	@-rm netlists/*/*/*grspw*
-	@-rm netlists/*/*/gr*
-	rm -rf doc/devices doc/grlib-ft-fpga.pdf doc/tmtc.pdf ;\
-	rm -rf $(T1FILES) ; \
-	rm -rf $(COREMP7FILES) ; \
-	rm -rf lib/techmap/*/grl*fp*_*_* ; \
-	rm -rf lib/techmap/unisim/grfp*_0_unisim_v2.vhd; \
-	rm -rf $(FTFILES)
-	@mv software/leon3/Makefile.com software/leon3/Makefile
-	@make -f bin/Makefile cfgdep
-
-delft: delint fpunet
-	@-rm netlists/*/*/*ft*
-	@-rm lib/techmap/*/*ft*
-	@-rm netlists/*/*/*grspw* ;\
-	rm -rf doc/devices doc/grlib-ft-fpga.pdf doc/tmtc.pdf ;\
-	echo creating grlib-netlists-$(VER).tar.gz ;\
-	tar czf ../grlib-netlists-$(VER).tar.gz lib/techmap/*/gr*fpw_*  netlists ;\
-	echo creating grlib-niagara-$(VER).tar.gz ;\
-	tar czf ../grlib-niagara-$(VER).tar.gz $(T1FILES) ; \
-	rm -rf $(T1FILES) ; \
-	echo creating grlib-coremp7-$(VER).tar.gz ;\
-	tar czf ../grlib-coremp7-$(VER).tar.gz $(COREMP7FILES) ; \
-	rm -rf $(COREMP7FILES) ; \
-	rm -rf netlists lib/techmap/*/gr*fp*_*_* ; \
-	rm -rf netlists ;\
-	rm -rf $(FTFILES)
-	@mv software/leon3/Makefile.gpl software/leon3/Makefile
-	@make -f bin/Makefile cfgdep
-
-com: delft
-	rm -rf $(GRLIB2FILES) $(LEON4FILES) doc/ftproasic3 doc/gr1553b
-ifneq ("$(EXTRA)","")
-	  for i in $(EXTRA); do cp -rp $(GRLIB)/$$i `dirname $$i`; done
-endif
-ifneq ("$(REMOVE)","")
-	  for i in $(REMOVE); do rm -rf $$i; done
-endif
-	for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done ;\
-	rm -rf $(CONTRIBLIBS) designs/*ft* designs/t1*;\
-	rm -rf lib/spw/netlists ; \
-	echo creating grlib-usb-host-$(VER).tar.gz ;\
-	tar czf ../grlib-usb-host-$(VER).tar.gz $(USBHCFILES) ; \
-	echo creating grlib-usb-device-$(VER).tar.gz ;\
-	tar czf ../grlib-usb-device-$(VER).tar.gz $(USBDCFILES) ; \
-	rm -rf $(USBFILES) ; \
-	make -f bin/Makefile cfgdep ;\
-	xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-
-coml4: delftl4
-	rm -rf $(CONTRIBLIBS) designs/*ft* designs/t1*;\
-	rm -rf lib/spw/netlists ; \
-	rm -rf $(USBFILES) ; \
-	rm -rf $(GRLIB2FILES); \
-	cp -rp $(GRLIB)/lib/gaisler/fpu lib/gaisler ;\
-	rm -rf $(GRLIB2FILES); \
-	rm -rf $(FPU) ;\
-	rm -rf \
-	verification/* \
-	lib/gleichmann lib/openchip
-ifneq ("$(EXTRA)","")
-	  for i in $(EXTRA); do cp -rp $(GRLIB)/$$i `dirname $$i`; done
-endif
-ifneq ("$(REMOVE)","")
-	  for i in $(REMOVE); do rm -rf $$i; done
-endif
-	rm -rf lib/*/*/cfg lib/*/*/doc lib/*/*/*/cfg  lib/*/*/*/*/cfg
-	for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done
-	make -f bin/Makefile cfgdep ;\
-	xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-fpga-com: delft
-	@cd lib/tech; rm -rf $(ASICLIBS)
-	@cd lib/techmap; rm -rf $(ASICLIBS)
-	@for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done ;\
-	rm -rf lib/openchip designs/*ft* ;\
-	rm -rf lib/spw/netlists ; \
-	rm -rf $(USBFILES) ; \
-	make -f bin/Makefile cfgdep ;\
-	xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-gpl: delft
-	rm -rf $(COMFILES) $(GRLIB2FILES) $(LEON4FILES) \
-	verification doc/ftproasic3 doc/gr1553b
-ifneq ("$(EXTRA)","")
-	  for i in $(EXTRA); do cp -rp $(GRLIB)/$$i `dirname $$i`; done
-endif
-ifneq ("$(REMOVE)","")
-	  for i in $(REMOVE); do rm -rf $$i; done
-endif
-	for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gpl.sed $$i > x; mv x $$i; fi; \
-	done ;\
-	mv lib/techmap/gencomp/tech.in.gpl lib/techmap/gencomp/tech.in
-	mv doc/Changelog-gpl.txt doc/Changelog.txt
-	make -f bin/Makefile cfgdep ;\
-	xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-distft:
-	rm -rf $(DISTLIB)/grlib-ft-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grlib-ft-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grlib-ft-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	make -C $(DISTLIB)/grlib-ft-$(VER)-b$(BID) ft
-
-distftfpgabase:
-	rm -rf $(DISTLIB)/grlib-ft-fpga-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grlib-ft-fpga-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grlib-ft-fpga-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	cp bin/Makefile $(DISTLIB)/grlib-ft-fpga-$(VER)-b$(BID)/bin
-	make -C $(DISTLIB)/grlib-ft-fpga-$(VER)-b$(BID) ftfpga
-
-distftfpgamda:
-	rm -rf $(DISTLIB)/grlib-ft-fpga-mda-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grlib-ft-fpga-mda-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grlib-ft-fpga-mda-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	cp bin/Makefile $(DISTLIB)/grlib-ft-fpga-mda-$(VER)-b$(BID)/bin
-	make -C $(DISTLIB)/grlib-ft-fpga-mda-$(VER)-b$(BID) ftfpgamda
-
-distfpgabase:
-	rm -rf $(DISTLIB)/grlib-fpga-com-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grlib-fpga-com-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grlib-fpga-com-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	cp bin/Makefile $(DISTLIB)/grlib-fpga-com-$(VER)-b$(BID)/bin
-	make -C $(DISTLIB)/grlib-fpga-com-$(VER)-b$(BID) fpga
-
-distcom:
-	rm -rf $(DISTLIB)/grlib-com-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grlib-com-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grlib-com-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	cp bin/Makefile $(DISTLIB)/grlib-com-$(VER)-b$(BID)/bin ;\
-	make -C $(DISTLIB)/grlib-com-$(VER)-b$(BID) com
-
-proa3:
-	cp -r designs/ft*/* designs; rm -rf designs/ft*
-	rm -rf $(INTFILES) $(HAPSFILES) netlists doc/Changelog-gpl.txt
-	rm -rf doc/devices doc/grlib-ft-fpga.pdf doc/tmtc.pdf ;\
-	rm -rf $(T1FILES) $(RMPROA3FILES) ; \
-	rm -rf $(COREMP7FILES) ; \
-	rm -rf $(FTFILES)
-	rm -rf $(COMFILES) $(GRLIB2FILES); \
-	cd doc; mv grlib/grlib.pdf grip/grip.pdf .; \
-	mkdir devices ;\
-	mv leon3ft-rtax/leon3ft-rtax-ag.pdf devices; \
-	mv ftproasic3/ftfpga.pdf grlib-ft-proasic3.pdf ; \
-	mv gr701/*.pdf devices ; \
-	rm -rf grlib grip leon3ft-rtax ftfpga gr701 haps devices gr1553b ftproasic3
-	-rm `find -name '*.fm' -print | xargs`
-	-rm `find -name '*.book' -print | xargs`
-	-rm -rf designs/leon3-ft*/bitfiles
-	-rm -rf `find -name '*bitfiles' -print | xargs`
-	-mkdir doc/tmtc
-	-rm lib/techmap/proasic3*/leon3ft_proasic3*mmu*.vhd
-	-rm lib/techmap/proasic3*/leon3ft_proasic3*fpu*.vhd
-ifneq ("$(EXTRA)","")
-	  for i in $(EXTRA); do cp -rp $(GRLIB)/$$i `dirname $$i`; done
-endif
-	cat lib/techmap/proasic3/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/proasic3/vhdlsyn.txt
-	cat lib/techmap/proasic3e/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/proasic3e/vhdlsyn.txt
-	cat lib/techmap/proasic3l/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/proasic3l/vhdlsyn.txt
-	cat lib/techmap/fusion/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/fusion/vhdlsyn.txt
-	cat lib/techmap/maps/vhdlsyn.txt | sed -e s/#// > x; mv x lib/techmap/maps/vhdlsyn.txt
-ifneq ("$(REMOVE)","")
-	  for i in $(REMOVE); do rm -rf $$i; done
-endif
-	cd lib/gaisler; mv leon3sim leon3ft
-	mv software/leon3/Makefile.gpl software/leon3/Makefile
-	-mkdir lib/gaisler/gr1553b lib/gaisler/leon3
-	for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done
-	mkdir tmp; mv boards/actel* boards/gr-mcc-c tmp; \
-	rm -rf boards/*; mv tmp/* boards; rmdir tmp; \
-	mkdir tmp; mv designs/*actel* designs/*gr-mcc-c* tmp; \
-	rm -rf designs/*; mv tmp/* designs; rmdir tmp; \
-	make -f bin/Makefile cfgdep
-	xpwd=`pwd`; tname=`basename $$xpwd`; \
-	echo creating $$xpwd.tar.gz ;\
-	cd .. ; tar czf $$tname.tar.gz $$tname
-
-distproa3base:
-	rm -rf $(DISTLIB)/grlib-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grlib-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grlib-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	cp bin/Makefile $(DISTLIB)/grlib-$(VER)-b$(BID)/bin
-	make -C $(DISTLIB)/grlib-$(VER)-b$(BID) proa3
-
-distgplbase:
-	rm -rf $(DISTLIB)/grlib-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grlib-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grlib-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	cp bin/Makefile $(DISTLIB)/grlib-$(VER)-b$(BID)/bin
-	make -C $(DISTLIB)/grlib-$(VER)-b$(BID) gpl
-
-dist:
-	make distft distcom distgpl distfpga
-
-axsmall:
-	cp $(GRLIB)/lib/tech/axcelerator/components/axcelerator_small.vhd \
-	   $(GRLIB)/lib/tech/axcelerator/components/axcelerator.vhd
-	cp $(GRLIB)/lib/tech/axcelerator/components/axcelerator_components_small.vhd \
-	   $(GRLIB)/lib/tech/axcelerator/components/axcelerator_components.vhd
-
-axfull:
-	cp $(GRLIB)/lib/tech/axcelerator/components/axcelerator_full.vhd \
-	   $(GRLIB)/lib/tech/axcelerator/components/axcelerator.vhd
-	cp $(GRLIB)/lib/tech/axcelerator/components/axcelerator_components_full.vhd \
-	   $(GRLIB)/lib/tech/axcelerator/components/axcelerator_components.vhd
-
-GPLDESIGNS = \
-	leon3-altera-ep1c20        leon3-digilent-xup         leon3-xilinx-ml403 \
-	leon3-altera-ep2s60-ddr    leon3-xilinx-ml40x \
-	leon3-altera-ep2s60-sdr    leon3-ge-hpe-mini          leon3-xilinx-ml501 \
-	leon3-xilinx-ml505 \
-	leon3-altera-ep3c25        leon3-xilinx-ml506 \
-	leon3-altera-ep3c25-eek    leon3-gr-cpci-xc2v6000     leon3-xilinx-ml507 \
-	leon3-altera-ep3sl150      leon3-gr-cpci-xc4v         leon3-xilinx-ml509 \
-	leon3-asic                 leon3-gr-pci-xc2v3000      leon3-xilinx-ml510 \
-	leon3-avnet-3s1500         leon3-gr-pci-xc5v          \
-	leon3-avnet-eval-xc4vlx25  leon3-gr-xc3s-1500         leon3-xilinx-xc3sd-1800 \
-	leon3-avnet-eval-xc4vlx60  leon3mp \
-	leon3-avnet-xc2v1500       leon3-memec-v2mb1000        \
-	leon3-clock-gate           leon3-nuhorizons-3s1500     \
-	leon3-digilent-xc3s1000    leon3-terasic-de2-115       \
-	leon3-digilent-xc3s1600e   
-
-vsimgpl:
-	for i in $(GPLDESIGNS); do \
-	  make -C designs/$$i vsim vsim-run; \
-	done
-
-cleangpl:
-	for i in $(GPLDESIGNS); do \
-	  make -C designs/$$i distclean; \
-	done
-
-COMDESIGNS = \
-	leon3-actel-fusion leon3-actel-proasic3 leon3-actel-proasic3l \
-	leon3-clk2x leon3-clock-gate leon3-gr-cpci-ax leon3-a3pe-proto-kit
-
-vsimcom:
-	for i in $(COMDESIGNS); do \
-	  make -C designs/$$i vsim vsim-run; \
-	done
-
-disttases:
-	make distftfpgabase EXTRA="netlists" \
-	REMOVE="lib/tech*/proasic3*  lib/tech*/fusion doc/*proa* \
-	designs/*proa* designs/*mcc* designs/*fusion* \
-	lib/techmap/*/grfpw* lib/techmap/*/*grfpu_* lib/techmap/unisim/*4* \
-	netlists/altera netlists/*/*/grf* \
-	lib/gaisler/ddr/ft_ddr2spax_ahb.vhd \
-	lib/techmap/unisim/ftmctrl_unisim_sd0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb1.vhd \
-	lib/tech*/cust1 lib/tech*/eclipsee \
-	lib/gr1553 lib/grlib/ftlib lib/gaisler/b1553 \
-	lib/gaisler/spacewire/sim lib/gaisler/pci lib/gaisler/gr1553b \
-	lib/actel " \
-	VNAME="tases-"
-
-disttai:
-	make distftfpgabase EXTRA="netlists lib/gaisler/gr1553b lib/gaisler/pcif \
-	lib/techmap/maps/corepcif_net.vhd" \
-	REMOVE="lib/tech*/proasic3*  lib/tech*/fusion doc/*proa* \
-	designs/*proa* designs/*mcc* designs/*fusion* \
-	lib/techmap/*/grfpw* lib/techmap/*/*grfpu_* lib/techmap/unisim/*4* \
-	netlists/altera netlists/*/*/grf* \
-	lib/gaisler/ddr/ft_ddr2spax_ahb.vhd \
-	lib/techmap/unisim/ftmctrl_unisim_sd0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb1.vhd \
-	lib/tech*/cust1 lib/tech*/eclipsee" \
-	VNAME="tai-"
-
-distkari:
-	make distftfpgabase EXTRA="netlists lib/gaisler/pcif \
-	lib/gaisler/gr1553b/test lib/techmap/maps/corepcif_net.vhd" \
-	REMOVE="lib/tech*/proasic3*  lib/tech*/fusion doc/*proa* \
-	designs/*proa* designs/*mcc* designs/*fusion* \
-	designs/leon3-ft-cpci-xc2v6000 designs/leon3-ft-hardi-haps51 \
-	designs/leon3-ft-pci-xc2v3000 designs/leon3-gr-xc6s \
-	lib/techmap/*/grfpw* lib/techmap/*/*grfpu_* lib/techmap/unisim/*4* \
-	netlists/altera netlists/*/*/grf* \
-	lib/gaisler/ddr/ft_ddr2spax_ahb.vhd \
-	lib/techmap/unisim/ftmctrl_unisim_sd0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb1.vhd \
-	lib/tech*/cust1 lib/tech*/eclipsee \
-	lib/techmap/*/*_fpu* lib/techmap/*/grlfpw_*_* \
-	lib/techmap/inferred/scanreg_inferred.vhd  lib/techmap/maps/scanreg.vhd \
-	lib/gaisler/pci/grpci2 \
-	designs/leon3-rtax-cid1 \
-	lib/gaisler/spacewire/sim \
-	lib/gaisler/gr1553b/test/gr1553b_tgapb.vhd \
-	" \
-	VNAME="kari-"
-
-distiaa:
-	make distftfpgabase EXTRA="netlists lib/gaisler/gr1553b/core lib/gaisler/gr1553b/test \
-	lib/gaisler/gr1553b/wrap \
-	designs/leon3-rtax-iaa" \
-	REMOVE="lib/tech*/proasic3*  lib/tech*/fusion doc/*proa* \
-	designs/*proa* designs/*mcc* designs/*fusion* \
-	designs/leon3-ft-cpci-xc2v6000 designs/leon3-ft-hardi-haps51 \
-	designs/leon3-ft-pci-xc2v3000 designs/leon3-gr-xc6s \
-	lib/techmap/*/grfpw* lib/techmap/*/*grfpu_* lib/techmap/unisim/*4* \
-	lib/techmap/inferred/scanreg_inferred.vhd  lib/techmap/maps/scanreg.vhd \
-	netlists/altera netlists/*/*/grf* \
-	lib/gaisler/ddr/ft_ddr2spax_ahb.vhd \
-	lib/techmap/unisim/ftmctrl_unisim_sd0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb0.vhd \
-	lib/techmap/unisim/spictrl_unisim_comb1.vhd \
-	lib/tech*/cust1 lib/tech*/eclipsee \
-	lib/techmap/*/*_fpu* lib/techmap/*/grlfpw_*_* \
-	lib/gaisler/pci/grpci2 \
-	designs/leon3-rtax-ci* \
-	lib/gr1553 lib/gaisler/b1553/b1553b*.vhd \
-	lib/gaisler/b1553/b1553r*.vhd lib/actel \
-	lib/gaisler/spacewire/sim \
-	" \
-	VNAME="iaa-"
-
-distfpga:
-	make distfpgabase \
-	REMOVE="\
-	lib/techmap/inferred/scanreg_inferred.vhd  lib/techmap/maps/scanreg.vhd \
-	"
-
-distfpga-lanl:
-	make distfpgabase \
-	EXTRA="netlists \
-	lib/tech/axcelerator lib/techmap/axcelerator \
-	lib/techmap/proasic3 \
-	lib/techmap/proasic3e \
-	lib/techmap/proasic3l \
-	lib/techmap/unisim \
-	lib/gaisler/spacewire/grspw2_phy.vhd \
-	designs/leon3-gr-cpci-ax \
-	verification/grspw \
-	doc/grspw \
-	" \
-	REMOVE="\
-	netlists/*/*/*ft* netlists/*/*/grl* netlists/*/*/grf* \
-	lib/techmap/inferred/scanreg_inferred.vhd  lib/techmap/maps/scanreg.vhd \
-	lib/techmap/*/*ft* lib/techmap/*/grl* lib/techmap/*/grf* \
-	lib/techmap/*/corepci* lib/techmap/*/grusb* lib/techmap/*/spi* \
-	verification/leon3-clk2x verification/leon4-clk2x verification/apbuart \
-	verification/grpci2 doc/grspw/*.fm doc/grspw/*.book doc/grspw/*.txt \
-	doc/grspw/grspw2_gen.pdf doc/Changelog-gpl.txt doc/ftproasic3 \
-	doc/gr1553b boards/altera* designs/*altera* \
-	" \
-	VNAME="lanl-"
-
-distftfpga:
-	make distftfpgabase EXTRA="" \
-	REMOVE="\
-	doc/ftproasic3 doc/gr1553b \
-	lib/techmap/*/grfpu_* lib/techmap/unisim/*4* \
-	netlists/altera netlists/*/*/*4* \
-	lib/techmap/*/ftmctrl_unisim_*.vhd \
-	lib/techmap/*/spictrl_unisim_*.vhd \
-	lib/tech*/cust1 lib/tech*/eclipsee \
-	lib/techmap/inferred/scanreg_inferred.vhd  \
-	lib/techmap/maps/scanreg.vhd \
-	lib/gaisler/spacewire/sim \
-	designs/leon3-rtax-iaa"
-
-
-grspwbase:
-	@for i in `find -name '*.vhd' -print | xargs`; do \
-	  if test -r $$i; then sed -f bin/gr.sed $$i > x; mv x $$i; fi; \
-	done ;\
-	mkdir tmp
-	mkdir tmp/doc
-	mkdir tmp/core
-	cp doc/grspw/grspw.pdf doc/grspw/grspw2_gen.pdf tmp/doc
-	rm -rf doc
-	cp lib/techmap/maps/allddr.vhd lib/techmap/maps/allmem.vhd \
-        lib/grlib/amba/amba.vhd lib/techmap/axcelerator/axcomp.vhd \
-	lib/techmap/axcelerator/ddr_axcelerator.vhd lib/techmap/inferred/ddr_inferred.vhd \
-	lib/techmap/maps/ddr_ireg.vhd lib/techmap/maps/ddr_oreg.vhd lib/techmap/unisim/ddr_unisim.vhd \
-	lib/grlib/amba/devices.vhd lib/grlib/ftlib/ftlib.vhd lib/techmap/gencomp/gencomp.vhd \
-	lib/gaisler/spacewire/grspw2_phy.vhd lib/spw/core/grspwpkg.vhd \
-	lib/spw/core/grspwrx2.vhd lib/spw/core/grspwtx2.vhd  \
-	lib/techmap/axcelerator/memory_axcelerator.vhd lib/techmap/inferred/memory_inferred.vhd \
-	lib/techmap/unisim/memory_unisim.vhd lib/gaisler/spacewire/spacewire.vhd lib/spw/comp/spwcomp.vhd \
-	lib/spw/core/sw_rstgen.vhd lib/techmap/maps/syncram.vhd \
-	lib/techmap/maps/syncram_2p.vhd lib/techmap/maps/syncram_2pft.vhd \
-	lib/grlib/stdlib/stdlib.vhd lib/grlib/util/util.vhd lib/grlib/stdlib/version.vhd \
-	lib/grlib/stdlib/config.vhd tmp/core
-	rm -rf designs designs2 cfg boards TODO.txt netlists projects 
-
-grspw2_gen: 
-	mkdir tmp/software
-	cp -R lib/spw/source_dist/grspw2_gen/* tmp
-	rm verification/grspw/spw_phy.vhd verification/grspw/grspw_tb.vhd
-	mv verification/grspw tmp/testbench
-	cp lib/grlib/stdlib/stdio.vhd lib/grlib/stdlib/testlib.vhd tmp/testbench
-	cp lib/spw/wrapper/grspw2_gen.vhd lib/spw/core/grspwc2.vhd lib/spw/core/sw_ahb_mst.vhd tmp/core 
-	cp lib/grlib/atf/at_* lib/grlib/amba/apbctrl.vhd lib/gaisler/spacewire/sim/spacewire_tp.vhd \
-        lib/gaisler/spacewire/sim/rmap_tp.vhd tmp/testbench
-	cp software/spw/Makefile software/spw/rmapapi.c software/spw/rmapapi.h software/spw/spwapi.c \
-	software/spw/spwapi.h software/spw/spwtest.c software/spw/spw_test_dual.c software/spw/spw_test_dual_sep.c \
-	tmp/software 
-	rm -rf verification software bin Makefile make.grlib2 lib
-	mv tmp/* . 
-	rm -rf tmp
-
-grspwcodec:
-	cp -R lib/spw/source_dist/grspw_codec/* tmp
-	cp lib/spw/core/grspw_codec_core.vhd lib/gaisler/spacewire/grspw_codec.vhd tmp/core
-	rm verification/grspw_codec/spw_phy.vhd
-	mv verification/grspw_codec tmp/testbench
-	cp lib/grlib/atf/at_* lib/grlib/amba/apbctrl.vhd lib/gaisler/spacewire/sim/spacewire_tp.vhd \
-        lib/gaisler/spacewire/sim/rmap_tp.vhd lib/gaisler/spacewire/sim/spw_sim_codec.vhd \
-        lib/gaisler/spacewire/sim/spw_sim_codec_pkg.vhd tmp/testbench
-	cp lib/grlib/stdlib/stdio.vhd lib/grlib/stdlib/testlib.vhd tmp/testbench
-	rm -rf verification software bin Makefile make.grlib2 lib
-	rm tmp/doc/grspw2_gen.pdf
-	mv tmp/* . 
-	rm -rf tmp
-
-distgrspw2_gen:
-	rm -rf $(DISTLIB)/grspw2-source-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grspw2_gen-source-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grspw2_gen-source-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	make -C $(DISTLIB)/grspw2_gen-source-$(VER)-b$(BID) grspwbase
-	make -C $(DISTLIB)/grspw2_gen-source-$(VER)-b$(BID) grspw2_gen
-
-distgrspwcodec: 
-	rm -rf $(DISTLIB)/grspwcodec-source-$(VER)-b$(BID) ;\
-	echo exporting repository to $(DISTLIB)/grspwcodec-source-$(VER)-b$(BID) ;\
-	git archive --format=tar --prefix=grspwcodec-source-$(VER)-b$(BID)/ HEAD | tar -x -C $(DISTLIB) ;\
-	make -C $(DISTLIB)/grspwcodec-source-$(VER)-b$(BID) grspwbase
-	make -C $(DISTLIB)/grspwcodec-source-$(VER)-b$(BID) grspwcodec
-
-distcomfuji:
-	make distcom \
-	EXTRA="lib/techmap/proasic3/grlfpw_0_proasic3.vhd \
-	lib/techmap/proasic3e/grlfpw_0_proasic3e.vhd \
-	lib/techmap/proasic3l/grlfpw_0_proasic3l.vhd" \
-	REMOVE="lib/gaisler/leon3ft doc/Changelog-gpl.txt" \
-	VNAME="fuji-"
-
-distgpl:
-	make distgplbase \
-	REMOVE="lib/tech*/proa* lib/tech*/axc* boards/actel* \
-	boards/gr-mcc-c designs/*actel* designs/*mcc* lib/tech*/apa* \
-	lib/tech*/fusion designs/*a3pe*" \
-	VNAME="gpl-"
-
-distcoml4:
-	make distcom \
-	EXTRA="$(LEON4FILES)" \
-	REMOVE="$(FPU) designs/leon4-avnet-eval-xc4vlx60 \
-	designs/leon4-gr-xc6s-l2 designs/leon4-natasha \
-	designs/leon4-ngmp designs/leon4-test" \
-	VNAME="l4-"
-
-distorbita:
-	make distcoml4base \
-	EXTRA="$(GBITFILES) $(USBFILES) $(GR1553BFILES) \
-	$(GRSPWCORE) \
-	lib/tech/tm65gplus lib/techmap/tm65gplus \
-	lib/tmtc software/ccsds doc/tmtc \
-	lib/gaisler/spacewire/grspw2_phy.vhd \
-	verification/ahb2ahb \
-	verification/ahbbridge \
-	verification/ahbmst2 \
-	verification/can_oc \
-	verification/grcan \
-	verification/grfpu \
-	verification/grspw \
-	verification/grtc \
-	verification/grtm \
-	verification/grtmtc \
-	verification/i2c \
-	verification/mobile_ddr_sdr \
-	verification/spictrl \
-	verification/grctm \
-	lib/tech/virage90 lib/techmap/virage90 \
-	verification/greth \
-	" \
-	REMOVE="\
-	lib/gaisler/leon4ft \
-	lib/gaisler/pci/grpci2 lib/gaisler/pci/doc \
-	doc/ft* doc/Changelog-gpl.txt \
-	doc/tmtc/*_* doc/tmtc/Makefile doc/tmtc/ecss.gif doc/tmtc/ccsds.jpg  doc/tmtc/tmtc.book \
-	lib/tmtc/grctm/*cuc* \
-	software/ccsds/*aes* \
-	lib/tech/proasic3e lib/techmap/proasic3e \
-	lib/tech/proasic3l lib/techmap/proasic3l \
-	lib/tech/virage90 lib/techmap/virage90 \
-	designs/leon3-gr-mcc-c \
-	lib/techmap/proasic3/*ft* \
-	lib/techmap/*/gr*_*_* \
-	lib/techmap/t*/grf* \
-	lib/tech/*/*/grf* \
-	" \
-	VNAME="orbita-"
-
-distfpga-mfti:
-	make distproa3base \
-	EXTRA="$(ADDPROA3FILES) $(TMTC) \
-	lib/techmap/proasic3/leon3ft_proasic3_8_4_fpu.vhd \
-	lib/techmap/proasic3/leon3ft_proasic3_8_4_fpu_v8.vhd \
-	lib/techmap/proasic3e/leon3ft_proasic3e_8_4_fpu.vhd \
-	lib/techmap/proasic3e/leon3ft_proasic3e_8_4_fpu_v8.vhd \
-	lib/techmap/proasic3l/leon3ft_proasic3l_8_4_fpu.vhd \
-	lib/techmap/proasic3l/leon3ft_proasic3l_8_4_fpu_v8.vhd \
-	" \
-	REMOVE="$(SKIPTMTC1) $(SKIPTMTC2) \
-	lib/tech*/fusion designs/leon3-actel-fusion" \
-	VNAME="ft-proasic3-mfti-"
-
-disti2c:
-	make distcom \
-	EXTRA="lib/gaisler/l2cache verification/l2c" \
-	REMOVE="designs lib/contrib lib/cypress lib/esa lib/fmf \
-	lib/gleichmann lib/gsi lib/hynix lib/micron lib/openchip \
-	lib/praesum lib/spansion lib/spw \
-	lib/gaisler/arith lib/gaisler/ata \
-	lib/gaisler/can lib/gaisler/ddr lib/gaisler/gr1553b \
-	lib/gaisler/jtag lib/gaisler/leon3 lib/gaisler/leon3ft \
-	lib/gaisler/memctrl lib/gaisler/misc lib/gaisler/pci \
-	lib/gaisler/spacewire lib/gaisler/uart lib/gaisler/usb \
-	verification/ahb2ahb verification/ahbbridge verification/apbuart \
-	verification/can_oc verification/grcan verification/grpci2 \
-	verification/leon3-clk2x verification/mobile_ddr_sdr \
-	verification/spi* lib/*/spi \
-	lib/opencores/can lib/opencores/ata lib/opencores/ac97 \
-	" \
-	VNAME="i2c-"

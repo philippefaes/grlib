@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -32,6 +32,9 @@ use grlib.amba.apb_slv_in_type;
 use grlib.amba.apb_slv_out_type;
 
 package gr1553b_pkg is
+
+  constant gr1553b_version: integer := 0;
+  constant gr1553b_cfgver: integer := 0;
 
   -----------------------------------------------------------------------------
   -- Types and top level component

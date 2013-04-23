@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ use grlib.devices.all;
 library techmap;
 use techmap.gencomp.all;
 library gaisler;
-use gaisler.misc.all;
 
 package pci is
 
@@ -246,7 +245,9 @@ component pcipads
     no66         : integer := 0;
     onchipreqgnt : integer := 0;
     drivereset   : integer := 0;
-    constidsel   : integer := 0
+    constidsel   : integer := 0;
+    level        : integer := pci33;
+    voltage      : integer := x33v
   );
   port (
     pci_rst     : inout std_logic;
@@ -447,6 +448,7 @@ end component;
 component grpci2
   generic (
     memtech     : integer := DEFMEMTECH;
+    tbmemtech   : integer := DEFMEMTECH;
     oepol       : integer := 0;
     hmindex     : integer := 0;
     hdmindex    : integer := 0;

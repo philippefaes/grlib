@@ -133,13 +133,6 @@
   constant CFG_GRETH1G	: integer := CONFIG_GRETH_GIGA;
   constant CFG_ETH_FIFO : integer := CFG_GRETH_FIFO;
 
--- ATA interface
-  constant CFG_ATA      : integer := CONFIG_ATA_ENABLE;
-  constant CFG_ATAIO    : integer := 16#CONFIG_ATAIO#;
-  constant CFG_ATAIRQ   : integer := CONFIG_ATAIRQ;
-  constant CFG_ATADMA   : integer := CONFIG_ATA_MWDMA;
-  constant CFG_ATAFIFO  : integer := CONFIG_ATA_FIFO;
-
 -- CAN 2.0 interface
   constant CFG_CAN      : integer := CONFIG_CAN_ENABLE;
   constant CFG_CAN_NUM  : integer := CONFIG_CAN_NUM;

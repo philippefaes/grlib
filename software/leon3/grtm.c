@@ -158,7 +158,7 @@ grtm_test(int paddr, int descsize, int buffersize, int buffers, int rsdepth, int
 //   int SUBREV =
 //   ldma->rev = ((TIRQ)<<16) | ((REV)<<8) | (SUBREV);
 
-   if ((ldma->rev & 0xff) != 2) fail(1);
+   if ((ldma->rev & 0xff) < 3) fail(1);
 
 
    // dma control - reset all

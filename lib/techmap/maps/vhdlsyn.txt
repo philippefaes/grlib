@@ -52,3 +52,5 @@ spictrl_net.vhd
 scanreg.vhd
 syncrambw.vhd
 syncram_2pbw.vhd
+obt1553_net.vhd
+sdram_phy.vhd

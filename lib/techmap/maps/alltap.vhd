@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,8 @@ component tap_gen
     part   : integer range 0 to 65535 := 0;
     ver    : integer range 0 to 15 := 0;
     trsten : integer range 0 to 1 := 1;    
-    scantest : integer := 0);
+    scantest : integer := 0;
+    oepol  : integer := 1);
   port (
     trst        : in std_ulogic;
     tckp        : in std_ulogic;
@@ -59,6 +60,7 @@ component tap_gen
     tapo_xsel2  : out std_ulogic;
     testen      : in std_ulogic := '0';
     testrst     : in std_ulogic := '1';
+    testoen     : in std_ulogic := '0';
     tdoen       : out std_ulogic
     );
 end component;
@@ -264,9 +266,56 @@ port (
     );
 end component;
 
+component virtex7_tap 
+port (
+     tapi_tdo1   : in std_ulogic;
+     tapi_tdo2   : in std_ulogic;
+     tapo_tck    : out std_ulogic;
+     tapo_tdi    : out std_ulogic;
+     tapo_rst    : out std_ulogic;
+     tapo_capt   : out std_ulogic;
+     tapo_shft   : out std_ulogic;
+     tapo_upd    : out std_ulogic;
+     tapo_xsel1  : out std_ulogic;
+     tapo_xsel2  : out std_ulogic
+    );
+end component;
+
+component kintex7_tap 
+port (
+     tapi_tdo1   : in std_ulogic;
+     tapi_tdo2   : in std_ulogic;
+     tapo_tck    : out std_ulogic;
+     tapo_tdi    : out std_ulogic;
+     tapo_rst    : out std_ulogic;
+     tapo_capt   : out std_ulogic;
+     tapo_shft   : out std_ulogic;
+     tapo_upd    : out std_ulogic;
+     tapo_xsel1  : out std_ulogic;
+     tapo_xsel2  : out std_ulogic
+    );
+end component;
+component zynq_tap 
+port (
+     tapi_tdo1   : in std_ulogic;
+     tapi_tdo2   : in std_ulogic;
+     tapo_tck    : out std_ulogic;
+     tapo_tdi    : out std_ulogic;
+     tapo_rst    : out std_ulogic;
+     tapo_capt   : out std_ulogic;
+     tapo_shft   : out std_ulogic;
+     tapo_upd    : out std_ulogic;
+     tapo_xsel1  : out std_ulogic;
+     tapo_xsel2  : out std_ulogic
+    );
+end component;
+
 -------------------------------------------------------------------------------
 
 component scanregi_inf
+  generic (
+    intesten : integer := 1
+    );
   port (
     pad     : in std_ulogic;
     core    : out std_ulogic;
@@ -298,7 +347,8 @@ end component;
 
 component scanregio_inf -- 3 scan registers: tdo<--input<--output<--outputen<--tdi
   generic (
-    hzsup   : integer range 0 to 1 := 1
+    hzsup   : integer range 0 to 1 := 1;
+    intesten: integer := 1
     );
   port (
     pado    : out std_ulogic;

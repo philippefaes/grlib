@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -62,7 +62,9 @@ entity grusbhc_stratixii is
     memsel      : integer                  := 0;
     syncprst    : integer range 0 to 1     := 0;
     sysfreq     : integer                  := 65000;
-    pcidev      : integer range 0 to 1     := 0);
+    pcidev      : integer range 0 to 1     := 0;
+    debug       : integer                  := 0;
+    debug_abits : integer                  := 13);
   port (
     clk               : in  std_ulogic;
     uclk              : in  std_ulogic;
@@ -81,7 +83,6 @@ entity grusbhc_stratixii is
     ahbmi_hready      : in  std_ulogic;
     ahbmi_hresp       : in  std_logic_vector(1 downto 0);
     ahbmi_hrdata      : in  std_logic_vector(31 downto 0);
-    ahbmi_hcache      : in  std_ulogic;
     -- UHC ahb_slv_in_type unwrapped
     uhc_ahbsi_hsel    : in  std_logic_vector(n_cc*uhcgen downto 1*uhcgen);
     uhc_ahbsi_haddr   : in  std_logic_vector(31 downto 0);
@@ -115,7 +116,6 @@ entity grusbhc_stratixii is
     uhc_ahbso_hresp   : out std_logic_vector((n_cc*2)*uhcgen downto 1*uhcgen);
     uhc_ahbso_hrdata  : out std_logic_vector((n_cc*32)*uhcgen downto 1*uhcgen);
     uhc_ahbso_hsplit  : out std_logic_vector((n_cc*16)*uhcgen downto 1*uhcgen);
-    uhc_ahbso_hcache  : out std_logic_vector(n_cc*uhcgen downto 1*uhcgen);
     uhc_ahbso_hirq    : out std_logic_vector(n_cc*uhcgen downto 1*uhcgen);
     -- grusb_out_type_vector unwrapped
     xcvrsel           : out std_logic_vector(((nports*2)-1) downto 0);
@@ -196,7 +196,13 @@ entity grusbhc_stratixii is
     testen            : in  std_ulogic;
     testrst           : in  std_ulogic;
     scanen            : in  std_ulogic;
-    testoen           : in  std_ulogic);
+    testoen           : in  std_ulogic;
+    -- debug signals
+    debug_raddr       : out std_logic_vector(15 downto 0);
+    debug_waddr       : out std_logic_vector(15 downto 0);
+    debug_wdata       : out std_logic_vector(31 downto 0);
+    debug_we          : out std_ulogic;
+    debug_rdata       : in  std_logic_vector(31 downto 0));
 end grusbhc_stratixii;
 
 architecture rtl of grusbhc_stratixii is
@@ -223,7 +229,6 @@ architecture rtl of grusbhc_stratixii is
       ahbmi_hready      : in  std_ulogic;
       ahbmi_hresp       : in  std_logic_vector(1 downto 0);
       ahbmi_hrdata      : in  std_logic_vector(31 downto 0);
-      ahbmi_hcache      : in  std_ulogic;
       -- UHC ahb_slv_in_type unwrapped
       uhc_ahbsi_hsel    : in  std_logic_vector(1*1 downto 1*1);
       uhc_ahbsi_haddr   : in  std_logic_vector(31 downto 0);
@@ -257,7 +262,6 @@ architecture rtl of grusbhc_stratixii is
       uhc_ahbso_hresp   : out std_logic_vector((1*2)*1 downto 1*1);
       uhc_ahbso_hrdata  : out std_logic_vector((1*32)*1 downto 1*1);
       uhc_ahbso_hsplit  : out std_logic_vector((1*16)*1 downto 1*1);
-      uhc_ahbso_hcache  : out std_logic_vector(1*1 downto 1*1);
       uhc_ahbso_hirq    : out std_logic_vector(1*1 downto 1*1);
       -- grusb_out_type_vector unwrapped
       xcvrsel           : out std_logic_vector(((1*2)-1) downto 0);
@@ -338,7 +342,13 @@ architecture rtl of grusbhc_stratixii is
       testen            : in  std_ulogic;
       testrst           : in  std_ulogic;
       scanen            : in  std_ulogic;
-      testoen           : in  std_ulogic);
+      testoen           : in  std_ulogic;
+      -- debug signals
+      debug_raddr       : out std_logic_vector(15 downto 0);
+      debug_waddr       : out std_logic_vector(15 downto 0);
+      debug_wdata       : out std_logic_vector(31 downto 0);
+      debug_we          : out std_ulogic;
+      debug_rdata       : in  std_logic_vector(31 downto 0));
   end component;
 
   component grusbhc_stratixii_comb1
@@ -360,7 +370,6 @@ architecture rtl of grusbhc_stratixii is
       ahbmi_hready      : in  std_ulogic;
       ahbmi_hresp       : in  std_logic_vector(1 downto 0);
       ahbmi_hrdata      : in  std_logic_vector(31 downto 0);
-      ahbmi_hcache      : in  std_ulogic;
       -- UHC ahb_slv_in_type unwrapped
       uhc_ahbsi_hsel    : in  std_logic_vector(1*0 downto 1*0);
       uhc_ahbsi_haddr   : in  std_logic_vector(31 downto 0);
@@ -394,7 +403,6 @@ architecture rtl of grusbhc_stratixii is
       uhc_ahbso_hresp   : out std_logic_vector((1*2)*0 downto 1*0);
       uhc_ahbso_hrdata  : out std_logic_vector((1*32)*0 downto 1*0);
       uhc_ahbso_hsplit  : out std_logic_vector((1*16)*0 downto 1*0);
-      uhc_ahbso_hcache  : out std_logic_vector(1*0 downto 1*0);
       uhc_ahbso_hirq    : out std_logic_vector(1*0 downto 1*0);
       -- grusb_out_type_vector unwrapped
       xcvrsel           : out std_logic_vector(((1*2)-1) downto 0);
@@ -475,7 +483,13 @@ architecture rtl of grusbhc_stratixii is
       testen            : in  std_ulogic;
       testrst           : in  std_ulogic;
       scanen            : in  std_ulogic;
-      testoen           : in  std_ulogic);
+      testoen           : in  std_ulogic;
+      -- debug signals
+      debug_raddr       : out std_logic_vector(15 downto 0);
+      debug_waddr       : out std_logic_vector(15 downto 0);
+      debug_wdata       : out std_logic_vector(31 downto 0);
+      debug_we          : out std_ulogic;
+      debug_rdata       : in  std_logic_vector(31 downto 0));
   end component;
 
   component grusbhc_stratixii_comb2
@@ -497,7 +511,6 @@ architecture rtl of grusbhc_stratixii is
       ahbmi_hready      : in  std_ulogic;
       ahbmi_hresp       : in  std_logic_vector(1 downto 0);
       ahbmi_hrdata      : in  std_logic_vector(31 downto 0);
-      ahbmi_hcache      : in  std_ulogic;
       -- UHC ahb_slv_in_type unwrapped
       uhc_ahbsi_hsel    : in  std_logic_vector(1*1 downto 1*1);
       uhc_ahbsi_haddr   : in  std_logic_vector(31 downto 0);
@@ -531,7 +544,6 @@ architecture rtl of grusbhc_stratixii is
       uhc_ahbso_hresp   : out std_logic_vector((1*2)*1 downto 1*1);
       uhc_ahbso_hrdata  : out std_logic_vector((1*32)*1 downto 1*1);
       uhc_ahbso_hsplit  : out std_logic_vector((1*16)*1 downto 1*1);
-      uhc_ahbso_hcache  : out std_logic_vector(1*1 downto 1*1);
       uhc_ahbso_hirq    : out std_logic_vector(1*1 downto 1*1);
       -- grusb_out_type_vector unwrapped
       xcvrsel           : out std_logic_vector(((1*2)-1) downto 0);
@@ -612,7 +624,13 @@ architecture rtl of grusbhc_stratixii is
       testen            : in  std_ulogic;
       testrst           : in  std_ulogic;
       scanen            : in  std_ulogic;
-      testoen           : in  std_ulogic);
+      testoen           : in  std_ulogic;
+      -- debug signals
+      debug_raddr       : out std_logic_vector(15 downto 0);
+      debug_waddr       : out std_logic_vector(15 downto 0);
+      debug_wdata       : out std_logic_vector(31 downto 0);
+      debug_we          : out std_ulogic;
+      debug_rdata       : in  std_logic_vector(31 downto 0));
   end component;
 
   component grusbhc_stratixii_comb3
@@ -634,7 +652,6 @@ architecture rtl of grusbhc_stratixii is
       ahbmi_hready      : in  std_ulogic;
       ahbmi_hresp       : in  std_logic_vector(1 downto 0);
       ahbmi_hrdata      : in  std_logic_vector(31 downto 0);
-      ahbmi_hcache      : in  std_ulogic;
       -- UHC ahb_slv_in_type unwrapped
       uhc_ahbsi_hsel    : in  std_logic_vector(1*1 downto 1*1);
       uhc_ahbsi_haddr   : in  std_logic_vector(31 downto 0);
@@ -668,7 +685,6 @@ architecture rtl of grusbhc_stratixii is
       uhc_ahbso_hresp   : out std_logic_vector((1*2)*1 downto 1*1);
       uhc_ahbso_hrdata  : out std_logic_vector((1*32)*1 downto 1*1);
       uhc_ahbso_hsplit  : out std_logic_vector((1*16)*1 downto 1*1);
-      uhc_ahbso_hcache  : out std_logic_vector(1*1 downto 1*1);
       uhc_ahbso_hirq    : out std_logic_vector(1*1 downto 1*1);
       -- grusb_out_type_vector unwrapped
       xcvrsel           : out std_logic_vector(((2*2)-1) downto 0);
@@ -749,7 +765,13 @@ architecture rtl of grusbhc_stratixii is
       testen            : in  std_ulogic;
       testrst           : in  std_ulogic;
       scanen            : in  std_ulogic;
-      testoen           : in  std_ulogic);
+      testoen           : in  std_ulogic;
+      -- debug signals
+      debug_raddr       : out std_logic_vector(15 downto 0);
+      debug_waddr       : out std_logic_vector(15 downto 0);
+      debug_wdata       : out std_logic_vector(31 downto 0);
+      debug_we          : out std_ulogic;
+      debug_rdata       : in  std_logic_vector(31 downto 0));
   end component;
 
   -----------------------------------------------------------------------------
@@ -780,7 +802,10 @@ architecture rtl of grusbhc_stratixii is
     memtech     : integer;
     memsel      : integer;
     syncprst    : integer range 0 to 1;
-    sysfreq     : integer)
+    sysfreq     : integer;
+    pcidev      : integer range 0 to 1;
+    debug       : integer;
+    debug_abits : integer)
     return boolean is
   begin
     -- comb0
@@ -790,7 +815,7 @@ architecture rtl of grusbhc_stratixii is
       bwrd = 16 and utm_type = 2 and vbusconf = 3 and ramtest = 0 and
       urst_time = 0 and oepol = 0 and scantest = 0 and
       is_fpga(memtech) = 1 and memsel = 0 and syncprst = 0 and
-      sysfreq = 65000 and pcidev = 0 then
+      sysfreq = 65000 and pcidev = 0 and debug = 0 then
       return true;
     end if;
     -- comb1
@@ -800,7 +825,7 @@ architecture rtl of grusbhc_stratixii is
       bwrd = 16 and utm_type = 2 and vbusconf = 3 and ramtest = 0 and
       urst_time = 0 and oepol = 0 and scantest = 0 and
       is_fpga(memtech) = 1 and memsel = 0 and syncprst = 0 and
-      sysfreq = 65000 and pcidev = 0 then
+      sysfreq = 65000 and pcidev = 0 and debug = 0 then
       return true;
     end if;
     -- comb2
@@ -810,7 +835,7 @@ architecture rtl of grusbhc_stratixii is
       bwrd = 16 and utm_type = 2 and vbusconf = 3 and ramtest = 0 and
       urst_time = 0 and oepol = 0 and scantest = 0 and
       is_fpga(memtech) = 1 and memsel = 0 and syncprst = 0 and
-      sysfreq = 65000 and pcidev = 0 then
+      sysfreq = 65000 and pcidev = 0 and debug = 0 then
       return true;
     end if;
     -- comb3
@@ -820,7 +845,7 @@ architecture rtl of grusbhc_stratixii is
       bwrd = 16 and utm_type = 2 and vbusconf = 3 and ramtest = 0 and
       urst_time = 0 and oepol = 0 and scantest = 0 and
       is_fpga(memtech) = 1 and memsel = 0 and syncprst = 0 and
-      sysfreq = 65000 and pcidev = 0 then
+      sysfreq = 65000 and pcidev = 0 and debug = 0 then
       return true;
     end if;    
     return false;
@@ -854,13 +879,14 @@ begin
             memsel           = 0 and
             syncprst         = 0 and
             sysfreq          = 65000 and
-            pcidev           = 0 generate
+            pcidev           = 0 and
+            debug            = 0 generate
     usbhc0 : grusbhc_stratixii_comb0
       port map(
         clk,uclk,rst,ehc_apbsi_psel,ehc_apbsi_penable,ehc_apbsi_paddr,
         ehc_apbsi_pwrite,ehc_apbsi_pwdata,
         ehc_apbso_prdata,ehc_apbso_pirq,ahbmi_hgrant,
-        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,ahbmi_hcache,
+        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,
         uhc_ahbsi_hsel,uhc_ahbsi_haddr,
         uhc_ahbsi_hwrite,uhc_ahbsi_htrans,uhc_ahbsi_hsize,uhc_ahbsi_hwdata,
         uhc_ahbsi_hready,
@@ -869,7 +895,7 @@ begin
         ehc_ahbmo_hwdata,uhc_ahbmo_hbusreq,uhc_ahbmo_hlock,uhc_ahbmo_htrans,
         uhc_ahbmo_haddr,uhc_ahbmo_hwrite,uhc_ahbmo_hsize,uhc_ahbmo_hburst,
         uhc_ahbmo_hprot,uhc_ahbmo_hwdata,uhc_ahbso_hready,uhc_ahbso_hresp,
-        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hcache,uhc_ahbso_hirq,
+        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hirq,
         xcvrsel,termsel,opmode,txvalid,drvvbus,dataho,validho,stp,datao,
         utm_rst,dctrlo,suspendm,dbus16_8,dppulldown,dmpulldown,idpullup,
         dischrgvbus,chrgvbus,txbitstuffenable,txbitstuffenableh,fslsserialmode,
@@ -882,7 +908,8 @@ begin
         sie20_pb_data,sie20_pb_en,sie20_pb_we,pb_sie20_data,sie11_pb_addr,
         sie11_pb_data,sie11_pb_en,sie11_pb_we,pb_sie11_data,mbc11_pb_addr,
         mbc11_pb_data,mbc11_pb_en,mbc11_pb_we,pb_mbc11_data,bufsel,
-        testen,testrst,scanen,testoen);
+        testen,testrst,scanen,testoen,
+        debug_raddr,debug_waddr,debug_wdata,debug_we,debug_rdata);
   end generate comb0;
 
   comb1 : if nports          = 1 and
@@ -908,13 +935,14 @@ begin
             memsel           = 0 and
             syncprst         = 0 and
             sysfreq          = 65000 and
-            pcidev           = 0 generate
+            pcidev           = 0 and
+            debug            = 0 generate
     usbhc0 : grusbhc_stratixii_comb1
       port map(
         clk,uclk,rst,ehc_apbsi_psel,ehc_apbsi_penable,ehc_apbsi_paddr,
         ehc_apbsi_pwrite,ehc_apbsi_pwdata,
         ehc_apbso_prdata,ehc_apbso_pirq,ahbmi_hgrant,
-        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,ahbmi_hcache,
+        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,
         uhc_ahbsi_hsel,uhc_ahbsi_haddr,
         uhc_ahbsi_hwrite,uhc_ahbsi_htrans,uhc_ahbsi_hsize,uhc_ahbsi_hwdata,
         uhc_ahbsi_hready,
@@ -923,7 +951,7 @@ begin
         ehc_ahbmo_hwdata,uhc_ahbmo_hbusreq,uhc_ahbmo_hlock,uhc_ahbmo_htrans,
         uhc_ahbmo_haddr,uhc_ahbmo_hwrite,uhc_ahbmo_hsize,uhc_ahbmo_hburst,
         uhc_ahbmo_hprot,uhc_ahbmo_hwdata,uhc_ahbso_hready,uhc_ahbso_hresp,
-        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hcache,uhc_ahbso_hirq,
+        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hirq,
         xcvrsel,termsel,opmode,txvalid,drvvbus,dataho,validho,stp,datao,
         utm_rst,dctrlo,suspendm,dbus16_8,dppulldown,dmpulldown,idpullup,
         dischrgvbus,chrgvbus,txbitstuffenable,txbitstuffenableh,fslsserialmode,
@@ -936,7 +964,8 @@ begin
         sie20_pb_data,sie20_pb_en,sie20_pb_we,pb_sie20_data,sie11_pb_addr,
         sie11_pb_data,sie11_pb_en,sie11_pb_we,pb_sie11_data,mbc11_pb_addr,
         mbc11_pb_data,mbc11_pb_en,mbc11_pb_we,pb_mbc11_data,bufsel,
-        testen,testrst,scanen,testoen);
+        testen,testrst,scanen,testoen,
+        debug_raddr,debug_waddr,debug_wdata,debug_we,debug_rdata);
   end generate comb1;
 
   comb2 : if nports          = 1 and
@@ -962,13 +991,14 @@ begin
             memsel           = 0 and
             syncprst         = 0 and
             sysfreq          = 65000 and
-            pcidev           = 0 generate
+            pcidev           = 0 and
+            debug            = 0 generate
     usbhc0 : grusbhc_stratixii_comb2
       port map(
         clk,uclk,rst,ehc_apbsi_psel,ehc_apbsi_penable,ehc_apbsi_paddr,
         ehc_apbsi_pwrite,ehc_apbsi_pwdata,
         ehc_apbso_prdata,ehc_apbso_pirq,ahbmi_hgrant,
-        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,ahbmi_hcache,
+        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,
         uhc_ahbsi_hsel,uhc_ahbsi_haddr,
         uhc_ahbsi_hwrite,uhc_ahbsi_htrans,uhc_ahbsi_hsize,uhc_ahbsi_hwdata,
         uhc_ahbsi_hready,
@@ -977,7 +1007,7 @@ begin
         ehc_ahbmo_hwdata,uhc_ahbmo_hbusreq,uhc_ahbmo_hlock,uhc_ahbmo_htrans,
         uhc_ahbmo_haddr,uhc_ahbmo_hwrite,uhc_ahbmo_hsize,uhc_ahbmo_hburst,
         uhc_ahbmo_hprot,uhc_ahbmo_hwdata,uhc_ahbso_hready,uhc_ahbso_hresp,
-        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hcache,uhc_ahbso_hirq,
+        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hirq,
         xcvrsel,termsel,opmode,txvalid,drvvbus,dataho,validho,stp,datao,
         utm_rst,dctrlo,suspendm,dbus16_8,dppulldown,dmpulldown,idpullup,
         dischrgvbus,chrgvbus,txbitstuffenable,txbitstuffenableh,fslsserialmode,
@@ -990,7 +1020,8 @@ begin
         sie20_pb_data,sie20_pb_en,sie20_pb_we,pb_sie20_data,sie11_pb_addr,
         sie11_pb_data,sie11_pb_en,sie11_pb_we,pb_sie11_data,mbc11_pb_addr,
         mbc11_pb_data,mbc11_pb_en,mbc11_pb_we,pb_mbc11_data,bufsel,
-        testen,testrst,scanen,testoen);
+        testen,testrst,scanen,testoen,
+        debug_raddr,debug_waddr,debug_wdata,debug_we,debug_rdata);
   end generate comb2;
 
   comb3 : if nports          = 2 and
@@ -1016,13 +1047,14 @@ begin
             memsel           = 0 and
             syncprst         = 0 and
             sysfreq          = 65000 and
-            pcidev           = 0 generate
+            pcidev           = 0 and
+            debug            = 0 generate
     usbhc0 : grusbhc_stratixii_comb3
       port map(
         clk,uclk,rst,ehc_apbsi_psel,ehc_apbsi_penable,ehc_apbsi_paddr,
         ehc_apbsi_pwrite,ehc_apbsi_pwdata,
         ehc_apbso_prdata,ehc_apbso_pirq,ahbmi_hgrant,
-        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,ahbmi_hcache,
+        ahbmi_hready,ahbmi_hresp,ahbmi_hrdata,
         uhc_ahbsi_hsel,uhc_ahbsi_haddr,
         uhc_ahbsi_hwrite,uhc_ahbsi_htrans,uhc_ahbsi_hsize,uhc_ahbsi_hwdata,
         uhc_ahbsi_hready,
@@ -1031,7 +1063,7 @@ begin
         ehc_ahbmo_hwdata,uhc_ahbmo_hbusreq,uhc_ahbmo_hlock,uhc_ahbmo_htrans,
         uhc_ahbmo_haddr,uhc_ahbmo_hwrite,uhc_ahbmo_hsize,uhc_ahbmo_hburst,
         uhc_ahbmo_hprot,uhc_ahbmo_hwdata,uhc_ahbso_hready,uhc_ahbso_hresp,
-        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hcache,uhc_ahbso_hirq,
+        uhc_ahbso_hrdata,uhc_ahbso_hsplit,uhc_ahbso_hirq,
         xcvrsel,termsel,opmode,txvalid,drvvbus,dataho,validho,stp,datao,
         utm_rst,dctrlo,suspendm,dbus16_8,dppulldown,dmpulldown,idpullup,
         dischrgvbus,chrgvbus,txbitstuffenable,txbitstuffenableh,fslsserialmode,
@@ -1044,14 +1076,15 @@ begin
         sie20_pb_data,sie20_pb_en,sie20_pb_we,pb_sie20_data,sie11_pb_addr,
         sie11_pb_data,sie11_pb_en,sie11_pb_we,pb_sie11_data,mbc11_pb_addr,
         mbc11_pb_data,mbc11_pb_en,mbc11_pb_we,pb_mbc11_data,bufsel,
-        testen,testrst,scanen,testoen);
+        testen,testrst,scanen,testoen,
+        debug_raddr,debug_waddr,debug_wdata,debug_we,debug_rdata);
   end generate comb3;
   
 -- pragma translate_off
   nomap : if not valid_comb(
     nports,ehcgen,uhcgen,n_cc,n_pcc,prr,portroute1,portroute2,endian_conv,
     be_regs,be_desc,uhcblo,bwrd,utm_type,vbusconf,ramtest,urst_time,oepol,
-    scantest,memtech,memsel,syncprst,sysfreq,pcidev) generate
+    scantest,memtech,memsel,syncprst,sysfreq,pcidev,debug,debug_abits) generate
     err : process 
     begin
       assert false report "ERROR : Can't map a netlist for this combination " &

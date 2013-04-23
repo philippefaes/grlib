@@ -5,15 +5,24 @@ BOARD=xilinx-ml501-xc5vlx50
 include $(GRLIB)/boards/$(BOARD)/Makefile.inc
 DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 #UCF=$(GRLIB)/boards/$(BOARD)/$(TOP).ucf
-ifeq ("$(CONFIG_MIG_DDR2)","y")
-UCF=leon3mp_mig.ucf
-else
 UCF=leon3mp.ucf
+ifeq ("$(CONFIG_MIG_DDR2)","y")
+UCF+=mig.ucf
 endif
-XSTOPT= -uc leon3mp.xcf
+ifeq ("$(CONFIG_DDR2SP)","y")
+UCF+=ddr2spa.ucf
+endif
+ifeq ("$(CONFIG_GRETH_GIGA)","y")
+UCF+=greth1g.ucf
+endif
+ifeq ("$(CONFIG_SVGA_ENABLE)","y")
+UCF+=svga.ucf
+endif
+
+XSTOPT=-uc leon3mp.xcf
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=high
-ISEMAPOPT="-m"
+ISEMAPOPT=-m
 SYNPOPT="set_option -pipe 1; set_option -retiming 1; set_option -write_apr_constraint 0"
 VHDLOPTSYNFILES= \
 	mig_36_1/user_design/rtl/ddr2_chipscope.vhd \
@@ -51,12 +60,12 @@ XLDFLAGS=-L./ lib3tests.a -Ttext=0x40000000
 TECHLIBS = unisim
 
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
-	tmtc openchip ihp gleichmann usbhc spw fmf gsi spansion
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan can ata pci leon3ft ambatest \
-	grusbhc usb spacewire hcan leon4 leon4b64 l2cache \
-	slink ascs pwm haps coremp7 gr1553b iommu
+	tmtc openchip ihp usbhc spw fmf gsi spansion
+DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan can pci leon3ft ambatest \
+	grusbhc usb spacewire hcan leon4 leon4v0 l2cache \
+	slink ascs pwm gr1553b iommu
 
-FILESKIP = grcan.vhd simple_spi_top.v
+FILESKIP = grcan.vhd
 
 include $(GRLIB)/bin/Makefile
 

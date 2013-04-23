@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -115,7 +115,10 @@ package net is
       mdint_pol      : integer range 0 to 1  := 0;
       enable_mdint   : integer range 0 to 1  := 0;
       multicast      : integer range 0 to 1  := 0;
-      ramdebug       : integer range 0 to 2  := 0); 
+      ramdebug       : integer range 0 to 2  := 0;
+      mdiohold       : integer := 1;
+      maxsize        : integer := 1500
+      );
     port(
      rst            : in  std_ulogic;
      clk            : in  std_ulogic;
@@ -161,7 +164,10 @@ package net is
       enable_mdint   : integer range 0 to 1  := 0;
       multicast      : integer range 0 to 1  := 0;
       edclsepahb     : integer range 0 to 1  := 0;
-      ramdebug       : integer range 0 to 2  := 0);
+      ramdebug       : integer range 0 to 2  := 0;
+      mdiohold       : integer := 1;
+      maxsize        : integer := 1500
+      );
     port(
       rst            : in  std_ulogic;
       clk            : in  std_ulogic;
@@ -208,7 +214,8 @@ package net is
       enable_mdint   : integer range 0 to 1  := 0;
       multicast      : integer range 0 to 1  := 0;
       edclsepahb     : integer range 0 to 1  := 0;
-      ramdebug       : integer range 0 to 2  := 0); 
+      ramdebug       : integer range 0 to 2  := 0;
+      mdiohold       : integer := 1); 
     port(
       rst            : in  std_ulogic;
       clk            : in  std_ulogic;
@@ -253,7 +260,8 @@ package net is
       mdint_pol      : integer range 0 to 1  := 0;
       enable_mdint   : integer range 0 to 1  := 0;
       multicast      : integer range 0 to 1  := 0;
-      ramdebug       : integer range 0 to 2  := 0); 
+      ramdebug       : integer range 0 to 2  := 0;
+      mdiohold       : integer := 1); 
     port(
       rst            : in  std_ulogic;
       clk            : in  std_ulogic;
@@ -300,7 +308,8 @@ package net is
     mdint_pol      : integer range 0 to 1  := 0;
     enable_mdint   : integer range 0 to 1  := 0;
     multicast      : integer range 0 to 1  := 0;
-    ramdebug       : integer range 0 to 2  := 0); 
+    ramdebug       : integer range 0 to 2  := 0;
+    mdiohold       : integer := 1); 
   port(
     rst            : in  std_ulogic;
     clk            : in  std_ulogic;
@@ -313,4 +322,21 @@ package net is
   );
   end component;
 
+  component rgmii is
+  generic (
+    tech    : integer := 0;
+    gmii    : integer := 0;
+    extclk  : integer := 0
+    );
+  port (
+    rstn        : in  std_ulogic;
+    clk50       : in  std_ulogic;
+    clk125      : in  std_ulogic;
+    gmiii : out eth_in_type;
+    gmiio : in  eth_out_type;
+    rgmiii  : in  eth_in_type;
+    rgmiio  : out eth_out_type
+    );
+  end component;
+  
 end;

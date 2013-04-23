@@ -1,4 +1,0 @@
-ahbpassthru_vhdl.vhd
-ahbpassthru_master_vhdl.vhd
-ahbpassthru_slave_vhdl.vhd
-

@@ -1,6 +1,3 @@
-
-#NET "clkm" 		TNM_NET = "clkm";
-
 CONFIG VCCAUX=2.5;
 CONFIG MCB_PERFORMANCE= EXTENDED;
 
@@ -10,12 +7,19 @@ NET "clk200p" period = 5.000 ;
 
 NET "clk33" LOC = "N19" | IOSTANDARD = LVCMOS25;
 
-# XST versions of MIG false paths
+NET "clkm" 		TNM_NET = "clkm";
+NET "clk33"             TNM_NET = "clk33";
+
+TIMESPEC "TS_clkm_clk33" = FROM "clkm" TO "clk33" TIG;
+TIMESPEC "TS_clk33_clkm" = FROM "clk33" TO "clkm" TIG;
+
+# --- MIG37 ---
 NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
 NET "mig_gen.ddrc/MCB_inst/c?_pll_lock" TIG;
+#NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG; ## This path exists for DDR2 only
+
+# --- MIG39 ---
 INST "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;
-#Please uncomment the below TIG if used in a design which enables self-refresh mode
-#NET "mig_gen.ddrc/MCB_inst/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/SELFREFRESH_MCB_REQ" TIG;
 
 NET "address(0)"  LOC = "n22"   | IOSTANDARD =LVCMOS25;
 NET "address(1)"  LOC = "n20" | IOSTANDARD =LVCMOS25;
@@ -235,3 +239,24 @@ NET "led(3)" LOC = "w15" | IOSTANDARD = LVCMOS25;
 NET "led(2)" LOC = "d21" | IOSTANDARD = LVCMOS25;
 NET "led(1)" LOC = "ab4" | IOSTANDARD = LVCMOS25; # normally used for ERRORN
 NET "led(0)" LOC = "d17" | IOSTANDARD = LVCMOS25; # normally used for DSUACT
+
+NET "sysace_mpa(6)" LOC = "D2" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpa(5)" LOC = "G4" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpa(4)" LOC = "H4" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpa(3)" LOC = "P4" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpa(2)" LOC = "P5" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpa(1)" LOC = "V3" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpa(0)" LOC = "V5" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpce" LOC = "W4" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpirq" LOC = "AA2" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpoe" LOC = "T6" | IOSTANDARD = LVCMOS15;
+NET "sysace_mpwe" LOC = "T5" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(7)" LOC = "R4" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(6)" LOC = "T3" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(5)" LOC = "P7" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(4)" LOC = "P6" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(3)" LOC = "T4" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(2)" LOC = "U4" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(1)" LOC = "N7" | IOSTANDARD = LVCMOS15;
+NET "sysace_d(0)" LOC = "N6" | IOSTANDARD = LVCMOS15;
+

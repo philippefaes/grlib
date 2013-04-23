@@ -26,8 +26,28 @@ mulpipe:
 	mov	%g0, %y
 	set	1, %o0
 	orcc	%g0, 1, %g0	! clear icc
+	udivcc	%g0, 1, %g0	! set Z
+	bne	1f
+	nop; nop; nop; nop;
+	orcc	%g0, 1, %g0	! clear icc
+	sdivcc	%g0, 1, %g0	! set Z
+	bne	1f
+	nop; nop; nop; nop;
+	orcc	%g0, 1, %g0	! clear icc
+	sdivcc	%o0, -1, %g0	! set N
+	nop
+	bge	1f
+	nop; nop; nop; nop;
+
+	mov	%g0, %y
+	set	1, %o0
+	orcc	%g0, 1, %g0	! clear icc
+	nop
 	umulcc	%g0, 1, %g0	! set Z
 	bne	1f
+	nop; nop; nop; nop;
+	umulcc	%o0, 1, %g0	! clear Z
+	be	1f
 	nop
 	umulcc	%o0, -1, %g0	! set N
 	bge	1f

@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -114,6 +114,12 @@ architecture behav of testbench is
   signal txdt         : std_logic_vector(7 downto 0) := (others => '0');
   signal rxdt         : std_logic_vector(7 downto 0) := (others => '0');
 
+  -- EPCS
+  signal epcs_data    : std_ulogic;
+  signal epcs_dclk    : std_ulogic;
+  signal epcs_csn     : std_logic;
+  signal epcs_asdi    : std_logic;
+  
 begin
 
   -- clock and reset
@@ -145,7 +151,9 @@ begin
       -- Reconfig SW1 and SW2
       reconfig_sw,
       -- SD card interface
-      sd_dat0, sd_dat1, sd_dat2, sd_dat3, sd_cmd, sd_clk
+      sd_dat0, sd_dat1, sd_dat2, sd_dat3, sd_cmd, sd_clk,
+      -- EPCS
+      epcs_data, epcs_dclk, epcs_csn, epcs_asdi
     ); 
 
   -- SD card signals
@@ -154,9 +162,19 @@ begin
     port map (sck => sd_clk, di => sd_cmd, do => sd_dat0, csn => sd_dat3);
   sd_dat0  <= 'Z'; sd_cmd  <= 'Z';
 
+  -- EPCS
+  spi0: spi_flash
+    generic map (
+      ftype => 4, debug => 0, fname => promfile, readcmd => CFG_SPIMCTRL_READCMD,
+      dummybyte  => CFG_SPIMCTRL_DUMMYBYTE, dualoutput => CFG_SPIMCTRL_DUALOUTPUT,
+      memoffset  => CFG_SPIMCTRL_OFFSET)
+    port map (sck => epcs_dclk, di => epcs_asdi, do => epcs_data,
+              csn => epcs_csn, sd_cmd_timeout  => open,
+              sd_data_timeout => open);
+  
   -- On the BeMicro the temp_* signals are connected to a temperature sensor
   temp_sc <= 'H'; temp_sio <= 'H';
-    
+  
   -- DDR memory
   ddr0 : mt46v16m16 
     generic map (index => -1, fname => sdramfile)

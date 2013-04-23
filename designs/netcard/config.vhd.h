@@ -10,6 +10,8 @@
   constant CFG_CLKMUL   : integer := CONFIG_CLK_MUL;
   constant CFG_CLKDIV   : integer := CONFIG_CLK_DIV;
   constant CFG_OCLKDIV  : integer := CONFIG_OCLK_DIV;
+  constant CFG_OCLKBDIV : integer := CONFIG_OCLKB_DIV;
+  constant CFG_OCLKCDIV : integer := CONFIG_OCLKC_DIV;
   constant CFG_PCIDLL   : integer := CONFIG_PCI_CLKDLL;
   constant CFG_PCISYSCLK: integer := CONFIG_PCI_SYSCLK;
   constant CFG_CLK_NOFB : integer := CONFIG_CLK_NOFB;
@@ -18,11 +20,13 @@
   constant CFG_DEFMST  	  : integer := CONFIG_AHB_DEFMST;
   constant CFG_RROBIN  	  : integer := CONFIG_AHB_RROBIN;
   constant CFG_SPLIT   	  : integer := CONFIG_AHB_SPLIT;
+  constant CFG_FPNPEN  	  : integer := CONFIG_AHB_FPNPEN;
   constant CFG_AHBIO   	  : integer := 16#CONFIG_AHB_IOADDR#;
   constant CFG_APBADDR 	  : integer := 16#CONFIG_APB_HADDR#;
   constant CFG_AHB_MON 	  : integer := CONFIG_AHB_MON;
   constant CFG_AHB_MONERR : integer := CONFIG_AHB_MONERR;
   constant CFG_AHB_MONWAR : integer := CONFIG_AHB_MONWAR;
+  constant CFG_AHB_DTRACE : integer := CONFIG_AHB_DTRACE;
 
 -- DSU UART
   constant CFG_AHB_UART	: integer := CONFIG_DSU_UART;

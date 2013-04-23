@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+library grlib;
+use grlib.config_types.all;
 
 package config is
 
@@ -53,7 +55,15 @@ constant CFG_AHBDW     : integer := 32;
 --
 constant CFG_AHB_ACDM : integer := 0; 
 
-constant grlib_debug_level : integer := 0; 
-constant grlib_debug_mask  : integer := 0; 
+-- GRLIB_CONFIG_ARRAY - Array of configuration values
+--
+-- The length of this array and the meaning of different positions is defined
+-- in the grlib.config_types package.
+constant GRLIB_CONFIG_ARRAY : grlib_config_array_type := (
+  grlib_debug_level => 0,
+  grlib_debug_mask => 0,
+  grlib_techmap_strict_ram => 0,
+  grlib_techmap_testin_extra => 0,
+  others => 0);
 
 end;

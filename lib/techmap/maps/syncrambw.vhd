@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ use techmap.gencomp.all;
 use techmap.allmem.all;
 library grlib;
 use grlib.config.all;
+use grlib.config_types.all;
 use grlib.stdlib.all;
 
 entity syncrambw is
@@ -43,18 +44,21 @@ entity syncrambw is
     dataout : out std_logic_vector (dbits-1 downto 0);
     enable  : in  std_logic_vector (dbits/8-1 downto 0);
     write   : in  std_logic_vector (dbits/8-1 downto 0);
-    testin  : in  std_logic_vector (3 downto 0) := "0000");
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
 end;
 
 architecture rtl of syncrambw is
 
-  constant has_srambw : tech_ability_type := (easic45 => 1, others => 0);
-
-  constant nctrl : integer := abits + 2 + 2*dbits/8;
+  constant nctrl : integer := abits + (TESTIN_WIDTH-2) + 2*dbits/8;
   signal dataoutx, databp, testdata : std_logic_vector((dbits -1) downto 0);
-  constant SCANTESTBP : boolean := (testen = 1) and (tech /= 0);
+  constant SCANTESTBP : boolean := (testen = 1) and (tech /= 0) and (tech /= ut90);
+
+  signal xenable, xwrite : std_logic_vector(dbits/8-1 downto 0);
   
 begin
+
+  xenable <= enable when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
+  xwrite <= write when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
 
   sbw : if has_srambw(tech) = 1 generate
     -- RAM bypass for scan
@@ -63,7 +67,7 @@ begin
         variable tmp : std_logic_vector((dbits -1) downto 0);
         variable ctrlsigs : std_logic_vector((nctrl -1) downto 0);
       begin
-        ctrlsigs := testin(1 downto 0) & write & enable & address;
+        ctrlsigs := testin(TESTIN_WIDTH-3 downto 0) & write & enable & address;
         tmp := datain;
         for i in 0 to nctrl-1 loop
           tmp(i mod dbits) := tmp(i mod dbits) xor ctrlsigs(i);
@@ -79,7 +83,7 @@ begin
       end process;
       dmuxout : for i in 0 to dbits-1 generate
         x0: grmux2 generic map (tech)
-          port map (dataoutx(i), databp(i), testin(3), dataout(i));
+          port map (dataoutx(i), databp(i), testin(TESTIN_WIDTH-1), dataout(i));
       end generate;
     end generate;
 
@@ -87,10 +91,10 @@ begin
     
     n2x : if tech = easic45 generate 
       x0 : n2x_syncram_be generic map (abits, dbits)
-         port map (clk, address, datain, dataout, enable, write);
+         port map (clk, address, datain, dataout, xenable, xwrite);
     end generate;
 -- pragma translate_off
-    dmsg : if grlib_debug_level >= 2 generate
+    dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
       x : process
       begin
         assert false report "syncrambw: " & tost(2**abits) & "x" & tost(dbits) &

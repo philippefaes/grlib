@@ -4,7 +4,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -161,22 +161,7 @@ component leon3mp
     usb_txvalid   : out std_ulogic;
     usb_validh    : inout std_ulogic;
     usb_xcvrsel   : out std_ulogic;
-    usb_vbus      : in std_ulogic;
-
-    ata_rstn  : out std_logic; 
-    ata_data  : inout std_logic_vector(15 downto 0);
-    ata_da    : out std_logic_vector(2 downto 0);  
-    ata_cs0   : out std_logic;
-    ata_cs1   : out std_logic;
-    ata_dior  : out std_logic;
-    ata_diow  : out std_logic;
-    ata_iordy : in std_logic;
-    ata_intrq : in std_logic;
-    ata_dmarq : in std_logic; 
-    ata_dmack : out std_logic;
-    --ata_dasp  : in std_logic;
-    ata_csel  : out std_logic
-
+    usb_vbus      : in std_ulogic
   );
 
 end component;
@@ -267,22 +252,6 @@ signal usb_xcvrsel   : std_ulogic;
 signal usb_vbus      : std_ulogic;
 signal rhvalid       : std_ulogic;
 
-signal ata_data  : std_logic_vector(15 downto 0);
-signal ata_da    : std_logic_vector(2 downto 0);  
-signal ata_cs0   : std_logic;
-signal ata_cs1   : std_logic;
-signal ata_dior  : std_logic;
-signal ata_diow  : std_logic;
-signal ata_iordy : std_logic;
-signal ata_intrq : std_logic;
-signal ata_dmarq : std_logic; 
-signal ata_dmack : std_logic;
-signal ata_rstn  : std_logic;
-signal ata_csel  : std_logic;
-
-signal from_ata : ata_out_type := ATAO_RESET_VECTOR;
-signal to_ata : ata_in_type := ATAI_RESET_VECTOR;
-
 constant lresp : boolean := false;
 
 begin
@@ -303,9 +272,6 @@ begin
   spw_rxdp <= spw_txdp; spw_rxdn <= spw_txdn;
   spw_rxsp <= spw_txsp; spw_rxsn <= spw_txsn;
 
-  ata_iordy <= 'H'; ata_intrq <= 'H'; ata_dmarq <= 'H';
-  ata_data <= (others => 'H');
-
   cpu : leon3mp
       generic map ( fabtech, memtech, padtech, clktech, 
 	disas, dbguart, pclow )
@@ -320,8 +286,7 @@ begin
         spw_rxsp,  spw_rxsn, spw_txdp, spw_txdn, spw_txsp, spw_txsn, usb_clkout,
         usb_d, usb_linestate, usb_opmode, usb_reset, usb_rxactive, usb_rxerror,
         usb_rxvalid, usb_suspend, usb_termsel, usb_txready, usb_txvalid, usb_validh,
-        usb_xcvrsel, usb_vbus, ata_rstn, ata_data, ata_da, ata_cs0, ata_cs1, 
-	ata_dior, ata_diow, ata_iordy, ata_intrq, ata_dmarq, ata_dmack, ata_csel
+        usb_xcvrsel, usb_vbus
       );
 
   u0: mt48lc16m16a2 generic map (index => 0, fname => sdramfile)
@@ -340,17 +305,6 @@ begin
   prom0 : sram generic map (index => 6, abits => romdepth, fname => promfile)
 	port map (address(romdepth-1 downto 0), data(31 downto 24), romsn(0),
 		  writen, oen);
-
-  disk: ata_device
-    generic map( sector_length => 512, log2_size => 14)
-    port map( clk => clk, rst => rst, d => ata_data, atai => to_ata,
-      atao => from_ata
-    );
-  to_ata.cs(0)<=ata_cs0; to_ata.cs(1)<=ata_cs1;
-  to_ata.da<=ata_da; to_ata.dmack<=ata_dmack;
-  to_ata.dior<=ata_dior; to_ata.diow<=ata_diow; to_ata.reset<=ata_rstn;
-  ata_dmarq<=from_ata.dmarq; ata_intrq<=from_ata.intrq; ata_iordy<=from_ata.iordy;
-
 
   phy0 : if (CFG_GRETH = 1) generate
     emdio <= 'H';

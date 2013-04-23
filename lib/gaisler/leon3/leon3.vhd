@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -500,7 +500,8 @@ package leon3 is
   component grfpushwx 
   generic (mul    : integer              := 0;
            nshare : integer range 0 to 8 := 0;
-           tech   : integer);
+           tech   : integer;
+           arb    : integer range 0 to 2 := 1);
   port(
     clk     : in  std_logic;
     reset   : in  std_logic;
@@ -829,6 +830,37 @@ package leon3 is
     cpurun : in  std_logic_vector(ncpu-1 downto 0) := (others => '0')
   );
   end component; 
+
+  component irqamp2x
+  generic (
+    pindex     : integer := 0;
+    paddr      : integer := 0;
+    pmask      : integer := 16#fff#;
+    ncpu       : integer := 1;
+    eirq       : integer := 0;
+    nctrl      : integer range 1 to 16 := 1;
+    tstamp     : integer range 0 to 16 := 0;
+    wdogen     : integer range 0 to 1 := 0;
+    nwdog      : integer range 1 to 16 := 1;
+    dynrstaddr : integer range 0 to 1 := 0;
+    rstaddr    : integer range 0 to 16#fffff# := 0;
+    extrun     : integer range 0 to 1 := 0;
+    clkfact    : integer := 2
+  );
+  port (
+    rst    : in  std_ulogic;
+    hclk   : in  std_ulogic;
+    cpuclk : in  std_ulogic;
+    apbi   : in  apb_slv_in_type;
+    apbo   : out apb_slv_out_type;
+    irqi   : in  irq_out_vector(0 to ncpu-1);
+    irqo   : out irq_in_vector(0 to ncpu-1);
+    wdog   : in  std_logic_vector(nwdog-1 downto 0) := (others => '0');
+    cpurun : in  std_logic_vector(ncpu-1 downto 0) := (others => '0');
+    hclken : in  std_ulogic
+  );
+  end component;
+
   
 component leon3ftsh
   generic (
@@ -837,7 +869,7 @@ component leon3ftsh
     memtech   : integer range 0 to NTECH  := DEFMEMTECH;
     nwindows  : integer range 2 to 32 := 8;
     dsu       : integer range 0 to 1  := 0;
-    fpu       : integer range 0 to 31 := 0;
+    fpu       : integer range 0 to 63 := 0;
     v8        : integer range 0 to 63 := 0;
     cp        : integer range 0 to 1  := 0;
     mac       : integer range 0 to 1  := 0;

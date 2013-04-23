@@ -34,16 +34,16 @@
 --				    - Fully Tested with New Test Bench and Test Vectors	
 -----------------------------------------------------------------------------------------
 
-LIBRARY ieee,work,grlib,gaisler;
+LIBRARY ieee,work,grlib;
 	USE ieee.std_logic_1164.all;
 --	USE ieee.std_logic_unsigned.all;
 --	Use IEEE.Std_Logic_Arith.all;
 --	Use work.all;   
 	USE work.package_utility.all;   
 	use grlib.stdlib.all;
+	use grlib.stdio.all;
 	use ieee.std_logic_1164.all;
 	use std.textio.all;
-	use gaisler.sim.all;
 	
 
 ENTITY cy7c1354 IS
@@ -313,20 +313,20 @@ BEGIN
           if L1'length > 0 then
             std.textio.read(L1, ch);
             if (ch = 'S') or (ch = 's') then
-              hexread(L1, rectype);
-              hexread(L1, reclen);
+              hread(L1, rectype);
+              hread(L1, reclen);
 	      recaddr := (others => '0');
 	      case rectype is 
 		when "0001" =>
-                  hexread(L1, recaddr(15 downto 0));
+                  hread(L1, recaddr(15 downto 0));
 		when "0010" =>
-                  hexread(L1, recaddr(23 downto 0));
+                  hread(L1, recaddr(23 downto 0));
 		when "0011" =>
-                  hexread(L1, recaddr);
+                  hread(L1, recaddr);
 		  recaddr(31 downto 24) := (others => '0');
 		when others => next;
 	      end case;
-              hexread(L1, recdata);
+              hread(L1, recdata);
               ai := conv_integer(recaddr)/4;
  	      for i in 0 to 3 loop
                 bank3 (ai+i) := '0' & recdata((i*32) to (i*32+7));

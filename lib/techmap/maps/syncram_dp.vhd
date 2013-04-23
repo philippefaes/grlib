@@ -1,7 +1,7 @@
 ------------------------------------------------------------------------------
 --  This file is a part of the GRLIB VHDL IP LIBRARY
 --  Copyright (C) 2003 - 2008, Gaisler Research
---  Copyright (C) 2008 - 2012, Aeroflex Gaisler
+--  Copyright (C) 2008 - 2013, Aeroflex Gaisler
 --
 --  This program is free software; you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ use techmap.gencomp.all;
 use work.allmem.all;
 library grlib;
 use grlib.config.all;
+use grlib.config_types.all;
 use grlib.stdlib.all;
 
 entity syncram_dp is
@@ -48,11 +49,17 @@ entity syncram_dp is
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic;
-    testin   : in std_logic_vector(3 downto 0) := "0000");
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
 end;
 
 architecture rtl of syncram_dp is
+  signal xenable1,xenable2,xwrite1,xwrite2: std_ulogic;
 begin
+
+  xenable1 <= enable1 and not testin(TESTIN_WIDTH-2) when testen/=0 else enable1;
+  xenable2 <= enable2 and not testin(TESTIN_WIDTH-2) when testen/=0 else enable2;
+  xwrite1 <= write1 and not testin(TESTIN_WIDTH-2) when testen/=0 else write1;
+  xwrite2 <= write2 and not testin(TESTIN_WIDTH-2) when testen/=0 else write2;
 
 -- pragma translate_off
   inf : if has_dpram(tech) = 0 generate
@@ -64,7 +71,7 @@ begin
       wait;
     end process;
   end generate;
-  dmsg : if grlib_debug_level >= 2 generate
+  dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
     x : process
     begin
       assert false report "syncram_dp: " & tost(2**abits) & "x" & tost(dbits) &
@@ -78,106 +85,100 @@ begin
 
   xcv : if (tech = virtex) generate
     x0 : virtex_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   xc2v : if (is_unisim(tech) = 1) and (tech /= virtex) generate
     x0 : unisim_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   vir  : if tech = memvirage generate
     x0 : virage_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   arti : if tech = memartisan generate
     x0 : artisan_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
-  end generate;
-
-  axc  : if (tech = axcel) or (tech = axdsp) generate
-    x0 : axcel_syncram_2p generic map (abits, dbits)
-    port map (clk1, enable1, address1, dataout1, clk1, address1, datain1, write1);
-    x1 : axcel_syncram_2p generic map (abits, dbits)
-    port map (clk1, enable2, address2, dataout2, clk1, address1, datain1, write1);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   pa3  : if tech = apa3 generate
     x0 : proasic3_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   pa3e  : if tech = apa3e generate
     x0 : proasic3e_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   pa3l  : if tech = apa3l generate
     x0 : proasic3l_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   fus  : if tech = actfus generate
     x0 : fusion_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   alt : if (tech = altera) or (tech = stratix1) or (tech = stratix2) or
 	(tech = stratix3) or (tech = cyclone3) generate
     x0 : altera_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   lat  : if tech = lattice generate
     x0 : ec_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   vir90  : if tech = memvirage90 generate
     x0 : virage90_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   atrh : if tech = atc18rha generate
     x0 : atc18rha_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2, testin);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2,
+                   testin(TESTIN_WIDTH-1 downto TESTIN_WIDTH-4));
   end generate;
 
   smic : if tech = smic013 generate
     x0 : smic13_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   tm65gplu  : if tech = tm65gpl generate
     x0 : tm65gplus_syncram_dp generic map (abits, dbits)
-         port map (clk1, address1, datain1, dataout1, enable1, write1,
-                   clk2, address2, datain2, dataout2, enable2, write2);
+         port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                   clk2, address2, datain2, dataout2, xenable2, xwrite2);
    end generate;
 
   n2x : if tech = easic45 generate
     x0 : n2x_syncram_dp generic map (abits => abits, dbits => dbits, sepclk => 1)
-      port map (clk1, address1, datain1, dataout1, enable1, write1,
-                clk2, address2, datain2, dataout2, enable2, write2);
+      port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
   ut9 : if tech = ut90 generate
     x0 : ut90nhbd_syncram_dp generic map (abits => abits, dbits => dbits)
-      port map (clk1, address1, datain1, dataout1, enable1, write1,
-                clk2, address2, datain2, dataout2, enable2, write2);
+      port map (clk1, address1, datain1, dataout1, xenable1, xwrite1,
+                clk2, address2, datain2, dataout2, xenable2, xwrite2);
   end generate;
 
 end;
