@@ -9,6 +9,8 @@
   <Mappings Location="eclipsee" Library="eclipsee"/>
   <Mappings Location="gtech" Library="gtech"/>
   <Mappings Location="" Library="not mapped"/>
+  <Mappings Location="ec/orca/ORCA_L.vhd" Library="not mapped"/>
+  <Mappings Location="ec/orca/mem3.vhd" Library="not mapped"/>
   <Mappings Location="secureip" Library="secureip"/>
   <Mappings Location="simprim" Library="simprim"/>
   <Mappings Location="snps" Library="snps"/>

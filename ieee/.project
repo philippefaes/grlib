@@ -3,6 +3,7 @@
 	<name>ieee</name>
 	<comment></comment>
 	<projects>
+		<project>std</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
