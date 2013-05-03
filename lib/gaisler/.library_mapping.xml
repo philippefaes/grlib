@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings xmlns:com.sigasi.hdt.vhdl.scoping.librarymapping.model="com.sigasi.hdt.vhdl.scoping.librarymapping" Version="2">
   <Mappings Location="" Library="gaisler"/>
-  <Mappings Location="ambatest" Library="not mapped"/>
+  <Mappings Location="ambatest" Library="gaisler"/>
+  <Mappings Location="ddr" Library="gaisler"/>
+  <Mappings Location="pci" Library="gaisler"/>
   <Mappings Location="can/can_mc.in.vhd" Library="not mapped"/>
   <Mappings Location="can/can_oc.in.vhd" Library="not mapped"/>
   <Mappings Location="can/grcan.in.vhd" Library="not mapped"/>
-  <Mappings Location="ddr" Library="not mapped"/>
-  <Mappings Location="ddrv1/ddr2sp.in.vhd" Library="not mapped"/>
-  <Mappings Location="ddrv1/ddrctrl.in.vhd" Library="not mapped"/>
-  <Mappings Location="ddrv1/ddrsp.in.vhd" Library="not mapped"/>
-  <Mappings Location="ddrv1/mig.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddr/ddr2sp.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddr/ddrsp.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddr/mig.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddr/mig_series7.in.vhd" Library="not mapped"/>
+  <Mappings Location="ddrv1" Library="not mapped"/>
   <Mappings Location="gr1553b/gr1553b.in.vhd" Library="not mapped"/>
   <Mappings Location="gr1553b/gr1553b_2.in.vhd" Library="not mapped"/>
   <Mappings Location="greth/greth.in.vhd" Library="not mapped"/>
@@ -40,7 +42,8 @@
   <Mappings Location="misc/ps2vga.in.vhd" Library="not mapped"/>
   <Mappings Location="misc/svgactrl.in.vhd" Library="not mapped"/>
   <Mappings Location="net/edcl.in.vhd" Library="not mapped"/>
-  <Mappings Location="pci" Library="not mapped"/>
+  <Mappings Location="pci/pci.in.vhd" Library="not mapped"/>
+  <Mappings Location="pci/pcitrace.in.vhd" Library="not mapped"/>
   <Mappings Location="spacewire/router.in.vhd" Library="not mapped"/>
   <Mappings Location="spacewire/spacewire.in.vhd" Library="not mapped"/>
   <Mappings Location="spi/spi2ahb.in.vhd" Library="not mapped"/>
