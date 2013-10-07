@@ -145,11 +145,11 @@ package config is
   constant CFG_AHBRAMEN : integer := 0;
   constant CFG_AHBRSZ : integer := 1;
   constant CFG_AHBRADDR : integer := 16#A00#;
+  constant CFG_AHBRPIPE : integer := 0;
 -- Gaisler Ethernet core
   constant CFG_GRETH : integer := 1;
   constant CFG_GRETH1G : integer := 0;
   constant CFG_ETH_FIFO : integer := 16;
-
 -- UART 1
   constant CFG_UART1_ENABLE : integer := 1;
   constant CFG_UART1_FIFO : integer := 8;

@@ -40,7 +40,8 @@ entity sram16 is
     abits: Positive := 10;		-- Default 10 address bits (1 Kbyte)
     echk : integer := 0;		-- Generate EDAC checksum
     tacc : integer := 10;		-- access time (ns)
-    fname : string := "ram.dat");	-- File to read from
+    fname : string := "ram.dat";	-- File to read from
+    clear : integer := 0);		-- clear memory
   port (  
     a : in std_logic_vector(abits-1 downto 0);
     d : inout std_logic_vector(15 downto 0);
@@ -60,10 +61,10 @@ begin
 
   cex(0) <= ce or lb; cex(1) <= ce or ub;
 
-  sr0 : sram generic map (index+1, abits, tacc, fname)
+  sr0 : sram generic map (index+1, abits, tacc, fname, clear)
 	port map (a, d(7 downto 0), cex(0), we, oe);
 
-  sr1 : sram generic map (index, abits, tacc, fname)
+  sr1 : sram generic map (index, abits, tacc, fname, clear)
 	port map (a, d(15 downto 8), cex(1), we, oe);
 
 end sim;

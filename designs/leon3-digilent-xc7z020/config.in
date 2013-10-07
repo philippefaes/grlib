@@ -3,7 +3,7 @@
 #
 # Written by Jiri Gaisler, Gaisler Research
 #
-# Comments and bug reports to jiri@gaisler.com
+# Comments and bug reports to support@gaisler.com
 #
 #
 
@@ -11,7 +11,7 @@
 #define_bool CONFIG_LEON3FT_PRESENT y
 #define_bool CONFIG_HAS_SHARED_GRFPU y
 
-mainmenu_name "LEON3MP Zedboard Design Configuration"
+mainmenu_name "LEON3MP Design Configuration"
 
 mainmenu_option next_comment
   comment 'Synthesis      '
@@ -49,7 +49,7 @@ comment 'Peripherals             '
   mainmenu_option next_comment
   comment 'UARTs, timers and irq control         '
     source lib/gaisler/uart/uart1.in
-    source lib/gaisler/leon3/irqmp.in
+    source lib/gaisler/irqmp/irqmp.in
     source lib/gaisler/misc/gptimer.in
     source lib/gaisler/misc/grgpio.in
   endmenu

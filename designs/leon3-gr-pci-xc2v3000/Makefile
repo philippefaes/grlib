@@ -19,8 +19,8 @@ CLEAN=soft-clean
 TECHLIBS = unisim secureip
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF gsi \
 	tmtc openchip hynix cypress ihp fmf spansion usbhc
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan ddr usb grusbhc \
-	slink ascs
+DIRSKIP = b1553 pci/pcif leon2 leon2ft crypto satcan ddr usb grusbhc \
+	slink ascs leon4v0
 
 include $(GRLIB)/bin/Makefile
 include $(GRLIB)/software/leon3/Makefile

@@ -54,7 +54,7 @@ end;
 architecture behav of testbench is
 
   constant promfile    : string := "prom.srec";
-  constant sdramfile   : string := "sdram.srec";
+  constant sdramfile   : string := "ram.srec";
 
   signal clock_50      : std_logic := '0';
 

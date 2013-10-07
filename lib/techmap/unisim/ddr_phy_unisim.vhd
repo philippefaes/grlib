@@ -2272,44 +2272,46 @@ use grlib.stdlib.all;
 -- pragma translate_off
 library unisim;
 use unisim.BUFG;
-use unisim.DCM;
+use unisim.DCM_SP;
 use unisim.IDDR2;
 use unisim.ODDR2;
 use unisim.FD;
-use unisim.BUFIO;
+use unisim.IODELAY2;
 -- pragma translate_on
 
 library techmap;
 use techmap.gencomp.all;
 
-entity spartan6_ddr2_phy is
+entity spartan6_ddr2_phy_wo_pads is
   generic (MHz         : integer := 125; rstdelay   : integer := 200;
            dbits       : integer := 16;  clk_mul    : integer := 2;
-           clk_div     : integer := 2;   tech       : integer := spartan3;
-           rskew       : integer := 0;   eightbanks : integer range 0 to 1 := 0);
+           clk_div     : integer := 2;   tech       : integer := spartan6;
+           rskew       : integer := 0;   eightbanks : integer range 0 to 1 := 0;
+           abits       : integer := 14;
+           nclk        : integer := 3;   ncs        : integer := 2 );
   port (   rst         : in  std_ulogic;
            clk         : in  std_logic;        -- input clock
            clkout      : out std_ulogic;       -- DDR clock
            lock        : out std_ulogic;       -- DCM locked
-           
-           ddr_clk     : out std_logic_vector(2 downto 0);
-           ddr_clkb    : out std_logic_vector(2 downto 0);
-           ddr_clk_fb_out : out std_logic;
-           ddr_clk_fb  : in  std_logic;
-           ddr_cke     : out std_logic_vector(1 downto 0);
-           ddr_csb     : out std_logic_vector(1 downto 0);
+
+           ddr_clk     : out std_logic_vector(nclk-1 downto 0);
+           ddr_cke     : out std_logic_vector(ncs-1 downto 0);
+           ddr_csb     : out std_logic_vector(ncs-1 downto 0);
            ddr_web     : out std_ulogic;                               -- ddr write enable
            ddr_rasb    : out std_ulogic;                               -- ddr ras
            ddr_casb    : out std_ulogic;                               -- ddr cas
            ddr_dm      : out std_logic_vector (dbits/8-1 downto 0);    -- ddr dm
-           ddr_dqs     : inout std_logic_vector (dbits/8-1 downto 0);  -- ddr dqs
-           ddr_dqsn    : inout std_logic_vector (dbits/8-1 downto 0);  -- ddr dqsn
-           ddr_ad      : out std_logic_vector (13 downto 0);           -- ddr address
+           ddr_dqs_in  : in  std_logic_vector (dbits/8-1 downto 0);
+           ddr_dqs_out : out std_logic_vector (dbits/8-1 downto 0);
+           ddr_dqs_oen : out std_logic_vector (dbits/8-1 downto 0);
+           ddr_ad      : out std_logic_vector (abits-1 downto 0);      -- ddr address
            ddr_ba      : out std_logic_vector (1+eightbanks downto 0); -- ddr bank address
-           ddr_dq      : inout  std_logic_vector (dbits-1 downto 0);   -- ddr data
-           ddr_odt     : out std_logic_vector(1 downto 0);
+           ddr_dq_in   : in  std_logic_vector (dbits-1 downto 0);   -- ddr data
+           ddr_dq_out  : out std_logic_vector (dbits-1 downto 0);   -- ddr data
+           ddr_dq_oen  : out std_logic_vector (dbits-1 downto 0);   -- ddr data
+           ddr_odt     : out std_logic_vector(ncs-1 downto 0);
 
-           addr        : in  std_logic_vector (13 downto 0);           -- row address
+           addr        : in  std_logic_vector (abits-1 downto 0);      -- row address
            ba          : in  std_logic_vector ( 2 downto 0);           -- bank address
            dqin        : out std_logic_vector (dbits*2-1 downto 0);    -- ddr input data
            dqout       : in  std_logic_vector (dbits*2-1 downto 0);    -- ddr output data
@@ -2320,48 +2322,53 @@ entity spartan6_ddr2_phy is
            rasn        : in  std_ulogic;
            casn        : in  std_ulogic;
            wen         : in  std_ulogic;
-           csn         : in  std_logic_vector(1 downto 0);
-           cke         : in  std_logic_vector(1 downto 0);
-           cal_pll     : in  std_logic_vector(1 downto 0);
-           odt         : in  std_logic_vector(1 downto 0));
+           csn         : in  std_logic_vector(ncs-1 downto 0);
+           cke         : in  std_logic_vector(ncs-1 downto 0);
+           cal_en      : in  std_logic_vector(dbits/8-1 downto 0);
+           cal_inc     : in  std_logic_vector(dbits/8-1 downto 0);
+           cal_rst     : in  std_logic;
+           odt         : in  std_logic_vector(ncs-1 downto 0));
 end;
 
-architecture rtl of spartan6_ddr2_phy is
-  component DCM
-    generic (CLKDV_DIVIDE          :     real       := 2.0;
-             CLKFX_DIVIDE          :     integer    := 1;
-             CLKFX_MULTIPLY        :     integer    := 4;
-             CLKIN_DIVIDE_BY_2     :     boolean    := false;
-             CLKIN_PERIOD          :     real       := 10.0;
-             CLKOUT_PHASE_SHIFT    :     string     := "NONE";
-             CLK_FEEDBACK          :     string     := "1X";
-             DESKEW_ADJUST         :     string     := "SYSTEM_SYNCHRONOUS";
-             DFS_FREQUENCY_MODE    :     string     := "LOW";
-             DLL_FREQUENCY_MODE    :     string     := "LOW";
-             DSS_MODE              :     string     := "NONE";
-             DUTY_CYCLE_CORRECTION :     boolean    := true;
-             FACTORY_JF            :     bit_vector := X"C080";
-             PHASE_SHIFT           :     integer    := 0;
-             STARTUP_WAIT          :     boolean    := false);
-    port (   CLKFB                 : in  std_logic;
-             CLKIN                 : in  std_logic;
-             DSSEN                 : in  std_logic;
-             PSCLK                 : in  std_logic;
-             PSEN                  : in  std_logic;
-             PSINCDEC              : in  std_logic;
-             RST                   : in  std_logic;
-             CLK0                  : out std_logic;
-             CLK90                 : out std_logic;
-             CLK180                : out std_logic;
-             CLK270                : out std_logic;
-             CLK2X                 : out std_logic;
-             CLK2X180              : out std_logic;
-             CLKDV                 : out std_logic;
-             CLKFX                 : out std_logic;
-             CLKFX180              : out std_logic;
-             LOCKED                : out std_logic;
-             PSDONE                : out std_logic;
-             STATUS                : out std_logic_vector (7 downto 0));
+architecture rtl of spartan6_ddr2_phy_wo_pads is
+
+  component DCM_SP is
+    generic (
+      CLKDV_DIVIDE : real := 2.0;
+      CLKFX_DIVIDE : integer := 1;
+      CLKFX_MULTIPLY : integer := 4;
+      CLKIN_DIVIDE_BY_2 : boolean := false;
+      CLKIN_PERIOD : real := 10.0;
+      CLKOUT_PHASE_SHIFT : string := "NONE";
+      CLK_FEEDBACK : string := "1X";
+      DESKEW_ADJUST : string := "SYSTEM_SYNCHRONOUS";
+      DFS_FREQUENCY_MODE : string := "LOW";
+      DLL_FREQUENCY_MODE : string := "LOW";
+      DSS_MODE : string := "NONE";
+      DUTY_CYCLE_CORRECTION : boolean := true;
+      FACTORY_JF : bit_vector := X"C080";
+      PHASE_SHIFT : integer := 0;
+      STARTUP_WAIT : boolean := false );
+    port (
+      CLK0 : out std_ulogic;
+      CLK180 : out std_ulogic;
+      CLK270 : out std_ulogic;
+      CLK2X : out std_ulogic;
+      CLK2X180 : out std_ulogic;
+      CLK90 : out std_ulogic;
+      CLKDV : out std_ulogic;
+      CLKFX : out std_ulogic;
+      CLKFX180 : out std_ulogic;
+      LOCKED : out std_ulogic;
+      PSDONE : out std_ulogic;
+      STATUS : out std_logic_vector(7 downto 0);
+      CLKFB : in std_ulogic;
+      CLKIN : in std_ulogic;
+      DSSEN : in std_ulogic;
+      PSCLK : in std_ulogic;
+      PSEN : in std_ulogic;
+      PSINCDEC : in std_ulogic;
+      RST : in std_ulogic );
   end component;
 
   component BUFG
@@ -2405,40 +2412,51 @@ architecture rtl of spartan6_ddr2_phy is
              S  : in  std_ulogic);             -- 1-bit set input
   end component;
 
+  component IODELAY2 is
+    generic (
+      COUNTER_WRAPAROUND : string := "WRAPAROUND";
+      DATA_RATE : string := "SDR";
+      DELAY_SRC : string := "IO";
+      IDELAY2_VALUE : integer := 0;
+      IDELAY_MODE : string := "NORMAL";
+      IDELAY_TYPE : string := "DEFAULT";
+      IDELAY_VALUE : integer := 0;
+      ODELAY_VALUE : integer := 0;
+      SERDES_MODE : string := "NONE";
+      SIM_TAPDELAY_VALUE : integer := 75 );
+    port (
+      BUSY                 : out std_ulogic;
+      DATAOUT              : out std_ulogic;
+      DATAOUT2             : out std_ulogic;
+      DOUT                 : out std_ulogic;
+      TOUT                 : out std_ulogic;
+      CAL                  : in std_ulogic;
+      CE                   : in std_ulogic;
+      CLK                  : in std_ulogic;
+      IDATAIN              : in std_ulogic;
+      INC                  : in std_ulogic;
+      IOCLK0               : in std_ulogic;
+      IOCLK1               : in std_ulogic;
+      ODATAIN              : in std_ulogic;
+      RST                  : in std_ulogic;
+      T                    : in std_ulogic );
+  end component;
+
   signal vcc, gnd, oe, lockl : std_ulogic;
   signal dqsn                : std_logic_vector(dbits/8-1 downto 0);
-
-  signal ddr_rasnr, ddr_casnr, ddr_wenr      : std_ulogic;
-  signal ddr_clkl, ddr_clkbl                 : std_logic_vector(2 downto 0);
-  signal ddr_csnr, ddr_ckenr, ckel           : std_logic_vector(1 downto 0);
-  signal ddr_clk_fbl, ddr_clk_fb_outl        : std_ulogic;
+  signal dqsoen_reg          : std_logic_vector(dbits/8-1 downto 0);
+  signal ddr_dq_indel        : std_logic_vector(dbits-1 downto 0);
+  signal ckel                : std_logic_vector(ncs-1 downto 0);
   signal clk_90ro                            : std_ulogic;
   signal clk0r, clk90r, clk180r, clk270r     : std_ulogic;
-  signal rclk0b, rclk90b, rclk180b, rclk270b : std_ulogic;
-  signal rclk0, rclk90, rclk180, rclk270              : std_ulogic;
-  signal rclk0b_high, rclk90b_high, rclk270b_high : std_ulogic;
-  signal rclk0_high, rclk90_high, rclk270_high : std_ulogic;
   signal locked, vlockl, dllfb               : std_ulogic;
 
-  signal ddr_dqin                            : std_logic_vector (dbits-1 downto 0);      -- ddr data
-  signal ddr_dqout                           : std_logic_vector (dbits-1 downto 0);      -- ddr data
-  signal ddr_dqoen                           : std_logic_vector (dbits-1 downto 0);      -- ddr data
-  signal ddr_adr                             : std_logic_vector (13 downto 0);           -- ddr row address
-  signal ddr_bar                             : std_logic_vector (1+eightbanks downto 0); -- ddr bank address
-  signal ddr_dmr                             : std_logic_vector (dbits/8-1 downto 0);    -- ddr mask
-  signal ddr_dqsin                           : std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
-  signal ddr_dqsoen                          : std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
-  signal ddr_dqsoutl                         : std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
-  signal dqinl                               : std_logic_vector (dbits*2-1 downto 0);    -- ddr data
-  signal dllrst                              : std_ulogic;
-  signal dll0rst                             : std_ulogic;
-  signal dll1rst                             : std_ulogic;
+  signal dllrst                              : std_logic_vector(0 to 3);
+  signal dll0rst                             : std_logic_vector(0 to 3);
   signal mlock, mclkfb, mclk, mclkfx, mclk0  : std_ulogic;
-  signal odtl                                : std_logic_vector(1 downto 0);
 
-  --signals needed for alignment with DQS
-  signal dm_delay                            : std_logic_vector (dbits/8-1 downto 0);      
-  signal dqout_delay                         : std_logic_vector (dbits-1 downto 0);
+  signal delay_cal                           : std_ulogic;
+  signal dcal_started                        : std_ulogic;
 
   constant DDR_FREQ : integer := (MHz * clk_mul) / clk_div;
 
@@ -2462,31 +2480,36 @@ begin
 
   oe <= not oen;
   vcc <= '1'; gnd <= '0';
-  
+
   -- Optional DDR clock multiplication
 
   noclkscale : if clk_mul = clk_div generate
     mlock <= '1';
-    mbufg0 : BUFG port map (I => clk, O => mclk);
+    mclk <= clk;
+    -- mbufg0 : BUFG port map (I => clk, O => mclk);
   end generate;
 
   clkscale : if clk_mul /= clk_div generate
-    rstdel : process (clk, rst)
+
+    -- Extend DCM reset signal.
+    dll0rstdel : process (clk, rst)
     begin
       if rst = '0' then
-        dll0rst <= '1';
+        dll0rst <= (others => '1');
       elsif rising_edge(clk) then
-        dll0rst <= '0';
+        dll0rst <= dll0rst(1 to 3) & "0";
       end if;
     end process;
 
     bufg0 : BUFG port map (I => mclkfx, O => mclk);
     bufg1 : BUFG port map (I => mclk0,  O => mclkfb);
 
-    dllm : DCM
-      generic map (CLKFX_MULTIPLY => clk_mul, CLKFX_DIVIDE => clk_div)
+    dllm : DCM_SP
+      generic map (
+        CLKFX_MULTIPLY => clk_mul, CLKFX_DIVIDE => clk_div,
+        CLK_FEEDBACK => "1X", CLKIN_PERIOD => 1000.0/real(MHz) )
       port map (CLKIN => clk, CLKFB => mclkfb, DSSEN => gnd, PSCLK => gnd,
-                PSEN => gnd, PSINCDEC => gnd, RST => dll0rst, CLK0 => mclk0,
+                PSEN => gnd, PSINCDEC => gnd, RST => dll0rst(0), CLK0 => mclk0,
                 LOCKED => mlock, CLKFX => mclkfx );
   end generate;
 
@@ -2495,11 +2518,11 @@ begin
   bufg2 : BUFG port map (I => clk_90ro, O => clk90r);
   dllfb <= clk90r;
 
-  dll : DCM
-    generic map (CLKFX_MULTIPLY => 2, CLKFX_DIVIDE => 2, 
-                 CLKOUT_PHASE_SHIFT => "FIXED", PHASE_SHIFT => 64)
+  dll : DCM_SP
+    generic map ( CLKFX_MULTIPLY => 2, CLKFX_DIVIDE => 2, 
+                  CLKOUT_PHASE_SHIFT => "FIXED", PHASE_SHIFT => 64 )
     port map (CLKIN => mclk, CLKFB => dllfb, DSSEN => gnd, PSCLK => gnd,
-              PSEN => gnd, PSINCDEC => gnd, RST => dllrst, CLK0 => clk_90ro,
+              PSEN => gnd, PSINCDEC => gnd, RST => dllrst(0), CLK0 => clk_90ro,
               CLK90 => open, CLK180 => open, CLK270 => open,
               LOCKED => lockl);
 
@@ -2507,19 +2530,18 @@ begin
   clk180r <= not mclk;
   clk270r <= not clk90r;
   clkout  <= mclk;
-  
-  rstdel : process (mclk, rst, mlock)
+
+  -- Extend DCM reset signal.
+  dllrstdel : process (mclk, rst, mlock)
   begin
     if rst = '0' or mlock = '0' then
-      dllrst <= '1';
+      dllrst <= (others => '1');
     elsif rising_edge(mclk) then
-      dllrst <= '0';
+      dllrst <= dllrst(1 to 3) & "0";
     end if;
   end process;
 
-  nordel : if rstdelay = 0 generate
-    vlockl <= '1';
-  end generate;
+  -- Delay lock signal.
   rdel : if rstdelay /= 0 generate
     rcnt : process (clk0r)
       variable cnt : std_logic_vector(15 downto 0);
@@ -2546,183 +2568,125 @@ begin
   lock   <= locked;
 
   -- Generate external DDR clock
-  ddrclocks : for i in 0 to 2 generate
+  ddrclocks : for i in 0 to nclk-1 generate
     dclk0r : ODDR2
-      port map (Q => ddr_clkl(i), C0 => clk90r, C1 => clk270r, CE => vcc,
-                D0 => vcc, D1 => gnd, R => gnd, S => gnd);
-    ddrclk_pad : outpad
-      generic map (tech => virtex4, level => sstl18_i) 
-      port map (ddr_clk(i), ddr_clkl(i));
-
-    dclk0rb : ODDR2
-      port map (Q => ddr_clkbl(i), C0 => clk90r, C1 => clk270r, CE => vcc,
-                D0 => gnd, D1 => vcc, R => gnd, S => gnd);
-    ddrclkb_pad : outpad
-      generic map (tech => virtex4, level => sstl18_i)
-      port map (ddr_clkb(i), ddr_clkbl(i));
-  end generate;
-
-  -- Generate the DDR clock to be fed back for DQ synchronization
-  dclkfb0r : ODDR2
-    port map (Q => ddr_clk_fb_outl, C0 => clk90r, C1 => clk270r, CE => vcc,
-              D0 => vcc, D1 => gnd, R => gnd, S => gnd);
-  ddrclkfb_pad : outpad
-    generic map (tech => virtex4, level => sstl18_i) 
-    port map (ddr_clk_fb_out, ddr_clk_fb_outl);
-
-  -- The above clock fed back for DQ synchronization
-  ddrref_pad : clkpad generic map (tech => virtex4) 
-	port map (ddr_clk_fb, ddr_clk_fbl); 
-  
-  -- ODT pads
-  odtgen : for i in 0 to 1 generate
-    odtl(i) <= locked and odt(i);
-    ddr_odt_pad : outpad
-      generic map (tech => virtex4, level => sstl18_i)
-      port map (ddr_odt(i), odtl(i));
+      port map ( Q => ddr_clk(i), C0 => clk90r, C1 => clk270r, CE => vcc,
+                 D0 => vcc, D1 => gnd, R => gnd, S => gnd );
   end generate;
 
   --  DDR single-edge control signals
-  ddrbanks : for i in 0 to 1 generate
-    csn0gen : FD
-      port map ( Q => ddr_csnr(i), C => clk0r, D => csn(i));
-    csn0_pad : outpad
-      generic map (tech => virtex4, level => sstl18_i) 
-      port map (ddr_csb(i), ddr_csnr(i));
+  ddrbanks : for i in 0 to ncs-1 generate
+
+    ddr_odt(i) <= locked and odt(i);
+
+    csn0gen : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_csb(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 D0 => csn(i), D1 => csn(i), R => gnd, S => gnd );
 
     ckel(i) <= cke(i) and locked;
-    ckegen : FD
-      port map ( Q => ddr_ckenr(i), C => clk0r, D => ckel(i));
-    cke_pad : outpad
-      generic map (tech => virtex4, level => sstl18_i) 
-      port map (ddr_cke(i), ddr_ckenr(i));
+    ckegen : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC"  )
+      port map ( Q => ddr_cke(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 D0 => ckel(i), D1 => ckel(i), R => gnd, S => gnd );
   end generate;
 
-  rasgen : FD
-    port map ( Q => ddr_rasnr, C => clk0r, D => rasn);
-  rasn_pad : outpad
-    generic map (tech => virtex4, level => sstl18_i) 
-    port map (ddr_rasb, ddr_rasnr);
+  rasgen : ODDR2
+    generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC"  )
+    port map ( Q => ddr_rasb, C0 => clk0r, C1 => clk180r, CE => vcc,
+               D0 => rasn, D1 => rasn, R => gnd, S => gnd );
 
-  casgen : FD
-    port map ( Q => ddr_casnr, C => clk0r, D => casn);
-  casn_pad : outpad
-    generic map (tech => virtex4, level => sstl18_i) 
-    port map (ddr_casb, ddr_casnr);
+  casgen : ODDR2
+    generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+    port map ( Q => ddr_casb, C0 => clk0r, C1 => clk180r, CE => vcc,
+               D0 => casn, D1 => casn, R => gnd, S => gnd );
 
-  wengen : FD
-    port map ( Q => ddr_wenr, C => clk0r, D => wen);
-  wen_pad : outpad
-    generic map (tech => virtex4, level => sstl18_i) 
-    port map (ddr_web, ddr_wenr);
+  wengen : ODDR2
+    generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+    port map ( Q => ddr_web, C0 => clk0r, C1 => clk180r, CE => vcc,
+               D0 => wen, D1 => wen, R => gnd, S => gnd );
 
   bagen : for i in 0 to 1+eightbanks generate
-    ba0 : FD
-      port map ( Q => ddr_bar(i), C => clk0r, D => ba(i));
-    ddr_ba_pad  : outpad
-      generic map (tech => virtex4, level => sstl18_i)
-      port map (ddr_ba(i), ddr_bar(i));
+    ba0 : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_ba(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 D0 => ba(i), D1 => ba(i), R => gnd, S => gnd );
   end generate;
 
-  addrgen : for i in 0 to 13 generate
-    addr0 : FD
-      port map ( Q => ddr_adr(i), C => clk0r, D => addr(i));
-    ddr_ad_pad : outpad
-      generic map (tech => virtex4, level => sstl18_i) 
-      port map (ddr_ad(i), ddr_adr(i));
+  addrgen : for i in 0 to abits-1 generate
+    addr0 : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_ad(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 D0 => addr(i), D1 => addr(i), R => gnd, S => gnd );
   end generate;
 
   -- Data mask (DM) generation
   dmgen : for i in 0 to dbits/8-1 generate
-    dq_delay : FD
-      port map ( Q => dm_delay(i), C => clk0r, D => dm(i));
-    dm0 : ODDR2
-      generic map (DDR_ALIGNMENT => "NONE")
-      port map (Q => ddr_dmr(i), C0 => clk0r, C1 => clk180r, CE => vcc,
-                D0 => dm(i+dbits/8), D1 => dm_delay(i), R => gnd, S => gnd);
-    ddr_bm_pad : outpad
-      generic map (tech => virtex4, level => sstl18_i) 
-      port map (ddr_dm(i), ddr_dmr(i));
+    dmgen0 : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_dm(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 D0 => dm(i+dbits/8), D1 => dm(i), R => gnd, S => gnd );
   end generate;
 
   -- Data strobe (DQS) generation
   dqsgen : for i in 0 to dbits/8-1 generate
-    dsqreg : FD port map ( Q => dqsn(i), C => clk180r, D => oe);
-    da0 : ODDR2
-      port map ( Q => ddr_dqsin(i), C0 => clk90r, C1 => clk270r, CE => vcc,
-                 D0 => dqsn(i), D1 => gnd, R => gnd, S => gnd);
---    doen : FD
---      port map ( Q => ddr_dqsoen(i), C => clk0r, D => dqsoen);
 
-    doen : ODDR2
-      generic map (DDR_ALIGNMENT => "NONE")
-      port map (Q => ddr_dqsoen(i), C0 => clk90r, C1 => clk270r, CE => vcc,
-                D0 => dqsoen, D1 => dqsoen, R => gnd, S => gnd);
-    dqs_pad : iopad_ds
-      generic map (tech => virtex5, level => sstl18_ii)
-      port map (padp => ddr_dqs(i), padn => ddr_dqsn(i), i => ddr_dqsin(i), 
-                en => ddr_dqsoen(i), o => ddr_dqsoutl(i));
+    dqsreg : FD
+      port map ( Q => dqsn(i), C => clk180r, D => oe );
+    dqsgen0 : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_dqs_out(i), C0 => clk90r, C1 => clk270r, CE => vcc,
+                 D0 => dqsn(i), D1 => gnd, R => gnd, S => gnd );
+
+    doenreg : FD
+      port map ( Q => dqsoen_reg(i), C => clk180r, D => dqsoen );
+    doen0 : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_dqs_oen(i), C0 => clk90r, C1 => clk270r, CE => vcc,
+                 D0 => dqsoen_reg(i), D1 => dqsoen_reg(i), R => gnd, S => gnd );
   end generate;
 
-  -- Phase shift the feedback clock and use it to latch DQ
-  rstphase : process (ddr_clk_fbl, rst, lockl)
+  -- Data bus
+  ddgen : for i in 0 to dbits-1 generate
+
+    dqdelay : IODELAY2
+      generic map ( DATA_RATE => "DDR", DELAY_SRC => "IDATAIN",
+                    IDELAY_TYPE => "VARIABLE_FROM_ZERO" )
+      port map ( BUSY => open, CAL => delay_cal, CE => cal_en(i/8), CLK => clk0r,
+                 DATAOUT => ddr_dq_indel(i), DATAOUT2 => open, DOUT => open,
+                 IDATAIN => ddr_dq_in(i), INC => cal_inc(i/8),
+                 IOCLK0 => clk0r, IOCLK1 => clk180r,
+                 ODATAIN => gnd, RST => cal_rst, T => vcc, TOUT => open );
+
+    din : IDDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( D => ddr_dq_indel(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 R => gnd, S => gnd, Q0 => dqin(i), Q1 => dqin(i+dbits) );
+
+    dout : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_dq_out(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 D0 => dqout(i+dbits), D1 => dqout(i), R => gnd, S => gnd );
+
+    doen : ODDR2
+      generic map ( DDR_ALIGNMENT => "C0", SRTYPE => "ASYNC" )
+      port map ( Q => ddr_dq_oen(i), C0 => clk0r, C1 => clk180r, CE => vcc,
+                 D0 => oen, D1 => oen, R => gnd, S => gnd );
+  end generate;
+
+  -- Generate IODELAY calibration command after core reset.
+  calcmd : process (mclk, rst)
   begin
-    if rst = '0' or lockl = '0' then
-      dll1rst <= '1';
-    elsif rising_edge(ddr_clk_fbl) then
-      dll1rst <= '0';
+    if rst = '0' then
+      dcal_started <= '0';
+      delay_cal    <= '0';
+    elsif rising_edge(mclk) then
+      if mlock = '1' then
+        dcal_started <= '1';
+        delay_cal    <= not dcal_started;
+      end if;
     end if;
   end process;
 
-  bufg7 : BUFG port map (I => rclk90,  O => rclk90b);
-  rclk270b <= not rclk90b;
---  bufg8 : BUFG port map (I => rclk270, O => rclk270b);
-  bufg9 : BUFG port map (I => rclk180, O => rclk180b);
-
-  read_dll : DCM
-    generic map (clkin_period => 8.0, DESKEW_ADJUST => "SOURCE_SYNCHRONOUS", 
-                 CLKOUT_PHASE_SHIFT => "VARIABLE", PHASE_SHIFT => rskew)
-    port map ( CLKIN => ddr_clk_fbl, CLKFB => rclk90b, DSSEN => gnd, PSCLK => mclk,
-               PSEN => cal_pll(0), PSINCDEC => cal_pll(1), RST => dll1rst, CLK0 => rclk90,
-               CLK90 => rclk180); --, CLK180 => rclk270);
-  
-  -- Data bus
-  ddgen : for i in 0 to dbits-1 generate
-    qi : IDDR2
-      port map (Q0 => dqinl(i+dbits), -- 1-bit output for positive edge of C0
-                Q1 => dqinl(i),       -- 1-bit output for negative edge of C1
-                C0 => rclk90b,        -- 1-bit clock input 
-                C1 => rclk270b,       -- 1-bit clock input 
-                CE => vcc,            -- 1-bit clock enable input 
-                D  => ddr_dqin(i),    -- 1-bit DDR data input 
-                R  => gnd,            -- 1-bit reset 
-                S  => gnd);           -- 1-bit set 
-
-    dinq0 : FD
-      port map ( Q => dqin(i+dbits), C => rclk180b, D => dqinl(i));
-    dinq1 : FD
-      port map ( Q => dqin(i), C => rclk180b, D => dqinl(i+dbits));
-
-    dq_delay : FD
-      port map ( Q => dqout_delay(i), C => clk0r, D => dqout(i));
-    
-    dout : ODDR2
-      generic map (DDR_ALIGNMENT => "NONE")
-      port map (Q => ddr_dqout(i), C0 => clk0r, C1 => clk180r, CE => vcc,
-                D0 => dqout(i+dbits), D1 => dqout_delay(i), R => gnd, S => gnd);
---    doen : FD
---      port map (Q => ddr_dqoen(i), C => clk0r, D => oen);
-
-    doen : ODDR2
-      generic map (DDR_ALIGNMENT => "NONE")
-      port map (Q => ddr_dqoen(i), C0 => clk0r, C1 => clk180r, CE => vcc,
-                D0 => oen, D1 => oen, R => gnd, S => gnd);
-
-    dq_pad : iopad
-      generic map (tech => virtex4, level => sstl18_ii)
-      port map (pad => ddr_dq(i), i => ddr_dqout(i), en => ddr_dqoen(i), o => ddr_dqin(i));
-  end generate;
-end;
-
-
+end architecture;
 

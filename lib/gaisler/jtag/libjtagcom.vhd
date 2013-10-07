@@ -62,8 +62,29 @@ package libjtagcom is
     tapo : in tap_out_type;
     tapi : out tap_in_type;
     dmao : in  ahb_dma_out_type;    
-    dmai : out ahb_dma_in_type
+    dmai : out ahb_dma_in_type;
+    tck  : in std_ulogic;
+    trst : in std_ulogic
     );
+  end component;
+
+  component jtagcom2 is
+    generic (
+      gatetech: integer := 0;
+      isel   : integer range 0 to 1 := 0;
+      ainst  : integer range 0 to 255 := 2;
+      dinst  : integer range 0 to 255 := 3);
+    port (
+      rst  : in std_ulogic;
+      clk  : in std_ulogic;
+      tapo : in tap_out_type;
+      tapi : out tap_in_type;
+      dmao : in  ahb_dma_out_type;
+      dmai : out ahb_dma_in_type;
+      tckp : in std_ulogic;
+      tckn : in std_ulogic;
+      trst : in std_ulogic
+      );
   end component;
 
 end;  

@@ -45,3 +45,11 @@ mcb_044.vp
 mcb_045.vp
 mcb_046.vp
 mcb_047.vp
+pcie_2_0_001.vp
+pcie_2_0_002.vp
+gtxe1_001.vp
+gtxe1_002.vp
+gtpa1_dual_001.vp
+gtpa1_dual_002.vp
+pcie_a1_001.vp
+pcie_a1_002.vp

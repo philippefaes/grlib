@@ -36,7 +36,7 @@ use grlib.stdlib.all;
 entity syncram_2p is
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
 	sepclk : integer := 0; wrfst : integer := 0; testen : integer := 0;
-	words : integer := 0);
+	words : integer := 0; custombits : integer := 1);
   port (
     rclk     : in std_ulogic;
     renable  : in std_ulogic;
@@ -46,7 +46,10 @@ entity syncram_2p is
     write    : in std_ulogic;
     waddress : in std_logic_vector((abits -1) downto 0);
     datain   : in std_logic_vector((dbits -1) downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(custombits-1 downto 0));
 end;
 
 architecture rtl of syncram_2p is
@@ -61,6 +64,8 @@ signal renable2 : std_ulogic;
 constant SCANTESTBP : boolean := (testen = 1) and (tech /= 0) and (tech /= ut90);
 constant iwrfst : integer := (1-syncram_2p_write_through(tech)) * wrfst;
 signal xrenable,xwrite : std_ulogic;
+
+signal custominx,customoutx: std_logic_vector(syncram_customif_maxwidth downto 0);
 
 begin
 
@@ -132,7 +137,7 @@ begin
         signal col, mux : std_ulogic;
         signal rdatain : std_logic_vector((dbits-1) downto 0);
       begin
-        comb : process(mux, xrenable, write, raddress, waddress, rdatain,
+        comb : process(mux, xrenable, renable, write, raddress, waddress, rdatain,
                        dataoutx, testin)
         begin
           col <= '0'; renable2 <= xrenable;
@@ -151,15 +156,22 @@ begin
       end block wfrstblockc;
     end generate;
   end generate wrfst_gen;
-  
+
+  custominx(custominx'high downto custombits) <= (others => '0');
+  custominx(custombits-1 downto 0) <= customin;
+  customout <= customoutx(custombits-1 downto 0);
+  nocust: if syncram_has_customif(tech)=0 generate
+    customoutx <= (others => '0');
+  end generate;
+
   inf : if tech = inferred generate
     x0 : generic_syncram_2p generic map (abits, dbits, sepclk)
          port map (rclk, wclk, raddress, waddress, datain, write, dataoutx);
   end generate;
 
-  xcv : if tech = virtex generate 
+  xcv : if tech = virtex generate
     x0 : virtex_syncram_dp generic map (abits, dbits)
-         port map (wclk, waddress, datain, open, xwrite, xwrite, 
+         port map (wclk, waddress, datain, open, xwrite, xwrite,
                    rclk, raddress, vgnd, dataoutx, renable2, gnd);
   end generate;
 
@@ -231,7 +243,7 @@ begin
 
 -- NOTE: port 1 on altsyncram must be a read port due to Cyclone II M4K write issue
   alt : if (tech = altera) or (tech = stratix1) or (tech = stratix2) or
-	(tech = stratix3) or (tech = cyclone3) generate
+	(tech = stratix3) or (tech = stratix4) or (tech = cyclone3) generate
     x0 : altera_syncram_dp generic map (abits, dbits)
          port map (rclk, raddress, vgnd, dataoutx, renable2, gnd,
                    wclk, waddress, datain, open, xwrite, xwrite);
@@ -258,7 +270,7 @@ begin
   ut09 : if tech = ut90 generate
     x0 : ut90nhbd_syncram_2p generic map (abits, dbits)
          port map (rclk, renable2, raddress, dataoutx,
-		   wclk, xwrite, waddress, datain);
+		   wclk, xwrite, waddress, datain, testin(TESTIN_WIDTH-3));
   end generate;
 
   ut13 : if tech = ut130 generate
@@ -303,22 +315,28 @@ begin
 		   wclk, xwrite, waddress, datain);
   end generate;
 
-  tm65gplu : if tech = tm65gpl generate 
+  tm65gplu : if tech = tm65gpl generate
     x0 : tm65gplus_syncram_2p generic map (abits, dbits)
-         port map (rclk, renable2, raddress, dataoutx, 
+         port map (rclk, renable2, raddress, dataoutx,
                    wclk, xwrite, waddress, datain);
-  end generate; 
+  end generate;
 
-  cmos9sfx : if tech = cmos9sf generate 
+  cmos9sfx : if tech = cmos9sf generate
     x0 : cmos9sf_syncram_2p generic map (abits, dbits)
-         port map (rclk, renable2, raddress, dataoutx, 
+         port map (rclk, renable2, raddress, dataoutx,
                    wclk, xwrite, waddress, datain);
-  end generate; 
+  end generate;
 
   n2x : if tech = easic45 generate
     x0 : n2x_syncram_2p generic map (abits, dbits, sepclk, iwrfst)
       port map (rclk, renable2, raddress, dataoutx, wclk,
                 xwrite, waddress, datain);
+  end generate;
+
+  rh_lib13t0 : if tech = rhlib13t generate
+    x0 : rh_lib13t_syncram_2p generic map (abits, dbits, sepclk)
+         port map (rclk, renable2, raddress, dataoutx, wclk, xwrite, waddress, datain,
+                   testin(TESTIN_WIDTH-1 downto TESTIN_WIDTH-4));
   end generate;
   
 -- pragma translate_off

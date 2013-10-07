@@ -67,7 +67,7 @@ constant hconfig : ahb_config_type := (
   others => zero32);
 
 type tracebuf_in_type is record 
-  addr             : std_logic_vector(11 downto 0);
+  addr             : std_logic_vector(TBUFABITS-1 downto 0);
   data             : std_logic_vector(127 downto 0);
   enable           : std_logic;
   write            : std_logic_vector(3 downto 0);
@@ -122,6 +122,7 @@ type fregtype is record
   fw            : std_ulogic;         -- Filter writes
   smask         : std_logic_vector(15 downto 0);
   mmask         : std_logic_vector(15 downto 0);
+  rf            : std_ulogic;         -- Retry filtering
 end record;
 
 type bregtype is record
@@ -129,8 +130,9 @@ type bregtype is record
 end record;
 
 function ahb_filt_hit (
-  r  : regtype;
-  rf :  fregtype) return boolean is
+  r     : regtype;
+  rf    : fregtype;
+  hresp : std_logic_vector(1 downto 0)) return boolean is
   variable hit : boolean;
 begin
   -- filter hit -> inhibit
@@ -155,6 +157,10 @@ begin
       hit := true;
     end if;    
   end loop;
+  -- Filter on retry response
+  if (rf.rf = '1' and hresp = HRESP_RETRY) then
+    hit := true;
+  end if;
   return hit;
 end function ahb_filt_hit;
 
@@ -249,7 +255,7 @@ begin
 
       if r.enable = '1' then 
         if (r.ahbactive and tahbsi.hready) = '1' then
-          if not (FILTEN and ahb_filt_hit(r, rf)) then
+          if not (FILTEN and ahb_filt_hit(r, rf, tahbmi.hresp)) then
             v.aindex := aindex;
             vabufi.enable := '1'; vabufi.write := "1111";
           end if;
@@ -296,6 +302,7 @@ begin
             regsd(log2(ntrace)+12 downto 12) := vb.bsel;
           end if;
           if FILTEN then
+            regsd(5) := rf.rf;
             regsd(4) := rf.af;
             regsd(3) := rf.fr;
             regsd(2) := rf.fw;
@@ -307,6 +314,7 @@ begin
               vb.bsel := ahbsi.hwdata(log2(ntrace)+12 downto 12);
             end if;
             if FILTEN then
+              vf.rf := ahbsi.hwdata(5);
               vf.af := ahbsi.hwdata(4);
               vf.fr := ahbsi.hwdata(3);
               vf.fw := ahbsi.hwdata(2);
@@ -431,6 +439,7 @@ begin
     rf.fw        <= '0';
     rf.smask     <= (others => '0');
     rf.mmask     <= (others => '0');
+    rf.rf        <= '0';
   end generate;
   bregs : if ntrace /= 1 generate
     regs : process(clk)

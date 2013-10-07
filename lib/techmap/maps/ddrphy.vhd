@@ -638,11 +638,11 @@ begin
   -- External DDR clock
   ddrclocks : for i in 0 to nclk-1 generate
     -- DDR_CLK/B
-    xc456v : if (tech = virtex4) or (tech = virtex5) or (tech = virtex6) generate
+    xc456v : if (tech = virtex4) or (tech = virtex5) or (tech = virtex6) or (tech = spartan6) generate
       ddrclk_pad : outpad_ds generic map (tech => tech, slew => 1, level => sstl18_i) 
         port map (ddr_clk(i), ddr_clkb(i), lddr_clk(i), vcc);
     end generate;
-    noxc456v : if not ((tech = virtex4) or (tech = virtex5) or (tech = virtex6)) generate
+    noxc456v : if not ((tech = virtex4) or (tech = virtex5) or (tech = virtex6) or (tech = spartan6)) generate
     -- DDR_CLK
       ddrclk_pad : outpad generic map (tech => tech, slew => 1, level => sstl18_i) 
         port map (ddr_clk(i), lddr_clk(i));
@@ -936,20 +936,6 @@ begin
     dqin_valid <= '1';
   end generate;
 
-  sp6 : if  (tech = spartan6) generate
---    ddr_phy0 : spartan6_ddr2_phy 
-    ddr_phy0 : spartan3a_ddr2_phy 
-     generic map (MHz => MHz, rstdelay => rstdelay,
-                  clk_mul => clk_mul, clk_div => clk_div, dbits => dbits, tech => tech, rskew => rskew,
-                  eightbanks => eightbanks)
-     port map (   rst, clk, clkout, lock, ddr_clk, ddr_clkb, ddr_clk_fb_out, ddr_clk_fb,
-                  ddr_cke, ddr_csb, ddr_web, ddr_rasb, ddr_casb, 
-                  ddr_dm, ddr_dqs, ddr_dqsn, ddr_ad, ddr_ba, ddr_dq, ddr_odt,
-                  addr, ba, dqin, dqout, dm, oen, dqs, dqsoen,
-                  rasn, casn, wen, csn, cke, cal_pll, odt);
-    dqin_valid <= '1';
-  end generate;
-
   nextreme2 : if (tech = easic45) generate
     -- This requires dbits/8 extra bidir I/O that are suppliedd on the ddr_dqs port
     ddr_phy0 :  n2x_ddr2_phy
@@ -1175,7 +1161,26 @@ begin
     dqin_valid <= '1';
   end generate;
 
-  
+  sp6 : if (tech = spartan6) generate
+    ddr_phy0 : spartan6_ddr2_phy_wo_pads
+      generic map (
+        MHz => MHz, rstdelay => rstdelay,
+        clk_mul => clk_mul, clk_div => clk_div, dbits => dbits,
+        tech => tech, rskew => rskew,
+        eightbanks => eightbanks,
+        abits => abits, nclk => nclk, ncs => ncs)
+      port map (
+        rst, clk, clkout, lock,
+        ddr_clk, ddr_cke, ddr_csb, ddr_web, ddr_rasb, ddr_casb, 
+        ddr_dm, ddr_dqs_in, ddr_dqs_out, ddr_dqs_oen,
+        ddr_ad, ddr_ba, ddr_dq_in, ddr_dq_out, ddr_dq_oen, ddr_odt,
+        addr, ba, dqin, dqout, dm, oen, dqs, dqsoen,
+        rasn, casn, wen, csn, cke, cal_en, cal_inc, cal_rst, odt);
+    ddr_clkb <= (others => '0');
+    ddr_clk_fb_out <= '0';
+    dqin_valid <= '1';
+  end generate;
+
   inf : if (has_ddr2phy(tech) = 0) generate
     ddr_phy0 : generic_ddr2_phy_wo_pads
      generic map (MHz => MHz, rstdelay => rstdelay,

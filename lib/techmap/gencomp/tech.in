@@ -3,6 +3,7 @@
 	Altera-Stratix        	CONFIG_SYN_STRATIX \
 	Altera-StratixII      	CONFIG_SYN_STRATIXII \
 	Altera-StratixIII      	CONFIG_SYN_STRATIXIII \
+	Altera-StratixIV      	CONFIG_SYN_STRATIXIV \
 	Altera-CycloneIII      	CONFIG_SYN_CYCLONEIII \
 	Altera-Others         	CONFIG_SYN_ALTERA \
 	Actel-Axcelerator	CONFIG_SYN_AXCEL \

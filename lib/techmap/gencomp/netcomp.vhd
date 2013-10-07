@@ -248,11 +248,13 @@ component grspwc_net
     --apb slv out
     prdata	 : out  std_logic_vector(31 downto 0);
     --spw in
-    di 		 : in std_logic_vector(1 downto 0);
-    si 		 : in std_logic_vector(1 downto 0);
+    d 		 : in std_logic_vector(1 downto 0);
+    nd 		 : in std_logic_vector(9 downto 0);
+    dconnect	 : in std_logic_vector(3 downto 0);
     --spw out
     do 		 : out std_logic_vector(1 downto 0);
     so 		 : out std_logic_vector(1 downto 0);
+    rxrsto       : out std_ulogic;
     --time iface
     tickin       : in   std_ulogic;
     tickout      : out  std_ulogic;
@@ -267,8 +269,6 @@ component grspwc_net
     rmapnodeaddr : in   std_logic_vector(7 downto 0);
     --clk bufs
     rxclki       : in std_logic_vector(1 downto 0);
-    nrxclki      : in std_logic_vector(1 downto 0);
-    rxclko       : out std_logic_vector(1 downto 0);
     --rx ahb fifo
     rxrenable    : out  std_ulogic;
     rxraddress   : out  std_logic_vector(4 downto 0);
@@ -1473,6 +1473,7 @@ end component;
       phyo_pr_po_reqen          : out std_logic;
       phyo_pr_po_serren         : out std_logic;
       phyo_pr_po_inten          : out std_logic;
+      phyo_pr_po_vinten         : out std_logic_vector(3 downto 0);
 
       phyo_pio_rst              : out std_ulogic;
       phyo_pio_gnt              : out std_ulogic;
@@ -1516,7 +1517,8 @@ end component;
       phyo_poo_req              : out std_logic;
       phyo_poo_reqen            : out std_logic;
       phyo_poo_serren           : out std_logic;
-      phyo_poo_inten            : out std_logic
+      phyo_poo_inten            : out std_logic;
+      phyo_poo_vinten           : out std_logic_vector(3 downto 0)
     );
   end component;
 

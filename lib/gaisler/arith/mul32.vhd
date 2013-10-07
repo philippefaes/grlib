@@ -27,6 +27,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.stdlib.all;
 use grlib.multlib.all;
 library gaisler;
@@ -77,6 +79,19 @@ type mac_regtype is record
   mmac, xmac    : std_logic;
   msigned, xsigned : std_logic;
 end record;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant MULRES : mul_regtype := (
+  acc     => (others => '0'),
+  state   => (others => '0'),
+  start   => '0',
+  ready   => '0',
+  nready  => '0');
+constant MACRES : mac_regtype := (
+  mmac    => '0',
+  xmac    => '0',
+  msigned => '0',
+  xsigned => '0');
 
 signal rm, rmin : mul_regtype;
 signal mm, mmin : mac_regtype;
@@ -285,7 +300,10 @@ begin
 
 -- drive result and condition codes
     if (muli.flush = '1') then v.state := "00"; v.start := '0'; end if;
-    if (rst = '0') then v.nready := '0'; v.ready := '0'; v.state := "00"; v.start := '0'; end if;
+    if (not RESET_ALL) and (rst = '0') then
+      v.nready := MULRES.nready; v.ready := MULRES.ready;
+      v.state := MULRES.state; v.start := MULRES.start;
+    end if;
     rmin <= v; ma <= mop1; mb <= mop2; mmin <= w;
     if MULPIPE then mulo.ready <= rm.ready; mulo.nready <= rm.nready;
     else mulo.ready <= v.ready; mulo.nready <= v.nready;   end if;
@@ -341,6 +359,10 @@ begin
           mm <= mmin;
           mreg(33 downto 0) <= prod(33 downto 0);
 	end if;
+        if RESET_ALL and (rst = '0') then
+          mm <= MACRES;
+          mreg(33 downto 0) <= (others => '0');
+        end if;
       end if;
     end process;
     mreg(49 downto 34) <= (others => '0');
@@ -373,8 +395,13 @@ begin
   begin
     if rising_edge(clk) then
       if (holdn = '1') then rm <= rmin; end if;
-      if (rst = '0') then -- needed to preserve sync resets in synopsys ...
-	rm.nready <= '0'; rm.ready <= '0'; rm.state <= "00"; rm.start <= '0';
+      if (rst = '0') then
+        if RESET_ALL then
+          rm <= MULRES;
+        else
+          rm.nready <= MULRES.nready; rm.ready <= MULRES.ready;
+          rm.state <= MULRES.state; rm.start <= MULRES.start;
+        end if;
       end if;
     end if;
   end process;

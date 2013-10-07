@@ -59,7 +59,7 @@ constant SIM_BYPASS_INIT_CAL : string := "FAST";
 
 
   constant promfile  : string  := "prom.srec";        -- rom contents
-  constant sdramfile : string  := "sdram.srec";       -- sdram contents
+  constant sdramfile : string  := "ram.srec";       -- sdram contents
 
   constant lresp    : boolean := false;
   constant ct       : integer := clkperiod/2;
@@ -173,7 +173,21 @@ component ddr3_model is
 end component ddr3_model;
 
 
+---------------------pcie----------------------------------------------
+signal cor_sys_reset_n : std_logic := '1';
+signal ep_sys_clk_p    : std_logic;
+signal ep_sys_clk_n    : std_logic;
+signal rp_sys_clk      : std_logic;
+
+signal cor_pci_exp_txn : std_logic_vector(CFG_NO_OF_LANES-1 downto 0);
+signal cor_pci_exp_txp : std_logic_vector(CFG_NO_OF_LANES-1 downto 0);
+signal cor_pci_exp_rxn : std_logic_vector(CFG_NO_OF_LANES-1 downto 0);
+signal cor_pci_exp_rxp : std_logic_vector(CFG_NO_OF_LANES-1 downto 0);
+
+---------------------pcie end---------------------------------------------
+
 begin
+
   -- clock and reset
   clk        <= not clk after ct * 1 ns;
   clk200p    <= not clk200p after 2.5 ns;
@@ -263,6 +277,13 @@ begin
 	sysace_mpoe => sysace_mpoe,
         sysace_mpwe => sysace_mpwe, 
 	sysace_d => sysace_d,
+        pci_exp_txp=> cor_pci_exp_txp,
+        pci_exp_txn=> cor_pci_exp_txn,
+        pci_exp_rxp=> cor_pci_exp_rxp,
+        pci_exp_rxn=> cor_pci_exp_rxn,
+        sys_clk_p=> ep_sys_clk_p,   
+        sys_clk_n=> ep_sys_clk_n,
+        sys_reset_n=> cor_sys_reset_n,
         led => led
       );
 

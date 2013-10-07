@@ -17,10 +17,10 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Entity: 	tbufmem
--- File:	tbufmem.vhd
--- Author:	Jiri Gaisler - Gaisler Research
--- Description:	128-bit trace buffer memory (CPU/AHB)
+-- Entity:      tbufmem
+-- File:        tbufmem.vhd
+-- Author:      Jiri Gaisler - Gaisler Research
+-- Description: 128-bit trace buffer memory (CPU/AHB)
 ------------------------------------------------------------------------------
 
 library ieee;
@@ -56,7 +56,7 @@ begin
     ram0 : syncram64 generic map (tech => tech, abits => addrbits, testen => testen)
       port map ( clk, di.addr(addrbits-1 downto 0), di.data(((i*64)+63) downto (i*64)),
                  do.data(((i*64)+63) downto (i*64)), enable ,di.write(i*2+1 downto i*2),
-		 di.diag);
+                 di.diag);
   end generate;
 end;
   

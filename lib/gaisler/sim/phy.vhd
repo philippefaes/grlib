@@ -47,7 +47,8 @@ entity phy is
     base1000_x_hd : integer range 0 to 1  := 0;
     base1000_t_fd : integer range 0 to 1  := 1;
     base1000_t_hd : integer range 0 to 1  := 1;
-    rmii          : integer range 0 to 1  := 0
+    rmii          : integer range 0 to 1  := 0;
+    rgmii         : integer range 0 to 1  := 0
     );
   port(
     rstn     : in std_logic;
@@ -645,11 +646,22 @@ begin
         else
           rxd(1 downto 0) <= txd(1 downto 0);
         end if;
+        if rgmii = 1 then
+           if (gtx_clk = '1' and tx_en = '0') then
+              rxd(3 downto 0) <= r.ctrl.duplexmode & r.ctrl.speedsel & r.status.linkstat;
+           end if;
+        end if;  
         rx_clk <= '0'; tx_clk <= '0';
+        
       end if;
     else
       rx_col <= '0'; rx_crs <= '0'; rx_dv <= '0'; rx_er <= '0';
-      rxd <= (others => '0');
+      rxd <= (others => '0');      
+      if rgmii = 1 then
+         if (gtx_clk = '1') then
+            rxd(3 downto 0) <= r.ctrl.duplexmode & r.ctrl.speedsel & r.status.linkstat;
+         end if;
+      end if;  
       if rmii = 0 then
         if r.ctrl.speedsel /= "01" then
           rx_clk <= int_clk; tx_clk <= int_clk after 3 ns;

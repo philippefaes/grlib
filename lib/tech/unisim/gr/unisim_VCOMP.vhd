@@ -1480,6 +1480,125 @@ end component;
        RST : in std_ulogic
     );
   end component;
+
+  component PLL_ADV
+  generic (
+     BANDWIDTH : string := "OPTIMIZED";
+     CLKFBOUT_DESKEW_ADJUST : string := "NONE";
+     CLKFBOUT_MULT : integer := 1;
+     CLKFBOUT_PHASE : real := 0.0;
+     CLKIN1_PERIOD : real := 0.000;
+     CLKIN2_PERIOD : real := 0.000;
+     CLKOUT0_DESKEW_ADJUST : string := "NONE";
+     CLKOUT0_DIVIDE : integer := 1;
+     CLKOUT0_DUTY_CYCLE : real := 0.5;
+     CLKOUT0_PHASE : real := 0.0;
+     CLKOUT1_DESKEW_ADJUST : string := "NONE";
+     CLKOUT1_DIVIDE : integer := 1;
+     CLKOUT1_DUTY_CYCLE : real := 0.5;
+     CLKOUT1_PHASE : real := 0.0;
+     CLKOUT2_DESKEW_ADJUST : string := "NONE";
+     CLKOUT2_DIVIDE : integer := 1;
+     CLKOUT2_DUTY_CYCLE : real := 0.5;
+     CLKOUT2_PHASE : real := 0.0;
+     CLKOUT3_DESKEW_ADJUST : string := "NONE";
+     CLKOUT3_DIVIDE : integer := 1;
+     CLKOUT3_DUTY_CYCLE : real := 0.5;
+     CLKOUT3_PHASE : real := 0.0;
+     CLKOUT4_DESKEW_ADJUST : string := "NONE";
+     CLKOUT4_DIVIDE : integer := 1;
+     CLKOUT4_DUTY_CYCLE : real := 0.5;
+     CLKOUT4_PHASE : real := 0.0;
+     CLKOUT5_DESKEW_ADJUST : string := "NONE";
+     CLKOUT5_DIVIDE : integer := 1;
+     CLKOUT5_DUTY_CYCLE : real := 0.5;
+     CLKOUT5_PHASE : real := 0.0;
+     CLK_FEEDBACK : string := "CLKFBOUT";
+     COMPENSATION : string := "SYSTEM_SYNCHRONOUS";
+     DIVCLK_DIVIDE : integer := 1;
+     EN_REL : boolean := FALSE;
+     PLL_PMCD_MODE : boolean := FALSE;
+     REF_JITTER : real := 0.100;
+     RESET_ON_LOSS_OF_LOCK : boolean := FALSE;
+     RST_DEASSERT_CLK : string := "CLKIN1";
+     SIM_DEVICE : string := "VIRTEX5"
+  );
+  port (
+     CLKFBDCM : out std_ulogic := '0';
+     CLKFBOUT : out std_ulogic := '0';
+     CLKOUT0 : out std_ulogic := '0';
+     CLKOUT1 : out std_ulogic := '0';
+     CLKOUT2 : out std_ulogic := '0';
+     CLKOUT3 : out std_ulogic := '0';
+     CLKOUT4 : out std_ulogic := '0';
+     CLKOUT5 : out std_ulogic := '0';
+     CLKOUTDCM0 : out std_ulogic := '0';
+     CLKOUTDCM1 : out std_ulogic := '0';
+     CLKOUTDCM2 : out std_ulogic := '0';
+     CLKOUTDCM3 : out std_ulogic := '0';
+     CLKOUTDCM4 : out std_ulogic := '0';
+     CLKOUTDCM5 : out std_ulogic := '0';
+     DO : out std_logic_vector(15 downto 0);
+     DRDY : out std_ulogic := '0';
+     LOCKED : out std_ulogic := '0';
+     CLKFBIN : in std_ulogic;
+     CLKIN1 : in std_ulogic;
+     CLKIN2 : in std_ulogic;
+     CLKINSEL : in std_ulogic;
+     DADDR : in std_logic_vector(4 downto 0);
+     DCLK : in std_ulogic;
+     DEN : in std_ulogic;
+     DI : in std_logic_vector(15 downto 0);
+     DWE : in std_ulogic;
+     REL : in std_ulogic;
+     RST : in std_ulogic
+  );
+  end component;
+  
+  component PLL_BASE
+  generic (
+     BANDWIDTH : string := "OPTIMIZED";
+     CLKFBOUT_MULT : integer := 1;
+     CLKFBOUT_PHASE : real := 0.0;
+     CLKIN_PERIOD : real := 0.000;
+     CLKOUT0_DIVIDE : integer := 1;
+     CLKOUT0_DUTY_CYCLE : real := 0.5;
+     CLKOUT0_PHASE : real := 0.0;
+     CLKOUT1_DIVIDE : integer := 1;
+     CLKOUT1_DUTY_CYCLE : real := 0.5;
+     CLKOUT1_PHASE : real := 0.0;
+     CLKOUT2_DIVIDE : integer := 1;
+     CLKOUT2_DUTY_CYCLE : real := 0.5;
+     CLKOUT2_PHASE : real := 0.0;
+     CLKOUT3_DIVIDE : integer := 1;
+     CLKOUT3_DUTY_CYCLE : real := 0.5;
+     CLKOUT3_PHASE : real := 0.0;
+     CLKOUT4_DIVIDE : integer := 1;
+     CLKOUT4_DUTY_CYCLE : real := 0.5;
+     CLKOUT4_PHASE : real := 0.0;
+     CLKOUT5_DIVIDE : integer := 1;
+     CLKOUT5_DUTY_CYCLE : real := 0.5;
+     CLKOUT5_PHASE : real := 0.0;
+     CLK_FEEDBACK : string := "CLKFBOUT";
+     COMPENSATION : string := "SYSTEM_SYNCHRONOUS";
+     DIVCLK_DIVIDE : integer := 1;
+     REF_JITTER : real := 0.100;
+     RESET_ON_LOSS_OF_LOCK : boolean := FALSE
+  );
+  port (
+     CLKFBOUT : out std_ulogic;
+     CLKOUT0 : out std_ulogic;
+     CLKOUT1 : out std_ulogic;
+     CLKOUT2 : out std_ulogic;
+     CLKOUT3 : out std_ulogic;
+     CLKOUT4 : out std_ulogic;
+     CLKOUT5 : out std_ulogic;
+     LOCKED : out std_ulogic;
+     CLKFBIN : in std_ulogic;
+     CLKIN : in std_ulogic;
+     RST : in std_ulogic
+  );
+  end component;
   
   component BUFGMUX port (O : out std_logic; I0, I1, S : in std_logic); end component;
   component BUFG port (O : out std_logic; I : in std_logic); end component;
@@ -2321,6 +2440,38 @@ component IODELAY
 		RST : in std_ulogic;
 		T : in std_ulogic
 	);
+end component;
+
+component IODELAY2
+  generic (
+     COUNTER_WRAPAROUND : string := "WRAPAROUND";
+     DATA_RATE : string := "SDR";
+     DELAY_SRC : string := "IO";
+     IDELAY2_VALUE : integer := 0;
+     IDELAY_MODE : string := "NORMAL";
+     IDELAY_TYPE : string := "DEFAULT";
+     IDELAY_VALUE : integer := 0;
+     ODELAY_VALUE : integer := 0;
+     SERDES_MODE : string := "NONE";
+     SIM_TAPDELAY_VALUE : integer := 75
+  );
+  port (
+     BUSY : out std_ulogic;
+     DATAOUT : out std_ulogic;
+     DATAOUT2 : out std_ulogic;
+     DOUT : out std_ulogic;
+     TOUT : out std_ulogic;
+     CAL : in std_ulogic;
+     CE : in std_ulogic;
+     CLK : in std_ulogic;
+     IDATAIN : in std_ulogic;
+     INC : in std_ulogic;
+     IOCLK0 : in std_ulogic;
+     IOCLK1 : in std_ulogic;
+     ODATAIN : in std_ulogic;
+     RST : in std_ulogic;
+     T : in std_ulogic
+  );
 end component;
 
 component ISERDES

@@ -22,7 +22,13 @@
 #define CONFIG_SYN_TECH stratix2
 #elif defined CONFIG_SYN_STRATIXIII
 #define CONFIG_SYN_TECH stratix3
+#elif defined CONFIG_SYN_STRATIXIV
+#define CONFIG_SYN_TECH stratix4
+#elif defined CONFIG_SYN_CYCLONEII
+#define CONFIG_SYN_TECH stratix2
 #elif defined CONFIG_SYN_CYCLONEIII
+#define CONFIG_SYN_TECH cyclone3
+#elif defined CONFIG_SYN_CYCLONEIV
 #define CONFIG_SYN_TECH cyclone3
 #elif defined CONFIG_SYN_EASIC45
 #define CONFIG_SYN_TECH easic45

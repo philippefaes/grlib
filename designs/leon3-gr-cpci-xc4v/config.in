@@ -3,7 +3,7 @@
 #
 # Written by Jiri Gaisler, Gaisler Research
 #
-# Comments and bug reports to jiri@gaisler.com
+# Comments and bug reports to support@gaisler.com
 #
 #
 
@@ -11,7 +11,7 @@
 
 define_bool CONFIG_HAS_SHARED_GRFPU y
 
-mainmenu_name "LEON3MP GR-CPCI-XC4V Design Configuration"
+mainmenu_name "LEON3MP Design Configuration"
 
 mainmenu_option next_comment
   comment 'Synthesis      '
@@ -72,24 +72,24 @@ comment 'Peripherals             '
   comment 'PCI              '
     mainmenu_option next_comment
     comment 'GRPCI1         '
-    source lib/gaisler/pci/pci_target.in
-    source lib/gaisler/pci/pci_mtf.in
-    source lib/gaisler/pci/pcidma.in
-    source lib/gaisler/pci/pci.in
+    source lib/gaisler/pci/grpci1/pci_target.in
+    source lib/gaisler/pci/grpci1/pci_mtf.in
+    source lib/gaisler/pci/grpci1/pcidma.in
+    source lib/gaisler/pci/grpci1/pci.in
     endmenu
     mainmenu_option next_comment
     comment 'GRPCI2         '
       source lib/gaisler/pci/grpci2/grpci2.in
     endmenu
     source lib/esa/pci/pci_arb.in
-    source lib/gaisler/pci/pcitrace.in
+    source lib/gaisler/pci/pcitrace/pcitrace.in
   endmenu
 
   mainmenu_option next_comment
   comment 'UARTs, timers and I/O port         '
     source lib/gaisler/uart/uart1.in
     source lib/gaisler/uart/uart2.in
-    source lib/gaisler/leon3/irqmp.in
+    source lib/gaisler/irqmp/irqmp.in
     source lib/gaisler/misc/gptimer.in
     source lib/gaisler/misc/grgpio.in
   endmenu

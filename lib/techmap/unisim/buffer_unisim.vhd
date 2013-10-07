@@ -28,7 +28,6 @@ use ieee.std_logic_1164.all;
 library unisim;
 use unisim.BUFGMUX;
 use unisim.BUFG;
-use unisim.BUFGDLL;
 -- pragma translate_on
 
 entity clkbuf_xilinx is
@@ -41,7 +40,6 @@ entity clkbuf_xilinx is
 end entity;
 
 architecture rtl of clkbuf_xilinx is
-  component BUFGDLL port (O : out std_logic; I : in std_logic); end component;
   component BUFGMUX port (O : out std_logic; I0, I1, S : in std_logic); end component;
   component BUFG port (O : out std_logic; I : in std_logic); end component;
   signal gnd  : std_ulogic;

@@ -34,7 +34,7 @@ use grlib.config_types.all;
 use grlib.stdlib.all;
 
 entity syncram256bw is
-  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0);
+  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0; custombits: integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -42,7 +42,10 @@ entity syncram256bw is
     dataout : out std_logic_vector (255 downto 0);
     enable  : in  std_logic_vector (31 downto 0);
     write   : in  std_logic_vector (31 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(32*custombits-1 downto 0);
+    customout:out std_logic_vector(32*custombits-1 downto 0));
 end;
 
 architecture rtl of syncram256bw is
@@ -110,11 +113,19 @@ architecture rtl of syncram256bw is
   end component;
 
   signal xenable, xwrite : std_logic_vector(31 downto 0);
-
+  signal custominx,customoutx: std_logic_vector(syncram_customif_maxwidth downto 0);
+  
 begin
 
   xenable <= enable when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
   xwrite <= write when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
+
+  custominx(custominx'high downto custombits) <= (others => '0');
+  custominx(custombits-1 downto 0) <= customin;
+
+  nocust: if has_sram256bw(tech)=0 or syncram_has_customif(tech)=0 generate
+    customoutx <= (others => '0');
+  end generate;
 
   s256 : if has_sram256bw(tech) = 1 generate
     uni : if (is_unisim(tech) = 1) generate 
@@ -125,7 +136,7 @@ begin
          port map (clk, address, datain(255 downto 128), dataout(255 downto 128),
 		xenable(31 downto 16), xwrite(31 downto 16));
     end generate;
-    alt : if (tech = stratix2) or (tech = stratix3) or 
+    alt : if (tech = stratix2) or (tech = stratix3) or (tech = stratix4) or 
 	(tech = cyclone3) or (tech = altera) generate
       x0 : altera_syncram256bw generic map (abits)
          port map (clk, address, datain, dataout, xenable, xwrite);
@@ -140,6 +151,9 @@ begin
       x0 : cmos9sf_syncram256bw generic map (abits)
          port map (clk, address, datain, dataout, xenable, xwrite, testin);
     end generate;
+
+    customout(custombits-1 downto 0) <= customoutx(custombits-1 downto 0);
+    
 -- pragma translate_off
     dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
       x : process
@@ -156,9 +170,11 @@ begin
 
   nos256 : if has_sram256bw(tech) = 0 generate
     rx : for i in 0 to 31 generate
-      x0 : syncram generic map (tech, abits, 8, testen)
+      x0 : syncram generic map (tech, abits, 8, testen, custombits)
          port map (clk, address, datain(i*8+7 downto i*8), 
-	    dataout(i*8+7 downto i*8), enable(i), write(i), testin);
+	    dataout(i*8+7 downto i*8), enable(i), write(i), testin,
+                   customclk, customin((i+1)*custombits-1 downto i*custombits),
+                   customout((i+1)*custombits-1 downto i*custombits));
     end generate;
   end generate;
 

@@ -28,7 +28,7 @@ library techmap;
 use techmap.gencomp.all;
 use techmap.allddr.all;
 
-entity ddr_oreg is generic ( tech : integer);
+entity ddr_oreg is generic (tech : integer; arch : integer := 0);
   port
     ( Q : out std_ulogic;
       C1 : in std_ulogic;
@@ -70,7 +70,7 @@ begin
   end generate;
 
   xil : if is_unisim(tech) = 1 generate
-    xil0 : unisim_oddr_reg generic map (tech)
+    xil0 : unisim_oddr_reg generic map (tech, arch)
 	port map (Q, C1, C2, CE, D1, D2, R, S);
   end generate;
 

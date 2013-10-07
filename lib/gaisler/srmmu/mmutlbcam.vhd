@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 library gaisler;
@@ -53,6 +55,10 @@ architecture rtl of mmutlbcam is
   type tlbcam_rtype is record
     btag     : tlbcam_reg;
   end record;
+
+  constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+  constant RRES : tlbcam_rtype := (btag => tlbcam_reg_none);
+  
   signal r,c : tlbcam_rtype;
 
 begin  
@@ -182,8 +188,8 @@ begin
     end if;
 
     --# reset
-    if (rst = '0' or tlbcami.mmuen = '0') then
-      v.btag.VALID := '0';
+    if ((not RESET_ALL) and (rst = '0')) or (tlbcami.mmuen = '0') then
+      v.btag.VALID := RRES.btag.VALID;
     end if;
     
     tlbcamo_pteout(PTE_PPN_U downto PTE_PPN_D) := r.btag.PPN;
@@ -210,7 +216,13 @@ begin
   end process p0;
   
   p1: process (clk)
-  begin if rising_edge(clk) then r <= c; end if;
+  begin
+    if rising_edge(clk) then
+      r <= c;
+      if RESET_ALL and (rst = '0') then
+        r <= RRES;
+      end if;
+    end if;
   end process p1;
   
 end rtl;

@@ -256,8 +256,8 @@ set_instance_assignment -name MAX_DATA_ARRIVAL_SKEW "100 ps" -from "ddrspa:\ddrs
 set_instance_assignment -name ADV_NETLIST_OPT_ALLOWED "NEVER ALLOW" -to "full_2s60:inst|ddr_sdram:the_ddr_sdram|ddr_sdram_auk_ddr_sdram:ddr_sdram_auk_ddr_sdram_inst|ddr_sdram_auk_ddr_datapath:ddr_io|ddr_sdram_auk_ddr_dqs_group:\\g_datapath:0:g_ddr_io"
 set_instance_assignment -name REMOVE_DUPLICATE_REGISTERS OFF -to "full_2s60:inst|ddr_sdram:the_ddr_sdram|ddr_sdram_auk_ddr_sdram:ddr_sdram_auk_ddr_sdram_inst|ddr_sdram_auk_ddr_datapath:ddr_io|ddr_sdram_auk_ddr_dqs_group:\\g_datapath:0:g_ddr_io"
 
-set_instance_assignment -name CUT ON -from "clkgen:clkgen0|clkgen_cycloneiii:\cyc3:v|cyclone3_pll:sdclk_pll|altpll:\sden:altpll0|altpll_esv:auto_generated|clk[0]" -to "ddrspa:\ddrsp0:ddrc0|ddr_phy:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]"
-set_instance_assignment -name CUT ON -from "ddrspa:\ddrsp0:ddrc0|ddr_phy:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]" -to "clkgen:clkgen0|clkgen_cycloneiii:\cyc3:v|cyclone3_pll:sdclk_pll|altpll:\sden:altpll0|altpll_esv:auto_generated|clk[0]"
+set_instance_assignment -name CUT ON -from "clkgen:clkgen0|clkgen_cycloneiii:\cyc3:v|cyclone3_pll:sdclk_pll|altpll:\sden:altpll0|altpll_esv:auto_generated|clk[0]" -to "ddrspa:\ddrsp0:ddrc0|ddrphy_wrap_cdb:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]"
+set_instance_assignment -name CUT ON -from "ddrspa:\ddrsp0:ddrc0|ddrphy_wrap_cbd:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]" -to "clkgen:clkgen0|clkgen_cycloneiii:\cyc3:v|cyclone3_pll:sdclk_pll|altpll:\sden:altpll0|altpll_esv:auto_generated|clk[0]"
 
 set_global_assignment -name FMAX_REQUIREMENT "50.0 MHz"
 

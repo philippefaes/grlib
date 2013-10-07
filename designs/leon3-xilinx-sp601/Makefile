@@ -36,13 +36,13 @@ VHDLSIMFILES=testbench.vhd
 SIMTOP=testbench
 SDCFILE=$(GRLIB)/boards/$(BOARD)/default.sdc
 BITGEN=$(GRLIB)/boards/$(BOARD)/default.ut
-CLEAN=soft-clean
+CLEAN=soft-clean migclean
 
 TECHLIBS = secureip unisim
 
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
 	tmtc openchip ihp usbhc spw
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
+DIRSKIP = b1553 pci/pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
 	usb grusbhc spacewire ascs slink hcan \
 	leon4 leon4v0 l2cache pwm gr1553b iommu
 FILEADD=MCB.vhd
@@ -55,17 +55,16 @@ include $(GRLIB)/software/leon3/Makefile
 ##################  project specific targets ##########################
 
 mig:
+	cp -r grlib_mig/mig37 .
 	coregen -b mig37/mig.xco -p mig37
 
-migclean:
-	-rm -rf mig37/mig_37* mig37/tmp
-
 mig39:
+	cp -r grlib_mig/mig39 .
 	coregen -b mig39/mig.xco -p mig39
-	patch -p0 < mig_patch.txt
-	patch -p0 < mcb_soft_calibration_patch.txt
+	patch -p0 < grlib_mig/mig_patch.txt
+	patch -p0 < grlib_mig/mcb_soft_calibration_patch.txt
 
-mig39clean:
-	-rm -rf mig39/mig_39* mig39/tmp
+migclean:
+	-rm -rf mig37 mig39
 
-.PHONY : mig mig39 mig39clean
+.PHONY : migclean

@@ -36,7 +36,7 @@ use grlib.stdlib.all;
 
 entity syncrambw is
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
-    testen : integer := 0);
+    testen : integer := 0; custombits: integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits-1 downto 0);
@@ -44,7 +44,10 @@ entity syncrambw is
     dataout : out std_logic_vector (dbits-1 downto 0);
     enable  : in  std_logic_vector (dbits/8-1 downto 0);
     write   : in  std_logic_vector (dbits/8-1 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector((dbits/8)*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector((dbits/8)*custombits-1 downto 0));
 end;
 
 architecture rtl of syncrambw is
@@ -54,6 +57,7 @@ architecture rtl of syncrambw is
   constant SCANTESTBP : boolean := (testen = 1) and (tech /= 0) and (tech /= ut90);
 
   signal xenable, xwrite : std_logic_vector(dbits/8-1 downto 0);
+  signal custominx,customoutx: std_logic_vector(syncram_customif_maxwidth downto 0);
   
 begin
 
@@ -93,6 +97,10 @@ begin
       x0 : n2x_syncram_be generic map (abits, dbits)
          port map (clk, address, datain, dataout, xenable, xwrite);
     end generate;
+
+    customout(customout'high downto custombits) <= (others => '0');
+    customout(custombits-1 downto 0) <= customoutx(custombits-1 downto 0);
+    
 -- pragma translate_off
     dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
       x : process
@@ -108,12 +116,21 @@ begin
 
   nosbw : if has_srambw(tech) = 0 generate
     rx : for i in 0 to dbits/8-1 generate
-      x0 : syncram generic map (tech, abits, 8, testen)
+      x0 : syncram generic map (tech, abits, 8, testen, custombits)
          port map (clk, address, datain(i*8+7 downto i*8), 
-	    dataoutx(i*8+7 downto i*8), enable(i), write(i), testin);
+	    dataoutx(i*8+7 downto i*8), enable(i), write(i), testin,
+                   customclk, customin((i+1)*custombits-1 downto i*custombits),
+                   customout((i+1)*custombits-1 downto i*custombits));
     end generate;
     dataout <= dataoutx;
   end generate;
 
+  custominx(custominx'high downto (dbits/8)*custombits) <= (others => '0');
+  custominx((dbits/8)*custombits-1 downto 0) <= customin;
+
+  nocust: if has_srambw(tech)=0 or syncram_has_customif(tech)=0 generate
+    customoutx <= (others => '0');
+  end generate;
+  
 end;
 

@@ -263,6 +263,8 @@ begin
       edclsepahb     => ethi.edclsepahb,
       edcldisable    => ethi.edcldisable);
 
+  etho.tx_clk <= '0';                   -- driven in rgmii component
+
   irqdrv : process(irq)
   begin
     apbo.pirq       <= (others => '0');
@@ -292,19 +294,6 @@ begin
       port map(clk, rxrenable, rxraddress(fabits-1 downto 0), rxrdata, clk,
       rxwrite, rxwaddress(fabits-1 downto 0), rxwdata, ahbmi.testin);
   end generate;
-
-  ft1 : if ft /= 0 generate
-    tx_fifo0 : syncram_2pft generic map(tech => memtech, abits => fabits,
-      dbits => 32, sepclk => 0, ft => ft, testen => scanen)
-      port map(clk, txrenable, txraddress(fabits-1 downto 0), txrdata, clk,
-      txwrite, txwaddress(fabits-1 downto 0), txwdata, open, ahbmi.testin);
-
-    rx_fifo0 : syncram_2pft generic map(tech => memtech, abits => fabits,
-      dbits => 32, sepclk => 0, ft => ft, testen => scanen)
-      port map(clk, rxrenable, rxraddress(fabits-1 downto 0), rxrdata, clk,
-      rxwrite, rxwaddress(fabits-1 downto 0), rxwdata, open, ahbmi.testin);
-  end generate;
-
 -------------------------------------------------------------------------------
 -- EDCL buffer ram ------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -316,16 +305,6 @@ begin
       clk, erenable, eraddress(eabits-1 downto 0), erdata(15 downto 0), clk,
       ewritel, ewaddressl(eabits-1 downto 0), ewdata(15 downto 0), ahbmi.testin);
   end generate;
-
-  edclramft1 : if (edcl /= 0) and (edclft /= 0) generate
-    r0 : syncram_2pft generic map (memtech, eabits, 16, 0, 0, edclft, scanen) port map (
-      clk, erenable, eraddress(eabits-1 downto 0), erdata(31 downto 16), clk,
-      ewritem, ewaddressm(eabits-1 downto 0), ewdata(31 downto 16), open, ahbmi.testin);
-    r1 : syncram_2pft generic map (memtech, eabits, 16, 0, 0, edclft, scanen) port map (
-      clk, erenable, eraddress(eabits-1 downto 0), erdata(15 downto 0), clk,
-      ewritel, ewaddressl(eabits-1 downto 0), ewdata(15 downto 0), open, ahbmi.testin);
-  end generate;
-  
 -- pragma translate_off
   bootmsg : report_version 
   generic map (

@@ -129,7 +129,7 @@ architecture rtl of leon3mp is
   signal wpo        : wprot_out_type;
   signal sdi        : sdctrl_in_type;
   signal sdo        : sdram_out_type;
-  signal sdo2, sdo3 : sdctrl_out_type;
+  signal sdo2       : sdctrl_out_type;
   
   --for smc lan chip
   signal s_eth_aen   : std_logic; 
@@ -254,7 +254,7 @@ begin
     cpu : for i in 0 to NCPU-1 generate
       u0 : leon3s                         -- LEON3 processor
         generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU, CFG_V8,
-                   0, CFG_MAC, pclow, 0, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE,
+                   0, CFG_MAC, pclow, CFG_NOTAG, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE,
                    CFG_ISETSZ, CFG_ILOCK, CFG_DCEN, CFG_DREPL, CFG_DSETS, CFG_DLINE, CFG_DSETSZ,
                    CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
                    CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP,
@@ -304,7 +304,7 @@ begin
     sr0 : srctrl generic map (hindex => 0, ramws => CFG_SRCTRL_RAMWS, 
 	romws => CFG_SRCTRL_PROMWS, ramaddr => 16#400#, 
 	prom8en => CFG_SRCTRL_8BIT, rmw => CFG_SRCTRL_RMW)
-    port map (rstn, clkm, ahbsi, ahbso(0), memi, memo, sdo3);
+    port map (rstn, clkm, ahbsi, ahbso(0), memi, memo, sdo2);
     apbo(0) <= apb_none;
   end generate;
 
@@ -346,8 +346,8 @@ begin
   wpn <= '1'; byten <= '0';
 
   nosd0 : if (CFG_MCTRL_LEON2 = 0) generate 	-- no SDRAM controller
-     sdcke_pad : outpad generic map (tech => padtech) port map (sdcke, sdo3.sdcke(0));
-     sdcsn_pad : outpad generic map (tech => padtech) port map (sdcsn, sdo3.sdcsn(0));
+     sdcke_pad : outpad generic map (tech => padtech) port map (sdcke, vcc(0));
+     sdcsn_pad : outpad generic map (tech => padtech) port map (sdcsn, vcc(0));
   end generate;
 
   memi.brdyn  <= '1'; memi.bexcn <= '1';
@@ -469,7 +469,7 @@ begin
 
   ahbramgen : if CFG_AHBRAMEN = 1 generate
     ahbram0 : ahbram generic map (hindex => 3, haddr => CFG_AHBRADDR,
-                                  tech   => CFG_MEMTECH, kbytes => CFG_AHBRSZ)
+                                  tech   => CFG_MEMTECH, kbytes => CFG_AHBRSZ, pipe => CFG_AHBRPIPE)
       port map (rstn, clkm, ahbsi, ahbso(3));
   end generate;
   nram : if CFG_AHBRAMEN = 0 generate ahbso(3) <= ahbs_none; end generate;
@@ -501,12 +501,10 @@ begin
 -----------------------------------------------------------------------
 
 -- pragma translate_off
-  x : report_version 
+  x : report_design
   generic map (
    msg1 => "LEON3 Altera EP2C60 SDR Demonstration design",
-   msg2 => "GRLIB Version " & tost(LIBVHDL_VERSION/1000) & "." & tost((LIBVHDL_VERSION mod 1000)/100)
-      & "." & tost(LIBVHDL_VERSION mod 100) & ", build " & tost(LIBVHDL_BUILD),
-   msg3 => "Target technology: " & tech_table(fabtech) & ",  memory library: " & tech_table(memtech),
+   fabtech => tech_table(fabtech), memtech => tech_table(memtech),
    mdel => 1
   );
 -- pragma translate_on

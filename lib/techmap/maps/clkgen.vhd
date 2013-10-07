@@ -59,7 +59,8 @@ entity clkgen is
     clk1xu  : out std_logic;			-- unscaled 1X clock
     clk2xu  : out std_logic;			-- unscaled 2X clock
     clkb    : out std_logic;            -- Proasic3/Fusion clkB
-    clkc    : out std_logic);           -- Proasic3/Fusion clkC
+    clkc    : out std_logic;            -- Proasic3/Fusion clkC
+    clk8x   : out std_logic);           -- 8x clock
 end;
 
 architecture struct of clkgen is
@@ -75,7 +76,7 @@ begin
     ;
     clk1xu <= intclk; pciclk <= pciclkin; clk <= intclk; clkn <= not intclk;
     cgo.clklock <= '1'; cgo.pcilock <= '1'; clk2x <= '0'; clk4x <= '0';
-    clkb <= '0'; clkc <= '0';
+    clkb <= '0'; clkc <= '0'; clk8x <= '0';
   end generate;
   xc2v : if (tech = virtex2) or (tech = virtex4) generate
     v : clkgen_virtex2
@@ -90,7 +91,7 @@ begin
   xc7l : if (tech =virtex7) or (tech =kintex7) or (tech =artix7) or (tech =zynq7000) generate
     v : clkgen_virtex7
     generic map (clk_mul, clk_div, freq)
-    port map (clkin, clk, cgi, cgo);
+    port map (clkin, clk, clkn, clk2x ,cgi, cgo);
   end generate;
   xc3s : if (tech = spartan3) or (tech = spartan3e) or (tech = spartan6) generate
     v : clkgen_spartan3
@@ -112,7 +113,7 @@ begin
    generic map (clk_mul, clk_div, sdramen, noclkfb, pcien, pcidll, pcisysclk, freq, clk2xen)
    port map (clkin, pciclkin, clk, clkn, clk2x, sdclk, pciclk, cgi, cgo);
   end generate;
-  stra3 : if (tech = stratix3) generate
+  stra3 : if (tech = stratix3) or (tech = stratix4) generate
    v : clkgen_stratixiii
    generic map (clk_mul, clk_div, sdramen, noclkfb, pcien, pcidll, pcisysclk, freq, clk2xen)
    port map (clkin, pciclkin, clk, clkn, clk2x, sdclk, pciclk, cgi, cgo);
@@ -185,8 +186,9 @@ begin
   end generate;
   dr : if (tech = rhumc)  generate
    v : clkgen_dare
+   generic map (noclkfb)
    port map (clkin, clk, clk2x, sdclk, pciclk,
-	cgi, cgo, clk4x, clk1xu, clk2xu);
+	cgi, cgo, clk4x, clk1xu, clk2xu, clk8x);
   end generate;
 
   nextreme90 : if tech = easic90 generate

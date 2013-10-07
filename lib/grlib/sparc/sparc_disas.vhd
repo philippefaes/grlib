@@ -31,6 +31,7 @@ use ieee.numeric_std.all;
 library grlib;
 use grlib.stdlib.all;
 use grlib.sparc.all;
+use grlib.testlib.print;
 use std.textio.all;
 
 package sparc_disas is

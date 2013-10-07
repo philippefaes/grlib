@@ -38,6 +38,7 @@ package spacewire is
     rmapnodeaddr: std_logic_vector(7 downto 0);
     dcrstval    : std_logic_vector(9 downto 0);
     timerrstval : std_logic_vector(11 downto 0);
+    nd          : std_logic_vector(9 downto 0);
   end record;
 
   type grspw_out_type is record
@@ -52,16 +53,17 @@ package spacewire is
     rxdataout   : std_logic_vector(8 downto 0);
     rxdav       : std_ulogic;
     loopback    : std_ulogic;
+    rxrst       : std_ulogic;
   end record;
 
   constant grspw_in_none : grspw_in_type :=
     ((others => '0'), (others => '0'), (others => '0'),
      (others => '0'), '0', '0', (others => '0'), (others => '0'), '0',
-     (others => '0'), (others => '0'), (others => '0'));
+     (others => '0'), (others => '0'), (others => '0'), (others => '0'));
 
   constant grspw_out_none : grspw_out_type :=
     ((others => '0'), (others => '0'), '0', '0', '0', (others => '0'),
-     '0', '0', (others => '0'), '0', '0');
+     '0', '0', (others => '0'), '0', '0', '0');
 
   type grspw_codec_in_type is record
     --spw
@@ -128,7 +130,9 @@ package spacewire is
     --time iface
     tickin       : std_ulogic;
     timein       : std_logic_vector(7 downto 0);
+    --rmap iface
     rmapen       : std_ulogic;
+    rmapnodeaddr : std_logic_vector(7 downto 0);
   end record;
 
   type grspw_dma_out_type is record
@@ -218,6 +222,7 @@ package spacewire is
     instanceid   : std_logic_vector(7 downto 0);
     enbridge     : std_logic_vector(30 downto 0);
     enexttime    : std_logic_vector(30 downto 0);
+    nodeaddr     : std_logic_vector(7 downto 0);
   end record;
 
   type grspw_router_out_type is record
@@ -238,7 +243,7 @@ package spacewire is
     ((others => '0'), (others => '0'), (others => '0'), (others => (others => '0')),
      (others => '0'), (others => '0'), (others => (others => '0')), (others => '0'),
      (others => '0'), '0', '0', '0', '0', '0', '0', (others => '0'), (others => '0'),
-     (others => '0'));
+     (others => '0'), (others => '0'));
 
   constant grspw_router_out_none : grspw_router_out_type :=
     ((others => '0'), (others => '0'), (others => '0'), (others => '0'),
@@ -249,6 +254,25 @@ package spacewire is
     ahb_mst_out_type;
   type spw_apb_slv_out_vector is array (natural range <>) of
     apb_slv_out_type;
+
+  component grspw_phy is
+    generic(
+      tech          : integer              := 0;
+      rxclkbuftype  : integer range 0 to 2 := 0;
+      scantest      : integer range 0 to 1 := 0
+      );
+    port(
+      rxrst    : in  std_ulogic;
+      di       : in  std_ulogic;
+      si       : in  std_ulogic;
+      rxclko   : out std_ulogic;
+      do       : out std_ulogic;
+      ndo      : out std_logic_vector(4 downto 0);
+      dconnect : out std_logic_vector(1 downto 0);
+      testen   : in  std_ulogic := '0';
+      testclk  : in  std_ulogic := '0'
+      );
+  end component;
 
   component grspw2_phy is
     generic(
@@ -349,6 +373,7 @@ package spacewire is
     port(
       rst        : in  std_ulogic;
       clk        : in  std_ulogic;
+      rxclk      : in  std_logic_vector(1 downto 0);
       txclk      : in  std_ulogic;
       ahbmi      : in  ahb_mst_in_type;
       ahbmo      : out ahb_mst_out_type;
@@ -476,7 +501,9 @@ package spacewire is
       dualport     : integer range 0 to 1 := 0;
       charcntbits  : integer range 0 to 32 := 0;
       pktcntbits   : integer range 0 to 32 := 0;
-      prescalermin : integer := 250
+      prescalermin : integer := 250;
+      simple       : integer range 0 to 1 := 0;
+      nodeaddr     : integer range 0 to 255 := 254
       );
     port(
       rst          : in  std_ulogic;
@@ -511,7 +538,7 @@ package spacewire is
       pirq         : integer range 0 to NAHBIRQ-1 := 0;
       paddr        : integer range 0 to 16#FFF# := 0;
       pmask        : integer range 0 to 16#FFF# := 16#FFF#;
-      rmap         : integer range 0 to 1  := 0;
+      rmap         : integer range 0 to 2  := 0;
       rmapcrc      : integer range 0 to 1  := 0;
       fifosize1    : integer range 4 to 32 := 32;
       fifosize2    : integer range 16 to 2048 := 64;
@@ -521,7 +548,8 @@ package spacewire is
       dmachan      : integer range 1 to 4 := 1;
       tech         : integer range 0 to NTECH := inferred;
       techfifo     : integer range 0 to 7 := 1;
-      ft           : integer range 0 to 2 := 0
+      ft           : integer range 0 to 2 := 0;
+      nodeaddr     : integer range 0 to 255 := 254
     );
     port(
       rst          : in   std_ulogic;

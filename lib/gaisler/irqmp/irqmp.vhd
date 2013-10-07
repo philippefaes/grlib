@@ -27,6 +27,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 use grlib.devices.all;
@@ -79,6 +81,17 @@ type ereg_type is record
   ipend		: std_logic_vector(15 downto 0);
   irl    	: irl2_type;
 end record;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RRES : reg_type := (
+  imask => (others => (others => '0')), ilevel => (others => '0'),
+  ipend => (others => '0'), iforce => (others => (others => '0')),
+  ibroadcast => (others => '0'), irl => (others => (others => '0')),
+  cpurst => (others => '0'));
+constant ERES : ereg_type := (
+  imask => (others => (others => '0')), ipend => (others => '0'),
+  irl => (others => (others => '0')));
+  
 
 function prioritize(b : std_logic_vector(15 downto 0)) return std_logic_vector is
 variable a : std_logic_vector(15 downto 0);
@@ -276,16 +289,12 @@ begin
 
 -- reset
 
-    if rst = '0' then
-      v.imask := (others => (others => '0'));
-      v.iforce := (others => (others => '0'));
-      v.ipend := (others => '0');
+    if (not RESET_ALL) and (rst = '0') then
+      v.imask := RRES.imask; v.iforce := RRES.iforce; v.ipend := RRES.ipend;
       if ncpu > 1 then
-        v.ibroadcast := (others => '0');
+        v.ibroadcast := RRES.ibroadcast;
       end if;
-      v2.ipend := (others => '0');
-      v2.imask := (others => (others => '0'));
-      v2.irl := (others => (others => '0'));
+      v2.ipend := ERES.ipend; v2.imask := ERES.imask; v2.irl := ERES.irl;
     end if;
 
     apbo.prdata <= prdata;
@@ -307,11 +316,21 @@ begin
   apbo.pindex <= pindex;
 
   regs : process(clk)
-  begin if rising_edge(clk) then r <= rin; end if; end process;
+  begin
+    if rising_edge(clk) then
+      r <= rin;
+      if RESET_ALL and (rst = '0') then r <= RRES; end if;
+    end if;
+  end process;
   
   dor2regs : if eirq /= 0 generate
     regs : process(clk)
-    begin if rising_edge(clk) then r2 <= r2in; end if; end process;
+    begin
+      if rising_edge(clk) then
+        r2 <= r2in;
+        if RESET_ALL and (rst = '0') then r2 <= ERES; end if;
+      end if;
+    end process;
   end generate;
   nor2regs : if eirq = 0 generate
 --    r2 <= ((others => "0000000000000000"), "0000000000000000", (others => "00000"));

@@ -58,8 +58,8 @@ end;
 architecture behav of testbench is
 
 constant promfile  : string := "prom.srec";  -- rom contents
-constant sramfile  : string := "sram.srec";  -- ram contents
-constant sdramfile : string := "sdram.srec"; -- sdram contents
+constant sramfile  : string := "ram.srec";  -- ram contents
+constant sdramfile : string := "ram.srec"; -- sdram contents
 
 signal clk : std_logic := '0';
 signal Rst : std_logic := '0';			-- Reset
@@ -82,8 +82,8 @@ signal txd2, rxd2 : std_logic;
 signal ctsn1, rtsn1 : std_ulogic;       
 signal ctsn2, rtsn2 : std_ulogic;       
 
-signal erx_dv, etx_en: std_logic:='0';
-signal erxd, etxd: std_logic_vector(7 downto 0):=(others=>'0');
+signal erx_dv, erx_dv_d, etx_en: std_logic:='0';
+signal erxd, erxd_d, etxd: std_logic_vector(7 downto 0):=(others=>'0');
 signal emdc, emdio: std_logic; --dummy signal for the mdc,mdio in the phy which is not used
 signal emdint : std_ulogic;
 signal etx_clk : std_ulogic;
@@ -111,13 +111,6 @@ signal spw_txdp : std_logic_vector(0 to CFG_SPW_NUM-1);
 signal spw_txdn : std_logic_vector(0 to CFG_SPW_NUM-1);
 signal spw_txsp : std_logic_vector(0 to CFG_SPW_NUM-1);
 signal spw_txsn : std_logic_vector(0 to CFG_SPW_NUM-1);
-
-signal usb_clkout    : std_ulogic := '0';
-signal usb_d         : std_logic_vector(7 downto 0);
-signal usb_nxt     : std_logic;
-signal usb_stp     : std_logic;
-signal usb_dir     : std_logic;
-signal usb_resetn  : std_ulogic;
 
 signal tft_lcd_data    : std_logic_vector(11 downto 0);
 signal tft_lcd_clk_p   : std_ulogic;
@@ -171,7 +164,7 @@ begin
 
   clk  <= not clk after ct * 1 ns;
   clk125  <= not clk125 after 4 ns;
-  erx_clk <= not erx_clk after 4 ns;
+  --erx_clk <= not erx_clk after 4 ns;
   clk2 <= '0'; --not clk2 after 5 ns;
   rst <= dsurst and wdogn; 
   rxd1 <= 'H'; ctsn1 <= '0';
@@ -179,9 +172,6 @@ begin
   ps2clk <= "HH"; ps2data <= "HH";
   pio(4) <= pio(5); pio(1) <= pio(2); pio <= (others => 'H');
   wdogn <= 'H';
-  nousbtr: if (CFG_GRUSBHC = 0) generate
-    usb_clkout  <= not usb_clkout after 8.33 ns;     -- ~60MHz
-  end generate nousbtr;
   switch(7) <= '1';
   switch(8) <= '0';
   emdio <= 'H';
@@ -197,7 +187,7 @@ begin
 	ddr_clk, ddr_clkb, ddr_cke, ddr_odt, ddr_we, ddr_ras, ddr_csb ,ddr_cas, ddr_dm,
 	ddr_dqs, ddr_dqsn, ddr_ad, ddr_ba, ddr_dq, ddr_rzq, ddr_zio,
 	txd1, rxd1, ctsn1, rtsn1, txd2, rxd2, ctsn2, rtsn2, pio, genio,
-        switch, led, erx_clk, emdio, erxd(3 downto 0), erx_dv, emdint,
+        switch, led, erx_clk, emdio, erxd(3 downto 0)'delayed(1 ns), erx_dv'delayed(1 ns), emdint,
 	etx_clk, etxd(3 downto 0), etx_en, emdc, 
 	ps2clk, ps2data, iic_scl, iic_sda, ddc_scl, ddc_sda,
 	dvi_iic_scl, dvi_iic_sda,
@@ -205,8 +195,6 @@ begin
 	tft_lcd_vsync, tft_lcd_de, tft_lcd_reset_b,
 	spw_clk, spw_rxdp, spw_rxdn,
         spw_rxsp,  spw_rxsn, spw_txdp, spw_txdn, spw_txsp, spw_txsn, 
-	usb_clkout,
-        usb_d, usb_nxt, usb_stp, usb_dir, usb_resetn,
 	spi_sel_n, spi_clk, spi_mosi
       );
 
@@ -240,14 +228,16 @@ begin
     emdio <= 'H'; 
     p0: phy
       generic map(address => 1)
-      port map(rst, emdio, open, open, erxd, erx_dv,
-        erx_er, erx_col, erx_crs, etxd, etx_en, etx_er, emdc, etx_clk);
+      port map(rst, emdio, open, erx_clk, erxd_d, erx_dv_d,
+        erx_er, erx_col, erx_crs, etxd, etx_en, etx_er, emdc, clk125);
   end generate;
 
-  usbtr: if (CFG_GRUSBHC = 1) generate
-    u0: ulpi
-      port map (usb_clkout, usb_d, usb_nxt, usb_stp, usb_dir, usb_resetn);
-  end generate usbtr;
+  rcxclkp : process(erx_clk) is
+  begin
+      erxd   <= erxd_d;
+      erx_dv <= erx_dv_d;
+  end process;
+
 
   data <= buskeep(data) after 5 ns;
 
@@ -352,5 +342,16 @@ begin
 
     wait;
   end process;
+
+  iuerr : process
+  begin
+    wait until dsurst = '1';
+    wait for 5000 ns;
+    if to_x01(errorn) = '1' then wait on errorn; end if;
+    assert (to_x01(errorn) = '1') 
+      report "*** IU in error mode, simulation halted ***"
+      severity failure ;
+  end process;
+
 end ;
 

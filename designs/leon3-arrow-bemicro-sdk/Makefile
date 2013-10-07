@@ -19,7 +19,7 @@ TECHLIBS = altera altera_mf cycloneiii
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
 	tmtc openchip ihp stratixii stratixiii spw \
 	oppencores
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
+DIRSKIP = b1553 pci/pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
 	grusbhc spacewire hcan leon4 leon4v0 l2cache iommu slink ascs pwm \
 	gr1553b usb 
 FILESKIP = grcan.vhd

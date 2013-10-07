@@ -34,6 +34,7 @@ entity bschain is
   port (
     -- Chain control signals
     chain_tck   : in std_ulogic;
+    chain_tckn  : in std_ulogic;
     chain_tdi   : in std_ulogic;
     chain_tdo   : out std_ulogic;
     bsshft      : in std_ulogic;
@@ -182,7 +183,7 @@ begin
   -- Scan chain registers (note: adjust order to match pad ring)
   sr1a: bscanregs
     generic map (tech => tech, nsigs => sr1i'length, dirmask => 2#00001#, enable => enable)
-    port map (sr1i, sr1o, chain_tck, sr1a_tdi, chain_tdo,
+    port map (sr1i, sr1o, chain_tck, chain_tckn, sr1a_tdi, chain_tdo,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
     
   sr1i <= Presetn & Pclksel & Pclk & Cerrorn;
@@ -191,29 +192,29 @@ begin
 
   sr1b: bscanregs
     generic map (tech => tech, nsigs => Paddress'length, dirmask => 16#3FFFFFFF#, enable => enable)
-    port map (Caddress, Paddress, chain_tck, sr1_tdi, sr1a_tdi,
+    port map (Caddress, Paddress, chain_tck, chain_tckn, sr1_tdi, sr1a_tdi,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
     
   sr2a: bscanregsbd
     generic map (tech => tech, nsigs => Pdataout'length, enable => enable, hzsup => hzsup)
     port map (Pdataout, Pdataen, Pdatain, Cdataout, Cdataen, Cdatain,
-              chain_tck, sr2a_tdi, sr1_tdi,
+              chain_tck, chain_tckn, sr2a_tdi, sr1_tdi,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
   
   sr2b: bscanregsbd
     generic map (tech => tech, nsigs => Pcbout'length, enable => enable, hzsup => hzsup)
     port map (Pcbout, Pcben, Pcbin, Ccbout, Ccben, Ccbin,
-              chain_tck, sr2_tdi, sr2a_tdi,
+              chain_tck, chain_tckn, sr2_tdi, sr2a_tdi,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
   
   sr3a: bscanregs
     generic map (tech => tech, nsigs => sr3i'length-30, dirmask => 2#11_11111111_10#, enable => enable)
-    port map (sr3i(sr3i'high downto 30), sr3o(sr3i'high downto 30), chain_tck, sr3a_tdi, sr2_tdi,
+    port map (sr3i(sr3i'high downto 30), sr3o(sr3i'high downto 30), chain_tck, chain_tckn, sr3a_tdi, sr2_tdi,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
 
   sr3b: bscanregs
     generic map (tech => tech, nsigs => 30, dirmask => 2#001101_01111111_11111111_11111001#, enable => enable)
-    port map (sr3i(29 downto 0), sr3o(29 downto 0), chain_tck, sr3_tdi, sr3a_tdi,
+    port map (sr3i(29 downto 0), sr3o(29 downto 0), chain_tck, chain_tckn, sr3_tdi, sr3a_tdi,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
   
   sr3i(41 downto 30) <= Csdclk & Csdcsn & Csdwen & Csdrasn & Csdcasn &
@@ -235,12 +236,12 @@ begin
   sr4: bscanregsbd
     generic map (tech => tech, nsigs => Pgpioin'length, enable => enable, hzsup => hzsup)
     port map (Pgpioout, Pgpioen, Pgpioin, Cgpioout, Cgpioen, Cgpioin,
-              chain_tck, sr4_tdi, sr3_tdi,
+              chain_tck, chain_tckn, sr4_tdi, sr3_tdi,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
 
   sr5: bscanregs
     generic map (tech => tech, nsigs => sr5i'length, dirmask => 2#00000011_10010101#, enable => enable)
-    port map (sr5i, sr5o, chain_tck, chain_tdi, sr4_tdi,
+    port map (sr5i, sr5o, chain_tck, chain_tckn, chain_tdi, sr4_tdi,
               bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
 
   sr5i <= Pprom32 & Ppromedac & Pspw_clksel & Pspw_clk & Pspw_rxd & Pspw_rxs &

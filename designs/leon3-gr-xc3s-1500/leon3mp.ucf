@@ -44,25 +44,28 @@ INST "clkgen0/xc3s.v/sd0.dll1" LOC = DCM_X0Y0;
 INST "clkgen0.xc3s.v.dll0" LOC = DCM_X1Y0;
 INST "clkgen0.xc3s.v.sd0.dll1" LOC = DCM_X0Y0;
 
-# ISE/XST constraints
-#NET "spw.swloop[0].sw0/rxclki" PERIOD = 10.0 ;
-#NET "spw.swloop[1].sw0/rxclki" PERIOD = 10.0 ;
-#NET "spw.swloop[2].sw0/rxclki" PERIOD = 10.0 ;
+#GRSPW in source code - ISE 13.02
+#INST "spw.swloop[0].spw1_input.spw_inputloop.spw_phy0/Mxor_rxclki_Result1" LOC = "SLICE_X0Y62";
+#INST "spw.swloop[1].spw1_input.spw_inputloop.spw_phy0/Mxor_rxclki_Result1" LOC = "SLICE_X0Y48";
+#INST "spw.swloop[2].spw1_input.spw_inputloop.spw_phy0/Mxor_rxclki_Result1" LOC = "SLICE_X0Y24";
+#INST "spw.swloop[2].spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop[2].spw1_input.spw_phy0/nr.shftreg_0" IOB="FALSE";
+#INST "spw.swloop[1].spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop[1].spw1_input.spw_phy0/nr.shftreg_0" IOB="FALSE";
+#INST "spw.swloop[0].spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop[0].spw1_input.spw_phy0/nr.shftreg_0" IOB="FALSE";
 
-# ISE/SYNPLIFY constraints
-#NET "spw.swloop.0.sw0/rxclki" PERIOD = 10.0 ;
-#NET "spw.swloop.1.sw0/rxclki" PERIOD = 10.0 ;
-#NET "spw.swloop.2.sw0/rxclki" PERIOD = 10.0 ;
+#GRSPW - Synplify G-2012.09-SP1
+#INST "spw.swloop.0.spw1_input.spw_phy0/rxclki_1" LOC = "SLICE_X0Y62";
+#INST "spw.swloop.1.spw1_input.spw_phy0/rxclki_1" LOC = "SLICE_X0Y48";
+#INST "spw.swloop.2.spw1_input.spw_phy0/rxclki_1" LOC = "SLICE_X0Y24";
+#INST "spw.swloop.2.spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop.2.spw1_input.spw_phy0/nr.shftreg[0]" IOB="FALSE";
+#INST "spw.swloop.1.spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop.1.spw1_input.spw_phy0/nr.shftreg[0]" IOB="FALSE";
+#INST "spw.swloop.0.spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop.0.spw1_input.spw_phy0/nr.shftreg[0]" IOB="FALSE";
 
-INST "spw.swloop.0.sw0/grspwc0/rxclko" LOC = "SLICE_X0Y62";
-INST "spw.swloop[0].sw0/grspwc0/rxclko" LOC = "SLICE_X0Y62";
-INST "spw.swloop.1.sw0/grspwc0/rxclko" LOC = "SLICE_X0Y48";
-INST "spw.swloop[1].sw0/grspwc0/rxclko" LOC = "SLICE_X0Y48";
-INST "spw.swloop.2.sw0/grspwc0/rxclko" LOC = "SLICE_X0Y24";
-INST "spw.swloop[2].sw0/grspwc0/rxclko" LOC = "SLICE_X0Y24";
-INST "sw00/grspwc0/rxclko" LOC = SLICE_X0Y62;
-INST "sw01/grspwc0/rxclko" LOC = SLICE_X0Y48;
-INST "sw02/grspwc0/rxclko" LOC = SLICE_X0Y24;
 
 NET "address(0)" LOC = "u16" | IOSTANDARD = LVTTL;
 NET "address(1)" LOC = "u17" | IOSTANDARD = LVTTL;
@@ -417,48 +420,6 @@ NET "pio(17)" LOC = "c11" | IOSTANDARD = LVTTL;  # led(3)
 #NET "can_stb(1)" LOC = "g4" | IOSTANDARD = LVTTL; #pio(3)
 #NET "can_rxd(1)" LOC = "g1" | IOSTANDARD = LVTTL; #pio(4)
 #NET "can_txd(1)" LOC = "g2" | IOSTANDARD = LVTTL; #pio(5) 
-
-NET "ata_rstn"     LOC = "d22" | IOSTANDARD = LVTTL; #genio(20)
-NET "ata_data(7)"  LOC = "g17" | IOSTANDARD = LVTTL; #genio(21)
-NET "ata_data(6)"  LOC = "e21" | IOSTANDARD = LVTTL; #genio(22)
-NET "ata_data(5)"  LOC = "g22" | IOSTANDARD = LVTTL; #genio(23)
-NET "ata_data(4)"  LOC = "g21" | IOSTANDARD = LVTTL; #genio(24)
-NET "ata_data(3)"  LOC = "g19" | IOSTANDARD = LVTTL; #genio(25)
-NET "ata_data(2)"  LOC = "h22" | IOSTANDARD = LVTTL; #genio(26)
-NET "ata_data(1)"  LOC = "g18" | IOSTANDARD = LVTTL; #genio(27)
-NET "ata_data(0)"  LOC = "j18" | IOSTANDARD = LVTTL; #genio(28)
-#NET "genio(29)"   LOC = "j21" | IOSTANDARD = LVTTL; #genio(29) / not used
-NET "ata_dmarq"    LOC = "j22" | IOSTANDARD = LVTTL | PULLDOWN; #genio(30) / DMARQ
-NET "ata_diow"     LOC = "h21" | IOSTANDARD = LVTTL; #genio(31) / nDIOW
-NET "ata_dior"     LOC = "k22" | IOSTANDARD = LVTTL; #genio(32) / DIOR
-NET "ata_iordy"    LOC = "k21" | IOSTANDARD = LVTTL | PULLUP; #genio(33) / IORDY
-NET "ata_dmack"    LOC = "k18" | IOSTANDARD = LVTTL; #genio(34) / nDMACK
-NET "ata_intrq"    LOC = "l19" | IOSTANDARD = LVTTL | PULLDOWN; #genio(35) / INTRQ
-NET "ata_da(1)"    LOC = "l18" | IOSTANDARD = LVTTL; #genio(36) / DA1
-NET "ata_da(0)"    LOC = "k17" | IOSTANDARD = LVTTL; #genio(37) / DA0
-NET "ata_cs0"      LOC = "l17" | IOSTANDARD = LVTTL; #genio(38) / nCS0
-NET "ata_dasp"     LOC = "j17" | IOSTANDARD = LVTTL; #genio(39) / nDASP
-
-#NET "genio(40)"   LOC = "e19" | IOSTANDARD = LVTTL; #genio(40) / not used
-NET "ata_data(8)"  LOC = "f18" | IOSTANDARD = LVTTL; #genio(41)
-NET "ata_data(9)"  LOC = "e20" | IOSTANDARD = LVTTL; #genio(42)
-NET "ata_data(10)" LOC = "f19" | IOSTANDARD = LVTTL; #genio(43)
-NET "ata_data(11)" LOC = "f20" | IOSTANDARD = LVTTL; #genio(44)
-NET "ata_data(12)" LOC = "f21" | IOSTANDARD = LVTTL; #genio(45)
-NET "ata_data(13)" LOC = "e22" | IOSTANDARD = LVTTL; #genio(46)
-NET "ata_data(14)" LOC = "e18" | IOSTANDARD = LVTTL; #genio(47)
-NET "ata_data(15)" LOC = "g20" | IOSTANDARD = LVTTL; #genio(48)
-#NET "genio(49)"   LOC = "h19" | IOSTANDARD = LVTTL; #genio(49) / not used
-#NET "genio(50)"   LOC = "h18" | IOSTANDARD = LVTTL; #genio(50) / not used
-#NET "genio(51)"   LOC = "j19" | IOSTANDARD = LVTTL; #genio(51) / not used
-#NET "genio(52)"   LOC = "k20" | IOSTANDARD = LVTTL; #genio(52) / not used
-NET "ata_csel"    LOC = "k19" | IOSTANDARD = LVTTL; #genio(53) / Cable SEL
-#NET "genio(54)"   LOC = "l20" | IOSTANDARD = LVTTL; #genio(54) / not used
-#NET "genio(55)"   LOC = "l21" | IOSTANDARD = LVTTL; #genio(55) / not used
-#NET "genio(56)"   LOC = "m20" | IOSTANDARD = LVTTL; #genio(56) / nPDIAG
-NET "ata_da(2)"    LOC = "m19" | IOSTANDARD = LVTTL; #genio(57)
-NET "ata_cs1"      LOC = "m22" | IOSTANDARD = LVTTL; #genio(58)
-#NET "genio(59)"   LOC = "m21" | IOSTANDARD = LVTTL; #genio(59) 
 
 
 CONFIG PROHIBIT  = "aa14"; #"fpgadata" 

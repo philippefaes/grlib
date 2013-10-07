@@ -453,8 +453,14 @@ set_instance_assignment -name CUT ON -from "altera_eek_clkgen:\\lcd:lcdclkgen|cl
 #Cut between system clock and DDR clock
 #set_instance_assignment -name CUT ON -from "clkm" -to "clkml"
 #set_instance_assignment -name CUT ON -from "clkml" -to "clkm"
-set_instance_assignment -name CUT ON -from "clkm" -to "ddrspa:\ddrsp0:ddrc0|ddr_phy:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]"
-set_instance_assignment -name CUT ON -from "ddrspa:\ddrsp0:ddrc0|ddr_phy:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]" -to "clkm"
+set_instance_assignment -name CUT ON -from "clkm" -to "ddrspa:\ddrsp0:ddrc0|ddrphy_wrap_cbd:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]"
+set_instance_assignment -name CUT ON -from "ddrspa:\ddrsp0:ddrc0|ddrphy_wrap_cdb:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]" -to "clkm"
+
+set_instance_assignment -name CUT ON -from "clkm" -to "\ddrsp0:ddrc0|ddrphy_wrap_cbd:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]"
+set_instance_assignment -name CUT ON -from "\ddrsp0:ddrc0|ddrphy_wrap_cdb:ddr_phy0|ddrphy:ddr_phy0|cycloneiii_ddr_phy:\cyc3:ddr_phy0|apll:pll0|altpll:altpll_component|apll_altpll:auto_generated|wire_pll1_clk[0]" -to "clkm"
+
+
+
 
 set_instance_assignment -name CURRENT_STRENGTH_NEW 12MA -to ddr_clk
 set_instance_assignment -name IO_STANDARD "SSTL-2 CLASS I" -to ddr_clk

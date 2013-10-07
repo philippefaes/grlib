@@ -24,14 +24,13 @@ TECHLIBS = unisim
 
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
 	tmtc openchip ihp opencores usbhc spw
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
+DIRSKIP = b1553 pci/pcif leon2 leon2ft crypto satcan pci leon3ft ambatest can \
 	usb grusbhc spacewire synplicity hcan leon4 leon4v0 \
 	l2cache slink ascs pwm hynix gr1553b iommu
 FILESKIP = grcan.vhd i2cmst.vhd
 
 include $(GRLIB)/bin/Makefile
 include $(GRLIB)/software/leon3/Makefile
-#XLDFLAGS=-L./ lib3tests.a -Ttext=0x60000000
 
 
 ##################  project specific targets ##########################

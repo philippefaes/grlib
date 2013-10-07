@@ -11,8 +11,11 @@ CONFIG_SYN_INFERRED
   - Actel ProAsic/P/3, IGLOO and Axcelerator FPGAs
   - Aeroflex UT25CRH Rad-Hard 0.25 um CMOS
   - Altera: Most Altera FPGA families
+  - Altera-CycloneIII: Altera Cyclone-III/IV FPGA family
   - Altera-Stratix: Altera Stratix FPGA family
-  - Altera-StratixII: Altera Stratix-II FPGA family
+  - Altera-StratixII: Altera Stratix/Cyclone-II FPGA families
+  - Altera-StratixIII: Altera Stratix-III FPGA family
+  - Altera-StratixIV: Altera Stratix-III FPGA family
   - ATC18: Atmel-Nantes 0.18 um rad-hard CMOS
   - IHP25: IHP 0.25 um CMOS
   - IHP25RH: IHP Rad-Hard 0.25 um CMOS
@@ -259,6 +262,8 @@ CONFIG_IU_LDELAY
   One cycle gives best performance, but might create a critical path
   on targets with slow (data) cache memories. A 2-cycle delay can
   improve timing but will reduce performance with about 5%.
+
+  Note that the load delay must be 1 to support the CASA instruction.
 
 Reset address
 CONFIG_IU_RSTADDR
@@ -818,6 +823,11 @@ CONFIG_AHBRAM_START
   a 1 Mbyte slot at the selected address. Default is A00, corresponding
   to AHB address 0xA0000000.
 
+On-chip ram pipeline stage
+CONFIG_AHBRAM_PIPE
+  Set this option to add an extra pipeline stage to the read data of the 
+  on-chip RAM. This can improve timing, especially when the memory is 
+  large, at the cost of adding an additional cycle delay on read.
 Gaisler Ethernet MAC enable
 CONFIG_GRETH_ENABLE
   Say Y here to enable the Gaisler Research Ethernet MAC . The MAC has 

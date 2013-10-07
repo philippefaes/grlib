@@ -1,8 +1,8 @@
 -----------------------------------------------------------------------------
--- Entity: 	grfpushwx
--- File:	grfpushwx.vhd
--- Author:	Edvin Catovic - Gaisler Research
--- Description:	GRFPU (shared version) wrapper
+-- Entity:      grfpushwx
+-- File:        grfpushwx.vhd
+-- Author:      Edvin Catovic - Gaisler Research
+-- Description: GRFPU (shared version) wrapper
 ------------------------------------------------------------------------------
 
 library ieee;

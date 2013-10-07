@@ -34,7 +34,7 @@ Entity HY5PS121621F Is
      Part_Number     : PART_NUM_TYPE := B400;
      index           : integer := 0;
      bbits           : natural := 64;
-     fname           : string  := "sdram.srec";
+     fname           : string  := "ram.srec";
      fdelay          : integer  := 0);
   Port (  DQ    :  inout   std_logic_vector(15 downto 0) := (others => 'Z');
           LDQS  :  inout   std_logic := 'Z';

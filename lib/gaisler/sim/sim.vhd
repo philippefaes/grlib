@@ -57,7 +57,8 @@ package sim is
     abits: Positive := 10;		-- Default 10 address bits (1 Kbyte)
     echk : integer := 0;		-- Generate EDAC checksum
     tacc : integer := 10;		-- access time (ns)
-    fname : string := "ram.dat");	-- File to read from
+    fname : string := "ram.dat";	-- File to read from
+    clear : integer := 0);		-- Clear memory
   port (  
     a : in std_logic_vector(abits-1 downto 0);
     d : inout std_logic_vector(15 downto 0);
@@ -100,7 +101,8 @@ package sim is
       base1000_x_hd : integer range 0 to 1  := 0;
       base1000_t_fd : integer range 0 to 1  := 1;
       base1000_t_hd : integer range 0 to 1  := 1;
-      rmii          : integer range 0 to 1  := 0
+      rmii          : integer range 0 to 1  := 0;
+      rgmii         : integer range 0 to 1  := 0
       );
     port(
       rstn     : in std_logic;
@@ -119,6 +121,40 @@ package sim is
       gtx_clk  : in std_logic
       );
   end component;
+
+  component phy_sgmii is
+    generic (
+      INSTANCE_NUMBER          : integer := 0
+    );
+    port (
+      -- Physical Interface (Transceiver)
+      --------------------------------
+      txp                     : in  std_logic;
+      txn                     : in  std_logic;
+      rxp                     : out std_logic;
+      rxn                     : out std_logic;
+      -- GMII Interface
+      -----------------
+      gmii_tx_clk             : out std_logic;
+      gmii_rx_clk             : in std_logic;
+      gmii_txd                : out std_logic_vector(7 downto 0);
+      gmii_tx_en              : out std_logic;
+      gmii_tx_er              : out std_logic;
+      gmii_rxd                : in std_logic_vector(7 downto 0);
+      gmii_rx_dv              : in std_logic;
+      gmii_rx_er              : in std_logic;
+      -- Test bench speed selection
+      -----------------------------
+      speed_is_10_100         : in std_logic;
+      speed_is_100            : in std_logic;
+      -- Test Bench Semaphores
+      ------------------------
+      configuration_finished  : in  boolean;
+      tx_monitor_finished     : out boolean;
+      rx_monitor_finished     : out boolean
+      );
+  end component;
+
 
   procedure leon3_subtest(subtest : integer);
   procedure mctrl_subtest(subtest : integer);
@@ -374,7 +410,21 @@ package sim is
       ahbso: in ahb_slv_out_type
       );
   end component;
-  
+
+  component spwtrace is
+    generic (name: string );
+    port (d,s: in std_ulogic);
+  end component;
+
+  component spwtracev is
+    generic (
+      width: integer := 8;
+      prefix: string := "SPW#";
+      lono: integer := 0
+      );
+    port (d,s: in std_logic_vector(width-1 downto 0));
+  end component;
+
   procedure ps2_device (
     signal clk      : inout std_logic;
     signal data     : inout std_logic;

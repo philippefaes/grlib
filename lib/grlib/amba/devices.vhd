@@ -45,6 +45,7 @@ package devices is
   constant VENDOR_CONTRIB    : amba_vendor_type := 16#09#;
   constant VENDOR_DLR        : amba_vendor_type := 16#0A#;
   constant VENDOR_EONIC      : amba_vendor_type := 16#0B#;
+  constant VENDOR_TELECOMPT  : amba_vendor_type := 16#0C#;
   constant VENDOR_RADIONOR   : amba_vendor_type := 16#0F#;
   constant VENDOR_GLEICHMANN : amba_vendor_type := 16#10#;
   constant VENDOR_MENTA      : amba_vendor_type := 16#11#;
@@ -153,7 +154,8 @@ package devices is
   constant GAISLER_N2PLLCTRL : amba_device_type := 16#05B#;
   constant GAISLER_SPI2AHB   : amba_device_type := 16#05C#;
   constant GAISLER_DDRSDMUX  : amba_device_type := 16#05D#;
-
+  constant GAISLER_AHBFROM   : amba_device_type := 16#05E#;
+  constant GAISLER_PCIEXP    : amba_device_type := 16#05F#;
   constant GAISLER_APBPS2    : amba_device_type := 16#060#;
   constant GAISLER_VGACTRL   : amba_device_type := 16#061#;
   constant GAISLER_LOGAN     : amba_device_type := 16#062#;
@@ -170,7 +172,6 @@ package devices is
   constant GAISLER_SWITCHOVER: amba_device_type := 16#06D#;
   constant GAISLER_FIFOUART  : amba_device_type := 16#06E#;
   constant GAISLER_MUXCTRL   : amba_device_type := 16#06F#;
-
   constant GAISLER_B1553BC   : amba_device_type := 16#070#;
   constant GAISLER_B1553RT   : amba_device_type := 16#071#;
   constant GAISLER_B1553BRM  : amba_device_type := 16#072#;
@@ -186,7 +187,7 @@ package devices is
   constant GAISLER_GRPCI2    : amba_device_type := 16#07C#;
   constant GAISLER_GRPCI2_DMA: amba_device_type := 16#07D#;
   constant GAISLER_GRPCI2_TB : amba_device_type := 16#07E#;
-
+  constant GAISLER_MMA       : amba_device_type := 16#07F#;
   constant GAISLER_SATCAN    : amba_device_type := 16#080#;
   constant GAISLER_CANMUX    : amba_device_type := 16#081#;
   constant GAISLER_GRTMRX    : amba_device_type := 16#082#;
@@ -203,9 +204,11 @@ package devices is
   constant GAISLER_GRPWTX    : amba_device_type := 16#08D#;
   constant GAISLER_GRPWRX    : amba_device_type := 16#08E#;
   constant GAISLER_GPREGBANK : amba_device_type := 16#08F#;
-
   constant GAISLER_MIG_SERIES7   : amba_device_type := 16#090#;
-
+  constant GAISLER_SPWBIST   : amba_device_type := 16#091#;
+  constant GAISLER_SGMII     : amba_device_type := 16#092#;
+  constant GAISLER_RGMII     : amba_device_type := 16#093#;
+  constant GAISLER_IRQGEN    : amba_device_type := 16#094#;
 
 -- Sun Microsystems
 
@@ -351,6 +354,7 @@ package devices is
   constant GAISLER_GR703        : system_device_type := 16#0703#;
   constant GAISLER_DARE1        : system_device_type := 16#0704#;
   constant GAISLER_GR712RC      : system_device_type := 16#0712#;
+  constant GAISLER_SPWRTRASIC   : system_device_type := 16#0718#;
   constant AEROFLEX_UT840       : system_device_type := 16#0840#;
 
 -- pragma translate_off
@@ -399,6 +403,7 @@ package devices is
    GAISLER_GPIO      => "General Purpose I/O port       ",
    GAISLER_AHBROM    => "Generic AHB ROM                ",
    GAISLER_AHB2AHB   => "AHB-to-AHB Bridge              ",
+   GAISLER_AHBDMA    => "Simple AHB DMA controller      ",
    GAISLER_NUHOSP3   => "Nuhorizons Spartan3 IO I/F     ",
    GAISLER_CLKGATE   => "Clock gating unit              ",
    GAISLER_FTAHBRAM  => "Generic FT AHB SRAM module     ",
@@ -436,6 +441,7 @@ package devices is
    GAISLER_GRPCI2    => "GRPCI2 PCI/AHB bridge          ",
    GAISLER_GRPCI2_DMA=> "GRPCI2 DMA interface           ",
    GAISLER_GRPCI2_TB => "GRPCI2 Trace buffer            ",
+   GAISLER_MMA       => "Memory Mapped AMBA             ",
    GAISLER_ECC       => "Elliptic Curve Cryptography    ",
    GAISLER_PCIF      => "AMBA Wrapper for CorePCIF      ",
    GAISLER_USBDC     => "GR USB 2.0 Device Controller   ",
@@ -495,8 +501,14 @@ package devices is
    GAISLER_GPREGBANK => "General Purpose Register Bank  ",
    GAISLER_SPI2AHB   => "SPI to AHB Bridge              ",
    GAISLER_DDRSDMUX  => "Muxed FT DDR/SDRAM controller  ",
+   GAISLER_AHBFROM   => "Flash ROM Memory               ",
+   GAISLER_PCIEXP    => "Xilinx PCI EXPRESS Wrapper     ",
    GAISLER_MIG_SERIES7 => "Xilinx MIG DDR3 Controller     ",
-
+   GAISLER_SPWBIST   => "GRSPW Router BIST              ",
+   GAISLER_SGMII     => "XILINX SGMII Interface         ",
+   GAISLER_RGMII     => "Gaisler RGMII Interface        ",
+   GAISLER_IRQGEN    => "Interrupt generator            ",
+   
    others            => "Unknown Device                 ");
 
    constant gaisler_lib : vendor_library_type := (
@@ -685,6 +697,17 @@ package devices is
      device_table      => eonic_device_table
    );
 
+  constant telecompt_device_table : device_table_type := (
+   others              => "Unknown Device                 ");
+
+  constant TELECOMPT_DESC : vendor_description :=  "Telecom ParisTech       ";
+
+  constant telecompt_lib : vendor_library_type := (
+     vendorid 	       => VENDOR_TELECOMPT,
+     vendordesc        => TELECOMPT_DESC,
+     device_table      => telecompt_device_table
+   );
+  
   constant radionor_device_table : device_table_type := (
    others              => "Unknown Device                 ");
 
@@ -788,6 +811,7 @@ package devices is
     VENDOR_CONTRIB     => contrib_lib,
     VENDOR_DLR         => dlr_lib,
     VENDOR_EONIC       => eonic_lib,
+    VENDOR_TELECOMPT   => telecompt_lib,
     VENDOR_GLEICHMANN  => gleichmann_lib,
     VENDOR_MENTA       => menta_lib,
     VENDOR_EMBEDDIT    => embeddit_lib,
@@ -804,32 +828,33 @@ package devices is
   type system_table_type is array (0 to 4095) of device_description;
 
   constant system_table : system_table_type := (
-   LEON3_NEXTREME1   => "LEON3 eASIC Nextreme controller",
-   LEON4_NEXTREME1   => "LEON4 eASIC Nextreme SoC       ",
-   LEON3_ACT_FUSION  => "LEON3 Actel Fusion Dev. board  ",
-   LEON3_RTAX_CID2   => "LEON3FT RTAX Configuration 2   ",
-   LEON3_RTAX_CID5   => "LEON3FT RTAX Configuration 5   ",
-   LEON3_RTAX_CID6   => "LEON3FT RTAX Configuration 6   ",
-   LEON3_RTAX_CID7   => "LEON3FT RTAX Configuration 7   ",
-   LEON3_RTAX_CID8   => "LEON3FT RTAX Configuration 8   ",
-   ALTERA_DE2        => "Altera DE2 Development board   ",
-   XILINX_ML401      => "Xilinx ML401 Development board ",
-   XILINX_ML501      => "Xilinx ML501 Development board ",
-   XILINX_ML505      => "Xilinx ML505 Development board ",
-   XILINX_ML506      => "Xilinx ML506 Development board ",
-   XILINX_ML507      => "Xilinx ML507 Development board ",
-   XILINX_ML509      => "Xilinx ML509 Development board ",
-   XILINX_ML510      => "Xilinx ML510 Development board ",
-   XILINX_SP601      => "Xilinx SP601 Development board ",
-   XILINX_ML605      => "Xilinx ML605 Development board ",
-   AEROFLEX_UT699    => "Aeroflex UT699 Rad-Hard CPU    ",
-   AEROFLEX_UT700    => "Aeroflex UT700 Rad-Hard CPU    ",
-   GAISLER_DARE1     => "Gaisler DARE1 Rad-Hard CPU     ",
-   GAISLER_GR712RC   => "Gaisler GR712RC Rad-Hard CPU   ",
-   NGMP_PROTOTYPE    => "NGMP Prototype System-on-Chip  ",
-   NGMP_PROTOTYPE2   => "NGMP Prototype System-on-Chip  ",
-   ORBITA_OBTMP      => "Orbita LEON4 prototype system  ",
-   others            => "Unknown system                 ");
+   LEON3_NEXTREME1    => "LEON3 eASIC Nextreme controller",
+   LEON4_NEXTREME1    => "LEON4 eASIC Nextreme SoC       ",
+   LEON3_ACT_FUSION   => "LEON3 Actel Fusion Dev. board  ",
+   LEON3_RTAX_CID2    => "LEON3FT RTAX Configuration 2   ",
+   LEON3_RTAX_CID5    => "LEON3FT RTAX Configuration 5   ",
+   LEON3_RTAX_CID6    => "LEON3FT RTAX Configuration 6   ",
+   LEON3_RTAX_CID7    => "LEON3FT RTAX Configuration 7   ",
+   LEON3_RTAX_CID8    => "LEON3FT RTAX Configuration 8   ",
+   ALTERA_DE2         => "Altera DE2 Development board   ",
+   XILINX_ML401       => "Xilinx ML401 Development board ",
+   XILINX_ML501       => "Xilinx ML501 Development board ",
+   XILINX_ML505       => "Xilinx ML505 Development board ",
+   XILINX_ML506       => "Xilinx ML506 Development board ",
+   XILINX_ML507       => "Xilinx ML507 Development board ",
+   XILINX_ML509       => "Xilinx ML509 Development board ",
+   XILINX_ML510       => "Xilinx ML510 Development board ",
+   XILINX_SP601       => "Xilinx SP601 Development board ",
+   XILINX_ML605       => "Xilinx ML605 Development board ",
+   AEROFLEX_UT699     => "Aeroflex UT699 Rad-Hard CPU    ",
+   AEROFLEX_UT700     => "Aeroflex UT700 Rad-Hard CPU    ",
+   GAISLER_DARE1      => "Gaisler DARE1 Rad-Hard CPU     ",
+   GAISLER_GR712RC    => "Gaisler GR712RC Rad-Hard CPU   ",
+   NGMP_PROTOTYPE     => "NGMP Prototype System-on-Chip  ",
+   NGMP_PROTOTYPE2    => "NGMP Prototype System-on-Chip  ",
+   ORBITA_OBTMP       => "Orbita LEON4 prototype system  ",
+   GAISLER_SPWRTRASIC => "Gaisler SpaceWire Router ASIC  ",
+   others             => "Unknown system                 ");
 
 -- pragma translate_on
 

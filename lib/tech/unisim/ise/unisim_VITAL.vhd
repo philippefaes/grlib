@@ -1943,6 +1943,1876 @@ begin
   end process VITALTimingCheck;
 end CLKDLLHF_V;
 
+
+-------------------------------------------------------------------------------
+-- Copyright (c) 1995/2004 Xilinx, Inc.
+-- All Right Reserved.
+-------------------------------------------------------------------------------
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /    Vendor : Xilinx
+-- \   \   \/     Version : 11.1
+--  \   \         Description : Xilinx Functional Simulation Library Component
+--  /   /                  Digital Clock Manager
+-- /___/   /\     Filename : DCM_SP.vhd
+-- \   \  /  \    Timestamp : Fri Jun 18 10:57:08 PDT 2004
+--  \___\/\___\
+--
+-- Revision:
+--    03/06/06 - Initial version.
+--    05/09/06 - Add clkin_ps_mkup and clkin_ps_mkup_win for phase shifting (CR 229789).
+--    06/14/06 - Add period_int2 and period_int3 for multiple cycle phase shifting (CR 233283).
+--        07/21/06 - Change range of variable phase shifting to +/- integer of 20*(Period-3ns).
+--               Give warning not support initial phase shifting for variable phase shifting.
+--               (CR 235216).
+--    09/22/06 - Add lock_period and lock_fb to clkfb_div block (CR 418722).
+--    12/19/06 - Add clkfb_div_en for clkfb2x divider (CR431210).
+--    04/06/07 - Enable the clock out in clock low time after reset in model
+--               clock_divide_by_2  (CR 437471).
+--    07/10/07 - Remove modulaton of ps_delay_md for none and fixed delay type (CR441155)
+--    08/29/07 - Change delay of lock_fb_dly to 0.75*period, same as verilog (CR447628).
+--    01/22/08 - Add () to ps_in * period_in of ps_delay_md calculation (CR466293)
+--    02/21/08 - Align clk2x to both clk0 pos and neg edges. (CR467858).
+--    03/01/08 - Disable alignment of clkfb and clkin_fb check when ps_lock high (CR468893).
+--    03/20/08 - Not check clock lost when negative edge period smaller than positive
+--               edge period in dcm_adv_clock_lost module (CR469499).
+--             - always generate clk2x with even duty cycle regardless CLKIN duty cycle.(CR467858).
+--             - Remove -- from LOCKED <= for unisim model. (CR470138).
+--    05/13/08 - Change min input clock freq from 1.0Mhz to 0.2Mhz (CR467770)
+--    07/16/08 - remove condition for lock_out[0] when 2x feedback (CR476637).
+--    04/20/09 - Delay LOCKED (CR518620)
+--    12/03/09 - Add STATUS[5]=CLKFX STATUS[7]=CLKIN (CR538362)
+--    08/10/11 - change ps_max_range (CR618799).
+-- End Revision
+
+
+----- dcm_sp_clock_divide_by_2 -----
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+
+entity dcm_sp_clock_divide_by_2 is
+  port(
+    clock_out : out std_ulogic := '0';
+
+    clock : in std_ulogic;
+    clock_type : in integer;
+    rst : in std_ulogic
+    );
+end dcm_sp_clock_divide_by_2;
+
+architecture dcm_sp_clock_divide_by_2_V of dcm_sp_clock_divide_by_2 is
+  signal clock_div2 : std_ulogic := '0';
+  signal rst_reg : std_logic_vector(2 downto 0);
+  signal clk_src : std_ulogic;
+begin
+
+  CLKIN_DIVIDER : process
+  begin
+    if (rising_edge(clock)) then
+      clock_div2 <= not clock_div2;
+    end if;
+    wait on clock;
+  end process CLKIN_DIVIDER;
+
+  gen_reset : process
+  begin
+    if (rising_edge(clock)) then      
+      rst_reg(0) <= rst;
+      rst_reg(1) <= rst_reg(0) and rst;
+      rst_reg(2) <= rst_reg(1) and rst_reg(0) and rst;
+    end if;      
+    wait on clock;    
+  end process gen_reset;
+
+  clk_src <= clock_div2 when (clock_type = 1) else clock;
+
+  assign_clkout : process
+  begin
+    if (rst = '0') then
+      clock_out <= clk_src;
+    elsif (rst = '1') then
+      clock_out <= '0';
+      wait until falling_edge(rst_reg(2));
+      if (clk_src = '1') then
+         wait until falling_edge(clk_src);
+      end if;
+    end if;
+    wait on clk_src, rst, rst_reg;
+  end process assign_clkout;
+end dcm_sp_clock_divide_by_2_V;
+
+----- dcm_sp_maximum_period_check  -----
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+
+library STD;
+use STD.TEXTIO.all;
+
+entity dcm_sp_maximum_period_check is
+  generic (
+    InstancePath : string := "*";
+
+    clock_name : string := "";
+    maximum_period : time);
+  port(
+    clock : in std_ulogic;
+    rst : in std_ulogic
+    );
+end dcm_sp_maximum_period_check;
+
+architecture dcm_sp_maximum_period_check_V of dcm_sp_maximum_period_check is
+begin
+
+  MAX_PERIOD_CHECKER : process
+    variable clock_edge_previous : time := 0 ps;
+    variable clock_edge_current : time := 0 ps;
+    variable clock_period : time := 0 ps;
+    variable Message : line;
+  begin
+
+   if (rising_edge(clock)) then
+    clock_edge_previous := clock_edge_current;
+    clock_edge_current := NOW;
+
+    if (clock_edge_previous > 0 ps) then
+      clock_period := clock_edge_current - clock_edge_previous;
+    end if;
+
+    if (clock_period > maximum_period and  rst = '0') then
+      Write ( Message, string'(" Warning : Input Clock Period of "));
+      Write ( Message, clock_period );
+      Write ( Message, string'(" on the ") );
+      Write ( Message, clock_name );      
+      Write ( Message, string'(" port ") );      
+      Write ( Message, string'(" of DCM_SP instance ") );
+      Write ( Message, string'(" exceeds allowed value of ") );
+      Write ( Message, maximum_period );
+      Write ( Message, string'(" at simulation time ") );
+      Write ( Message, clock_edge_current );
+      Write ( Message, '.' & LF );
+      assert false report Message.all severity warning;
+      DEALLOCATE (Message);
+    end if;
+   end if;
+    wait on clock;
+  end process MAX_PERIOD_CHECKER;
+end dcm_sp_maximum_period_check_V;
+
+----- dcm_sp_clock_lost  -----
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+
+entity dcm_sp_clock_lost is
+  port(
+    lost : out std_ulogic := '0';
+
+    clock : in std_ulogic;
+    enable : in boolean := false;
+    rst :  in std_ulogic    
+    );
+end dcm_sp_clock_lost;
+
+architecture dcm_sp_clock_lost_V of dcm_sp_clock_lost is
+  signal period : time := 0 ps;
+  signal period_neg : time := 0 ps;
+  signal period_tmp_win : time := 0 ps;
+  signal period_neg_tmp_win : time := 0 ps;
+  signal period_chk_win : time := 0 ps;
+  signal lost_r : std_ulogic := '0';
+  signal lost_f : std_ulogic := '0';
+  signal lost_sig : std_ulogic := '0';  
+  signal clock_negedge, clock_posedge : integer := 0;
+  signal clock_low, clock_high : integer := 0;
+  signal clock_second_pos, clock_second_neg : integer := 0;
+begin
+  determine_period : process(clock,rst)
+    variable clock_edge_previous : time := 0 ps;
+    variable clock_edge_current : time := 0 ps;
+    variable period_tmp : time := 0 ps;
+  begin
+      if (rst = '1') then
+        period <= 0 ps;
+      elsif (rising_edge(clock)) then
+        clock_edge_previous := clock_edge_current;
+        clock_edge_current := NOW;
+        period_tmp := clock_edge_current - clock_edge_previous;
+        if (period /= 0 ps and (period_tmp <= period_tmp_win)) then
+          period <= period_tmp;
+        elsif (period /= 0 ps and (period_tmp > period_tmp_win)) then
+          period <= 0 ps;
+        elsif ((period = 0 ps) and (clock_edge_previous /= 0 ps) and (clock_second_pos = 1)) then
+          period <= period_tmp;
+        end if;
+      end if;
+  end process determine_period;
+                                                                                  
+  period_15_p : process(period) begin
+     period_tmp_win <= 1.5 * period;
+     period_chk_win <= (period * 9.1) / 10;
+  end process;
+
+  determine_period_neg : process(clock,rst)
+    variable clock_edge_neg_previous : time := 0 ps;
+    variable clock_edge_neg_current : time := 0 ps;
+    variable period_neg_tmp : time := 0 ps;
+  begin
+      if (rst = '1') then
+        period_neg <= 0 ps;
+      elsif (falling_edge(clock)) then
+        clock_edge_neg_previous := clock_edge_neg_current;
+        clock_edge_neg_current := NOW;
+        period_neg_tmp := clock_edge_neg_current - clock_edge_neg_previous;
+        if (period_neg /= 0 ps and (period_neg_tmp <= period_neg_tmp_win)) then
+          period_neg <= period_neg_tmp;
+        elsif (period_neg /= 0 ps and (period_neg_tmp > period_neg_tmp_win)) then
+          period_neg <= 0 ps;
+        elsif ((period_neg = 0 ps) and (clock_edge_neg_previous /= 0 ps) and (clock_second_neg = 1)) then
+          period_neg <= period_neg_tmp;
+        end if;
+      end if;
+  end process determine_period_neg;
+                                                                                  
+  period_15_neg_p : process(period_neg) begin
+     period_neg_tmp_win <= 1.5 * period_neg;
+  end process;
+
+
+  CLOCK_LOST_CHECKER : process(clock, rst)
+  begin
+      if (rst = '1') then
+        clock_low <= 0;
+        clock_high <= 0;
+        clock_posedge <= 0;              
+        clock_negedge <= 0;
+      else
+        if (rising_edge(clock)) then
+          clock_low <= 0;
+          clock_high <= 1;
+          clock_posedge <= 0;              
+          clock_negedge <= 1;
+        end if;
+        if (falling_edge(clock)) then
+          clock_high <= 0;
+          clock_low <= 1;
+          clock_posedge <= 1;
+          clock_negedge <= 0;
+        end if;
+      end if;
+  end process CLOCK_LOST_CHECKER;    
+
+  CLOCK_SECOND_P : process(clock, rst)
+    begin
+      if (rst = '1') then
+        clock_second_pos <= 0;
+        clock_second_neg <= 0;
+    else
+      if (rising_edge(clock)) then
+        clock_second_pos <= 1;
+      end if;
+      if (falling_edge(clock)) then
+          clock_second_neg <= 1;
+      end if;
+    end if;
+  end process CLOCK_SECOND_P;
+
+  SET_RESET_LOST_R : process
+    begin
+    if (rst = '1') then
+      lost_r <= '0';
+    else
+      if ((enable = true) and (clock_second_pos = 1))then
+        if (rising_edge(clock)) then
+          wait for 1 ps;                      
+          if (period /= 0 ps) then
+            lost_r <= '0';        
+          end if;
+          wait for (period_chk_win);
+          if ((clock_low /= 1) and (clock_posedge /= 1) and (rst = '0')) then
+            lost_r <= '1';
+          end if;
+        end if;
+      end if;
+    end if;
+    wait on clock, rst;    
+  end process SET_RESET_LOST_R;
+
+  SET_RESET_LOST_F : process
+    begin
+      if (rst = '1') then
+        lost_f <= '0';
+      else
+        if ((enable = true) and (clock_second_neg = 1))then
+          if (falling_edge(clock)) then
+            if (period /= 0 ps) then      
+              lost_f <= '0';
+            end if;
+            wait for (period_chk_win);
+            if ((clock_high /= 1) and (clock_negedge /= 1) and (rst = '0') and (period <= period_neg) ) then
+              lost_f <= '1';
+            end if;      
+          end if;        
+        end if;
+      end if;
+    wait on clock, rst;    
+  end process SET_RESET_LOST_F;      
+
+  assign_lost : process(lost_r, lost_f)
+    begin
+      if (enable = true) then
+        if (lost_r'event) then
+          lost <= lost_r;
+        end if;
+        if (lost_f'event) then
+          lost <= lost_f;
+        end if;
+      end if;      
+    end process assign_lost;
+end dcm_sp_clock_lost_V;
+
+
+----- CELL DCM_SP  -----
+library IEEE;
+use IEEE.std_logic_1164.all;
+
+
+
+
+
+library STD;
+use STD.TEXTIO.all;
+
+library unisim;
+use unisim.VPKG.all;
+
+entity DCM_SP is
+  generic (
+    TimingChecksOn : boolean := true;
+    InstancePath : string := "*";
+    Xon : boolean := true;
+    MsgOn : boolean := false;
+    CLKDV_DIVIDE : real := 2.0;
+    CLKFX_DIVIDE : integer := 1;
+    CLKFX_MULTIPLY : integer := 4;
+    CLKIN_DIVIDE_BY_2 : boolean := false;
+    CLKIN_PERIOD : real := 10.0;                         --non-simulatable
+    CLKOUT_PHASE_SHIFT : string := "NONE";
+    CLK_FEEDBACK : string := "1X";
+    DESKEW_ADJUST : string := "SYSTEM_SYNCHRONOUS";     --non-simulatable
+    DFS_FREQUENCY_MODE : string := "LOW";
+    DLL_FREQUENCY_MODE : string := "LOW";
+    DSS_MODE : string := "NONE";                        --non-simulatable
+    DUTY_CYCLE_CORRECTION : boolean := true;
+    FACTORY_JF : bit_vector := X"C080";                 --non-simulatable
+
+
+    PHASE_SHIFT : integer := 0;
+
+
+    STARTUP_WAIT : boolean := false                     --non-simulatable
+    );
+
+  port (
+    CLK0 : out std_ulogic := '0';
+    CLK180 : out std_ulogic := '0';
+    CLK270 : out std_ulogic := '0';
+    CLK2X : out std_ulogic := '0';
+    CLK2X180 : out std_ulogic := '0';
+    CLK90 : out std_ulogic := '0';
+    CLKDV : out std_ulogic := '0';
+    CLKFX : out std_ulogic := '0';
+    CLKFX180 : out std_ulogic := '0';
+    LOCKED : out std_ulogic := '0';
+    PSDONE : out std_ulogic := '0';
+    STATUS : out std_logic_vector(7 downto 0) := "00000000";
+    
+    CLKFB : in std_ulogic := '0';
+    CLKIN : in std_ulogic := '0';
+    DSSEN : in std_ulogic := '0';
+    PSCLK : in std_ulogic := '0';
+    PSEN : in std_ulogic := '0';
+    PSINCDEC : in std_ulogic := '0';
+    RST : in std_ulogic := '0'
+    );
+
+
+
+end DCM_SP;
+
+architecture DCM_SP_V of DCM_SP is
+  
+
+  component dcm_sp_clock_divide_by_2
+    port(
+      clock_out : out std_ulogic;
+
+      clock : in std_ulogic;
+      clock_type : in integer;
+      rst : in std_ulogic
+      );
+  end component;
+
+  component dcm_sp_maximum_period_check
+    generic (
+      InstancePath : string := "*";
+
+      clock_name : string := "";
+      maximum_period : time);
+    port(
+      clock : in std_ulogic;
+      rst : in std_ulogic
+      );
+  end component;
+
+  component dcm_sp_clock_lost
+    port(
+      lost : out std_ulogic;
+
+      clock : in std_ulogic;
+      enable : in boolean := false;
+      rst :  in std_ulogic          
+      );    
+  end component;
+
+  constant MAXPERCLKIN : time := 1000000 ps;                   
+  constant MAXPERPSCLK : time := 100000000 ps;                 
+  constant SIM_CLKIN_CYCLE_JITTER : time := 300 ps;
+  constant SIM_CLKIN_PERIOD_JITTER : time := 1000 ps;
+
+  signal CLKFB_ipd, CLKIN_ipd, DSSEN_ipd : std_ulogic;
+  signal PSCLK_ipd, PSEN_ipd, PSINCDEC_ipd, RST_ipd : std_ulogic;
+  signal PSCLK_dly ,PSEN_dly, PSINCDEC_dly : std_ulogic := '0';
+  
+  signal clk0_out : std_ulogic;
+  signal clk2x_out, clkdv_out : std_ulogic := '0';
+  signal clkfx_out, locked_out, psdone_out, ps_overflow_out, ps_lock : std_ulogic := '0';
+  signal CLKFX_sig : std_ulogic := '0';
+  signal locked_out0 : std_ulogic := '0';
+  signal locked_out_out : std_ulogic := '0';
+  signal LOCKED_sig : std_ulogic := '0';  
+
+  signal clkdv_cnt : integer := 0;
+  signal clkfb_type : integer;
+  signal divide_type : integer;
+  signal clkin_type : integer;
+  signal ps_type : integer;
+  signal deskew_adjust_mode : integer;
+  signal dfs_mode_type : integer;
+  signal dll_mode_type : integer;
+  signal clk1x_type : integer;
+
+
+  signal lock_period, lock_delay, lock_clkin, lock_clkfb : std_ulogic := '0';
+  signal lock_out : std_logic_vector(1 downto 0) := "00";  
+  signal lock_out1_neg : std_ulogic := '0';
+
+  signal lock_fb : std_ulogic := '0';
+  signal lock_fb_dly : std_ulogic := '0';
+  signal lock_fb_dly_tmp : std_ulogic := '0';
+  signal fb_delay_found : std_ulogic := '0';
+
+  signal clkin_div : std_ulogic;
+  signal clkin_ps : std_ulogic;
+  signal clkin_ps_tmp : std_ulogic;
+  signal clkin_ps_mkup : std_ulogic := '0';
+  signal clkin_ps_mkup_win : std_ulogic := '0';
+  
+  signal clkin_fb : std_ulogic;
+
+
+  signal ps_delay : time := 0 ps;
+  signal ps_in_out : integer := 0;
+  signal ps_delay_init : time := 0 ps;
+  signal ps_delay_md : time := 0 ps;
+  signal ps_delay_all : time := 0 ps;
+  signal ps_max_range : integer := 0;
+  signal ps_acc : integer := 0;
+  signal period_int : integer := 0;
+  
+
+  type   real_array_usr is array (2 downto 0) of time;
+  signal clkin_period_real : real_array_usr := (0.000 ns, 0.000 ns, 0.000 ns);
+  signal period : time := 0 ps;
+  signal period_25 : time := 0 ps;
+  signal period_50 : time := 0 ps;
+  signal period_div : time := 0 ps;
+  signal period_orig : time := 0 ps;
+  signal period_orig1 : time := 0 ps;
+  signal period_ps : time := 0 ps;
+  signal clkout_delay : time := 0 ps;
+  signal fb_delay : time := 0 ps;
+  signal period_fx, remain_fx : time := 0 ps;
+  signal period_dv_high, period_dv_low : time := 0 ps;
+  signal cycle_jitter, period_jitter : time := 0 ps;
+
+  signal clkin_window, clkfb_window : std_ulogic := '0';
+  signal rst_reg : std_logic_vector(2 downto 0) := "000";
+  signal rst_flag : std_ulogic := '0';
+  signal numerator, denominator, gcd : integer := 1;
+
+  signal clkin_lost_out : std_ulogic := '0';
+  signal clkfx_lost_out : std_ulogic := '0';
+
+  signal remain_fx_temp : integer := 0;
+
+  signal clkin_period_real0_temp : time := 0 ps;
+  signal ps_lock_reg : std_ulogic := '0';
+
+  signal clk0_sig : std_ulogic := '0';
+  signal clk2x_sig : std_ulogic := '0';
+
+  signal no_stop : boolean := false;
+
+  signal clkfx180_en : std_ulogic := '0';
+
+  signal status_out  : std_logic_vector(7 downto 0) := "00000000";
+
+  signal first_time_locked : boolean := false;
+
+  signal en_status : boolean := false;
+
+  signal ps_overflow_out_ext : std_ulogic := '0';  
+  signal clkin_lost_out_ext : std_ulogic := '0';
+  signal clkfx_lost_out_ext : std_ulogic := '0';
+
+  signal clkfb_div : std_ulogic := '0';
+  signal clkfb_div_en : std_ulogic := '0';
+  signal clkfb_chk : std_ulogic := '0';
+
+  signal lock_period_dly : std_ulogic := '0';
+  signal lock_period_dly1 : std_ulogic := '0';
+  signal lock_period_pulse : std_ulogic := '0';  
+
+  signal clock_stopped : std_ulogic := '1';
+
+  signal clkin_chkin, clkfb_chkin : std_ulogic := '0';
+  signal chk_enable, chk_rst : std_ulogic := '0';
+
+  signal lock_ps : std_ulogic := '0';
+  signal lock_ps_dly : std_ulogic := '0';      
+  
+  constant PS_STEP : time := 25 ps;
+
+begin
+  INITPROC : process
+  begin
+    detect_resolution
+      (model_name => "DCM_SP"
+       );
+    if (CLKDV_DIVIDE = 1.5) then
+      divide_type <= 3;
+    elsif (CLKDV_DIVIDE = 2.0) then
+      divide_type <= 4;
+    elsif (CLKDV_DIVIDE = 2.5) then
+      divide_type <= 5;
+    elsif (CLKDV_DIVIDE = 3.0) then
+      divide_type <= 6;
+    elsif (CLKDV_DIVIDE = 3.5) then
+      divide_type <= 7;
+    elsif (CLKDV_DIVIDE = 4.0) then
+      divide_type <= 8;
+    elsif (CLKDV_DIVIDE = 4.5) then
+      divide_type <= 9;
+    elsif (CLKDV_DIVIDE = 5.0) then
+      divide_type <= 10;
+    elsif (CLKDV_DIVIDE = 5.5) then
+      divide_type <= 11;
+    elsif (CLKDV_DIVIDE = 6.0) then
+      divide_type <= 12;
+    elsif (CLKDV_DIVIDE = 6.5) then
+      divide_type <= 13;
+    elsif (CLKDV_DIVIDE = 7.0) then
+      divide_type <= 14;
+    elsif (CLKDV_DIVIDE = 7.5) then
+      divide_type <= 15;
+    elsif (CLKDV_DIVIDE = 8.0) then
+      divide_type <= 16;
+    elsif (CLKDV_DIVIDE = 9.0) then
+      divide_type <= 18;
+    elsif (CLKDV_DIVIDE = 10.0) then
+      divide_type <= 20;
+    elsif (CLKDV_DIVIDE = 11.0) then
+      divide_type <= 22;
+    elsif (CLKDV_DIVIDE = 12.0) then
+      divide_type <= 24;
+    elsif (CLKDV_DIVIDE = 13.0) then
+      divide_type <= 26;
+    elsif (CLKDV_DIVIDE = 14.0) then
+      divide_type <= 28;
+    elsif (CLKDV_DIVIDE = 15.0) then
+      divide_type <= 30;
+    elsif (CLKDV_DIVIDE = 16.0) then
+      divide_type <= 32;
+    else
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "CLKDV_DIVIDE",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => CLKDV_DIVIDE,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, or 16.0",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+    if ((CLKFX_DIVIDE <= 0) or (32 < CLKFX_DIVIDE)) then
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "CLKFX_DIVIDE",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => CLKFX_DIVIDE,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are 1....32",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+    if ((CLKFX_MULTIPLY <= 1) or (32 < CLKFX_MULTIPLY)) then
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "CLKFX_MULTIPLY",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => CLKFX_MULTIPLY,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are 2....32",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+    case CLKIN_DIVIDE_BY_2 is
+      when false => clkin_type <= 0;
+      when true => clkin_type <= 1;
+      when others =>
+        GenericValueCheckMessage
+          (HeaderMsg => "Attribute Syntax Error",
+           GenericName => "CLKIN_DIVIDE_BY_2",
+           EntityName => "DCM_SP",
+           InstanceName => InstancePath,
+           GenericValue => CLKIN_DIVIDE_BY_2,
+           Unit => "",
+           ExpectedValueMsg => "Legal Values for this attribute are TRUE or FALSE",
+           ExpectedGenericValue => "",
+           TailMsg => "",
+           MsgSeverity => error
+           );
+    end case;
+
+
+    if ((CLKOUT_PHASE_SHIFT = "none") or (CLKOUT_PHASE_SHIFT = "NONE")) then
+      ps_type <= 0;
+    elsif ((CLKOUT_PHASE_SHIFT = "fixed") or (CLKOUT_PHASE_SHIFT = "FIXED")) then
+      ps_type <= 1;
+    elsif ((CLKOUT_PHASE_SHIFT = "variable") or (CLKOUT_PHASE_SHIFT = "VARIABLE")) then
+      ps_type <= 2;
+      if (PHASE_SHIFT /= 0) then
+       GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Warning",
+         GenericName => "PHASE_SHIFT",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => PHASE_SHIFT,
+         Unit => "",
+         ExpectedValueMsg => "The maximum variable phase shift range is only valid when initial phase shift PHASE_SHIFT is zero",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => warning  
+         );
+      end if;
+    else
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "CLKOUT_PHASE_SHIFT",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => CLKOUT_PHASE_SHIFT,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are NONE, FIXED or VARIABLE",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+    if ((CLK_FEEDBACK = "none") or (CLK_FEEDBACK = "NONE")) then
+      clkfb_type <= 0;
+    elsif ((CLK_FEEDBACK = "1x") or (CLK_FEEDBACK = "1X")) then
+      clkfb_type <= 1;
+    elsif ((CLK_FEEDBACK = "2x") or (CLK_FEEDBACK = "2X")) then
+      clkfb_type <= 2;
+    else
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "CLK_FEEDBACK",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => CLK_FEEDBACK,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are NONE, 1X or 2X",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+
+
+    if ((DESKEW_ADJUST = "source_synchronous") or (DESKEW_ADJUST = "SOURCE_SYNCHRONOUS")) then
+      DESKEW_ADJUST_mode <= 8;
+    elsif ((DESKEW_ADJUST = "system_synchronous") or (DESKEW_ADJUST = "SYSTEM_SYNCHRONOUS")) then
+      DESKEW_ADJUST_mode <= 11;
+    elsif ((DESKEW_ADJUST = "0")) then
+      DESKEW_ADJUST_mode <= 0;
+    elsif ((DESKEW_ADJUST = "1")) then
+      DESKEW_ADJUST_mode <= 1;
+    elsif ((DESKEW_ADJUST = "2")) then
+      DESKEW_ADJUST_mode <= 2;
+    elsif ((DESKEW_ADJUST = "3")) then
+      DESKEW_ADJUST_mode <= 3;
+    elsif ((DESKEW_ADJUST = "4")) then
+      DESKEW_ADJUST_mode <= 4;
+    elsif ((DESKEW_ADJUST = "5")) then
+      DESKEW_ADJUST_mode <= 5;
+    elsif ((DESKEW_ADJUST = "6")) then
+      DESKEW_ADJUST_mode <= 6;
+    elsif ((DESKEW_ADJUST = "7")) then
+      DESKEW_ADJUST_mode <= 7;
+    elsif ((DESKEW_ADJUST = "8")) then
+      DESKEW_ADJUST_mode <= 8;
+    elsif ((DESKEW_ADJUST = "9")) then
+      DESKEW_ADJUST_mode <= 9;
+    elsif ((DESKEW_ADJUST = "10")) then
+      DESKEW_ADJUST_mode <= 10;
+    elsif ((DESKEW_ADJUST = "11")) then
+      DESKEW_ADJUST_mode <= 11;
+    elsif ((DESKEW_ADJUST = "12")) then
+      DESKEW_ADJUST_mode <= 12;
+    elsif ((DESKEW_ADJUST = "13")) then
+      DESKEW_ADJUST_mode <= 13;
+    elsif ((DESKEW_ADJUST = "14")) then
+      DESKEW_ADJUST_mode <= 14;
+    elsif ((DESKEW_ADJUST = "15")) then
+      DESKEW_ADJUST_mode <= 15;
+    else
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "DESKEW_ADJUST_MODE",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => DESKEW_ADJUST_MODE,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are SOURCE_SYNCHRONOUS, SYSTEM_SYNCHRONOUS or 1....15",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+    if ((DFS_FREQUENCY_MODE = "high") or (DFS_FREQUENCY_MODE = "HIGH")) then
+      dfs_mode_type <= 1;
+    elsif ((DFS_FREQUENCY_MODE = "low") or (DFS_FREQUENCY_MODE = "LOW")) then
+      dfs_mode_type <= 0;
+    else
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "DFS_FREQUENCY_MODE",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => DFS_FREQUENCY_MODE,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are HIGH or LOW",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+    if ((DLL_FREQUENCY_MODE = "high") or (DLL_FREQUENCY_MODE = "HIGH")) then
+      dll_mode_type <= 1;
+    elsif ((DLL_FREQUENCY_MODE = "low") or (DLL_FREQUENCY_MODE = "LOW")) then
+      dll_mode_type <= 0;
+    else
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "DLL_FREQUENCY_MODE",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => DLL_FREQUENCY_MODE,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are HIGH or LOW",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+    if ((DSS_MODE = "none") or (DSS_MODE = "NONE")) then
+    else
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "DSS_MODE",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => DSS_MODE,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are NONE",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+    case DUTY_CYCLE_CORRECTION is
+      when false => clk1x_type <= 0;
+      when true => clk1x_type <= 1;
+      when others =>
+        GenericValueCheckMessage
+          (HeaderMsg => "Attribute Syntax Error",
+           GenericName => "DUTY_CYCLE_CORRECTION",
+           EntityName => "DCM_SP",
+           InstanceName => InstancePath,
+           GenericValue => DUTY_CYCLE_CORRECTION,
+           Unit => "",
+           ExpectedValueMsg => "Legal Values for this attribute are TRUE or FALSE",
+           ExpectedGenericValue => "",
+           TailMsg => "",
+           MsgSeverity => error
+           );
+    end case;
+
+    if ((PHASE_SHIFT < -255) or (PHASE_SHIFT > 255)) then
+      GenericValueCheckMessage
+        (HeaderMsg => "Attribute Syntax Error",
+         GenericName => "PHASE_SHIFT",
+         EntityName => "DCM_SP",
+         InstanceName => InstancePath,
+         GenericValue => PHASE_SHIFT,
+         Unit => "",
+         ExpectedValueMsg => "Legal Values for this attribute are -255 ... 255",
+         ExpectedGenericValue => "",
+         TailMsg => "",
+         MsgSeverity => error
+         );
+    end if;
+
+    period_jitter <= SIM_CLKIN_PERIOD_JITTER;
+    cycle_jitter <= SIM_CLKIN_CYCLE_JITTER;
+    
+    case STARTUP_WAIT is
+      when false => null;
+      when true => null;
+      when others =>
+        GenericValueCheckMessage
+          (HeaderMsg => "Attribute Syntax Error",
+           GenericName => "STARTUP_WAIT",
+           EntityName => "DCM_SP",
+           InstanceName => InstancePath,
+           GenericValue => STARTUP_WAIT,
+           Unit => "",
+           ExpectedValueMsg => "Legal Values for this attribute are TRUE or FALSE",
+           ExpectedGenericValue => "",
+           TailMsg => "",
+           MsgSeverity => error
+           );
+    end case;
+
+--
+-- fx parameters
+--    
+    gcd <= 1;
+    for i in 2 to CLKFX_MULTIPLY loop
+      if (((CLKFX_MULTIPLY mod i) = 0) and ((CLKFX_DIVIDE mod i) = 0)) then
+        gcd <= i;
+      end if;
+    end loop;    
+    numerator <= CLKFX_MULTIPLY / gcd;
+    denominator <= CLKFX_DIVIDE / gcd;          
+    wait;
+  end process INITPROC;
+
+--
+-- input wire delays
+--  
+
+
+   CLKFB_ipd <= CLKFB;
+   CLKIN_ipd <= CLKIN;
+   DSSEN_ipd <= DSSEN;
+   PSCLK_dly <= PSCLK;
+   PSEN_dly <= PSEN;
+   PSINCDEC_dly <= PSINCDEC;
+   RST_ipd <= RST;
+
+  i_clock_divide_by_2 : dcm_sp_clock_divide_by_2
+    port map (
+      clock => clkin_ipd,
+      clock_type => clkin_type,
+      rst => rst_ipd,
+      clock_out => clkin_div);
+
+  i_max_clkin : dcm_sp_maximum_period_check
+    generic map (
+      clock_name => "CLKIN",
+      maximum_period => MAXPERCLKIN)
+
+    port map (
+      clock => clkin_ipd,
+      rst => rst_ipd);
+
+  i_max_psclk : dcm_sp_maximum_period_check
+    generic map (
+      clock_name => "PSCLK",
+      maximum_period => MAXPERPSCLK)
+
+    port map (
+      clock => psclk_dly,
+      rst => rst_ipd);
+
+  i_clkin_lost : dcm_sp_clock_lost
+    port map (
+      lost  => clkin_lost_out,
+      clock => clkin_ipd,
+      enable => first_time_locked,
+      rst => rst_ipd      
+      );
+
+  i_clkfx_lost : dcm_sp_clock_lost
+    port map (
+      lost  => clkfx_lost_out,
+      clock => clkfx_out,
+      enable => first_time_locked,
+      rst => rst_ipd
+      );  
+
+  clkin_ps_tmp <= transport clkin_div after ps_delay_md;  
+
+  clkin_ps <= clkin_ps_mkup when clkin_ps_mkup_win = '1' else clkin_ps_tmp;
+  
+  clkin_fb <= transport (clkin_ps and lock_fb);
+
+
+  clkin_ps_tmp_p: process
+     variable  ps_delay_last : integer := 0;
+     variable  ps_delay_int : integer;
+     variable  period_int2  : integer := 0;
+     variable  period_int3  : integer := 0;
+  begin
+   if (ps_type = 2) then
+      ps_delay_int := (ps_delay /1 ps ) * 1;
+      period_int2 := 2 * period_int;
+      period_int3 := 3 * period_int;
+
+     if (rising_edge(clkin_div)) then
+       if ((ps_delay_last > 0  and ps_delay_int <= 0 ) or 
+        (ps_delay_last >= period_int  and ps_delay_int < period_int) or
+        (ps_delay_last >= period_int2 and ps_delay_int < period_int2) or 
+        (ps_delay_last >= period_int3  and ps_delay_int < period_int3)) then
+        clkin_ps_mkup_win <= '1';
+        clkin_ps_mkup <= '1';
+        wait until falling_edge(clkin_div);
+           clkin_ps_mkup_win <= '1';
+           clkin_ps_mkup <= '0';
+       else
+           clkin_ps_mkup_win <= '0';
+           clkin_ps_mkup <= '0';
+       end if;
+     end if;
+
+     if (falling_edge(clkin_div)) then
+        if ((ps_delay_last > 0  and ps_delay_int <= 0 ) or
+        (ps_delay_last >= period_int  and ps_delay_int < period_int) or
+        (ps_delay_last >= period_int2 and ps_delay_int < period_int2) or
+        (ps_delay_last >= period_int3  and ps_delay_int < period_int3)) then
+          clkin_ps_mkup <= '0';
+          clkin_ps_mkup_win <= '0';
+        wait until rising_edge(clkin_div);
+           clkin_ps_mkup <= '1';
+           clkin_ps_mkup_win <= '1';
+         wait until falling_edge(clkin_div);
+           clkin_ps_mkup <= '0';
+           clkin_ps_mkup_win <= '1';
+        else
+           clkin_ps_mkup <= '0';
+           clkin_ps_mkup_win <= '0';
+        end if;
+     end if;
+        ps_delay_last := ps_delay_int;
+   end if;
+    wait on clkin_div;
+  end process;
+
+  detect_first_time_locked : process
+    begin
+      if (first_time_locked = false) then
+        if (rising_edge(locked_out)) then
+          first_time_locked <= true;
+        end if;        
+      end if;
+      wait on locked_out;
+  end process detect_first_time_locked;
+
+  set_reset_en_status : process
+  begin
+    if (rst_ipd = '1') then
+      en_status <= false;
+    elsif (rising_edge(Locked_sig)) then
+      en_status <= true;
+    end if;
+    wait on rst_ipd, Locked_sig;
+  end process set_reset_en_status;    
+
+  gen_clkfb_div_en: process
+  begin
+    if (rst_ipd = '1') then
+      clkfb_div_en <= '0';
+    elsif (falling_edge(clkfb_ipd)) then
+      if (lock_fb_dly='1' and lock_period='1' and lock_fb = '1' and clkin_ps = '0') then
+        clkfb_div_en <= '1';
+      end if;
+    end if;
+    wait on clkfb_ipd, rst_ipd;
+  end process  gen_clkfb_div_en;
+
+   gen_clkfb_div: process
+  begin  
+    if (rst_ipd = '1') then
+      clkfb_div <= '0';      
+    elsif (rising_edge(clkfb_ipd)) then
+      if (clkfb_div_en = '1') then
+        clkfb_div <= not clkfb_div;      
+      end if;
+    end if;    
+    wait on clkfb_ipd, rst_ipd;
+  end process  gen_clkfb_div;
+
+  determine_clkfb_chk: process
+  begin
+    if (clkfb_type = 2) then
+      clkfb_chk <= clkfb_div;
+    else 
+      clkfb_chk <= clkfb_ipd and lock_fb_dly;
+    end if;
+    wait on clkfb_ipd, clkfb_div;
+  end process  determine_clkfb_chk;
+
+  set_reset_clkin_chkin : process
+  begin
+    if ((rising_edge(clkin_fb)) or (rising_edge(chk_rst))) then
+      if (chk_rst = '1') then
+        clkin_chkin <= '0';
+      else
+        clkin_chkin <= '1';
+      end if;
+    end if;
+    wait on clkin_fb, chk_rst;
+  end process set_reset_clkin_chkin;
+
+  set_reset_clkfb_chkin : process
+  begin
+    if ((rising_edge(clkfb_chk)) or (rising_edge(chk_rst))) then
+      if (chk_rst = '1') then
+        clkfb_chkin <= '0';
+      else
+        clkfb_chkin <= '1';
+      end if;
+    end if;
+    wait on clkfb_chk, chk_rst;
+  end process set_reset_clkfb_chkin;
+
+  
+--   assign_chk_rst: process
+--   begin
+--     if ((rst_ipd = '1') or (clock_stopped = '1')) then
+--       chk_rst <= '1';
+--     else
+--       chk_rst <= '0';  
+--     end if;
+--     wait on rst_ipd, clock_stopped;
+--   end process assign_chk_rst;
+
+  chk_rst <= '1' when ((rst_ipd = '1') or (clock_stopped = '1')) else '0';  
+
+--   assign_chk_enable: process
+--   begin
+--     if ((clkin_chkin = '1') and (clkfb_chkin = '1')) then
+--       chk_enable <= '1';
+--     else
+--       chk_enable <= '0';  
+--     end if;
+--   wait on clkin_chkin, clkfb_chkin;  
+--   end process  assign_chk_enable;
+
+  chk_enable <= '1' when ((clkin_chkin = '1') and (clkfb_chkin = '1') and (lock_ps = '1') and (lock_fb_dly = '1') and (lock_fb = '1')) else '0';  
+
+
+
+
+  control_status_bits: process
+  begin  
+    if ((rst_ipd = '1') or (en_status = false)) then
+      ps_overflow_out_ext <= '0';
+      clkin_lost_out_ext <= '0';
+      clkfx_lost_out_ext <= '0';
+    else
+      ps_overflow_out_ext <= ps_overflow_out;
+      clkin_lost_out_ext <= clkin_lost_out;
+      clkfx_lost_out_ext <= clkfx_lost_out;
+    end if;
+    wait on clkfx_lost_out, clkin_lost_out, en_status, ps_overflow_out, rst_ipd;
+  end process  control_status_bits;
+  
+  determine_period_div : process
+    variable clkin_div_edge_previous : time := 0 ps; 
+    variable clkin_div_edge_current : time := 0 ps;
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      clkin_div_edge_previous := 0 ps; 
+      clkin_div_edge_current := 0 ps;
+      period_div <= 0 ps;
+    else
+      if (rising_edge(clkin_div)) then
+        clkin_div_edge_previous := clkin_div_edge_current;
+        clkin_div_edge_current := NOW;
+        if ((clkin_div_edge_current - clkin_div_edge_previous) <= (1.5 * period_div)) then
+          period_div <= clkin_div_edge_current - clkin_div_edge_previous;
+        elsif ((period_div = 0 ps) and (clkin_div_edge_previous /= 0 ps)) then
+          period_div <= clkin_div_edge_current - clkin_div_edge_previous;      
+        end if;          
+      end if;    
+    end if;
+    wait on clkin_div, rst_ipd;
+  end process determine_period_div;
+
+  period_cal_p : process(period)
+        variable period_25_tmp : time := 0 ps;
+  begin
+        period_25_tmp := period / 4;
+        period_50 <= 2 * period_25_tmp;
+        period_25 <= period_25_tmp;
+  end process;
+
+  determine_period_ps : process
+    variable clkin_ps_edge_previous : time := 0 ps; 
+    variable clkin_ps_edge_current : time := 0 ps;    
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      clkin_ps_edge_previous := 0 ps; 
+      clkin_ps_edge_current := 0 ps;
+      period_ps <= 0 ps;
+    else    
+      if (rising_edge(clkin_ps)) then
+        clkin_ps_edge_previous := clkin_ps_edge_current;
+        clkin_ps_edge_current := NOW;
+        wait for 0 ps;
+        if ((clkin_ps_edge_current - clkin_ps_edge_previous) <= (1.5 * period_ps)) then
+          period_ps <= clkin_ps_edge_current - clkin_ps_edge_previous;
+        elsif ((period_ps = 0 ps) and (clkin_ps_edge_previous /= 0 ps)) then
+          period_ps <= clkin_ps_edge_current - clkin_ps_edge_previous;      
+        end if;
+      end if;
+    end if;
+    wait on clkin_ps, rst_ipd;    
+  end process determine_period_ps;
+
+  assign_lock_ps_fb : process
+
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      lock_fb <= '0';
+      lock_ps <= '0';
+      lock_ps_dly <= '0';                                            
+      lock_fb_dly <= '0';
+      lock_fb_dly_tmp <= '0';
+    else
+      if (rising_edge(clkin_ps)) then
+        lock_ps <= lock_period;
+        lock_ps_dly <= lock_ps;        
+        lock_fb <= lock_ps_dly;            
+        lock_fb_dly_tmp <= lock_fb;            
+      end if;          
+      if (falling_edge(clkin_ps)) then
+--         lock_fb_dly <= lock_fb_dly_tmp after (period/4);
+         lock_fb_dly <= lock_fb_dly_tmp after (period * 0.75);
+      end if;
+    end if;
+    wait on clkin_ps, rst_ipd;
+  end process assign_lock_ps_fb;
+
+  calculate_clkout_delay : process
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      clkout_delay <= 0 ps;
+    else
+      if(fb_delay = 0 ps) then
+        clkout_delay <= 0 ps;                
+      elsif (period'event or fb_delay'event) then
+        clkout_delay <= period - fb_delay;        
+      end if;
+    end if;
+    wait on period, fb_delay, rst_ipd;
+  end process calculate_clkout_delay;
+
+--
+--generate master reset signal
+--  
+
+  gen_master_rst : process
+  begin
+    if (rising_edge(clkin_ipd)) then    
+      rst_reg(2) <= rst_reg(1) and rst_reg(0) and rst_ipd;    
+      rst_reg(1) <= rst_reg(0) and rst_ipd;
+      rst_reg(0) <= rst_ipd;
+    end if;
+    wait on clkin_ipd;     
+  end process gen_master_rst;
+
+  check_rst_width : process
+    variable Message : line;    
+    begin
+      if (rst_ipd ='1') then
+          rst_flag <= '0';
+      end if;
+      if (falling_edge(rst_ipd)) then
+        if ((rst_reg(2) and rst_reg(1) and rst_reg(0)) = '0') then
+          rst_flag <= '1';
+          Write ( Message, string'(" Input Error : RST on DCM_SP "));
+          Write ( Message, string'(" must be asserted for 3 CLKIN clock cycles. "));          
+          assert false report Message.all severity error;
+          DEALLOCATE (Message);
+        end if;        
+      end if;
+
+      wait on rst_ipd;
+    end process check_rst_width;
+
+--
+--phase shift parameters
+--  
+
+  ps_max_range_p : process (period)
+    variable period_ps_tmp : integer := 0;
+  begin
+    period_int <= (period/ 1 ps ) * 1;
+    if (clkin_type = 1) then
+       period_ps_tmp := 2 * (period/ 1 ps );
+    else
+       period_ps_tmp := (period/ 1 ps ) * 1;
+    end if;
+   if (period_ps_tmp > 3000) then
+     if (period_ps_tmp > 16667) then
+       ps_max_range <= (10 * (period_ps_tmp - 3000)) / 1000;
+     else
+       ps_max_range <= (15 * (period_ps_tmp - 3000)) / 1000;
+     end if;
+   else
+     ps_max_range <= 0;
+  end if;
+  end process;
+
+  ps_delay_md_p : process (period, ps_delay, fb_delay_found, rst_ipd)
+      variable tmp_value : integer;
+      variable tmp_value1 : integer;
+      variable tmp_value2 : integer;
+  begin
+      if (rst_ipd = '1') then
+           ps_delay_md <= 0 ps;
+      elsif (fb_delay_found = '1') then
+          tmp_value := (ps_delay / 1 ps ) * 1;
+          tmp_value1 := (period / 1 ps) * 1;
+          tmp_value2 := tmp_value mod tmp_value1;
+          if (ps_type = 2) then
+             ps_delay_md <= period + tmp_value2 * 1 ps;
+          else
+             ps_delay_md <= period + (ps_in_out * period) / 256;
+          end if;
+      end if;
+  end process;
+
+
+  determine_phase_shift : process
+    variable Message : line;
+    variable first_time : boolean := true;
+    variable ps_in : integer;    
+    variable ps_acc : integer := 0;
+    variable ps_step_int : integer := 0;
+  begin
+    if (first_time = true) then
+      if ((CLKOUT_PHASE_SHIFT = "none") or (CLKOUT_PHASE_SHIFT = "NONE")) then
+        ps_in := 256;      
+      elsif ((CLKOUT_PHASE_SHIFT = "fixed") or (CLKOUT_PHASE_SHIFT = "FIXED")) then
+        ps_in := 256 + PHASE_SHIFT;
+      elsif ((CLKOUT_PHASE_SHIFT = "variable") or (CLKOUT_PHASE_SHIFT = "VARIABLE")) then
+        ps_in := 256 + PHASE_SHIFT;
+      end if;
+      ps_step_int := (PS_STEP / 1 ps ) * 1;
+      ps_in_out <= ps_in;
+      ps_lock <= '0';
+      ps_overflow_out <= '0';
+      ps_delay <= 0 ps;
+      ps_acc := 0;
+      first_time := false;
+    end if;    
+
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      if ((CLKOUT_PHASE_SHIFT = "none") or (CLKOUT_PHASE_SHIFT = "NONE")) then
+        ps_in := 256;      
+      elsif ((CLKOUT_PHASE_SHIFT = "fixed") or (CLKOUT_PHASE_SHIFT = "FIXED")) then
+        ps_in := 256 + PHASE_SHIFT;
+      elsif ((CLKOUT_PHASE_SHIFT = "variable") or (CLKOUT_PHASE_SHIFT = "VARIABLE")) then
+        ps_in := 256 + PHASE_SHIFT;
+      else
+      end if;
+      ps_in_out <= ps_in;
+      ps_lock <= '0';
+      ps_overflow_out <= '0';
+      ps_delay <= 0 ps;
+      ps_acc := 0;
+    elsif (rising_edge(lock_period_pulse)) then
+        ps_delay <= (ps_in * period_div / 256);        
+    elsif (rising_edge(PSCLK_dly)) then
+        if (ps_type = 2) then
+          if (psen_dly = '1') then
+            if (ps_lock = '1') then
+              Write ( Message, string'(" Warning : Please wait for PSDONE signal before adjusting the Phase Shift. "));
+              assert false report Message.all severity warning;
+              DEALLOCATE (Message);              
+            else if (lock_ps = '1') then
+              if (psincdec_dly = '1') then
+                if (ps_acc > ps_max_range) then
+                  ps_overflow_out <= '1';
+                else
+                  ps_delay <= ps_delay  + PS_STEP;
+                  ps_acc := ps_acc + 1;
+                  ps_overflow_out <= '0';
+                end if;
+                ps_lock <= '1';                
+              elsif (psincdec_dly = '0') then
+                if (ps_acc < -ps_max_range) then
+                  ps_overflow_out <= '1';
+                else
+                  ps_delay <= ps_delay - PS_STEP;
+                  ps_acc := ps_acc - 1;
+                  ps_overflow_out <= '0';
+                end if;
+                ps_lock <= '1';                                
+              end if;
+            end if;
+          end if;
+         end if;
+        end if;
+      end if;
+    if (ps_lock_reg'event) then
+      ps_lock <= ps_lock_reg;
+    end if;
+    wait on lock_period_pulse, psclk_dly, ps_lock_reg, rst_ipd;
+  end process determine_phase_shift;
+
+  determine_psdone_out : process
+  begin
+    if (rising_edge(ps_lock)) then
+      ps_lock_reg <= '1';      
+      wait until (rising_edge(clkin_ps));
+      wait until (rising_edge(psclk_dly));
+      wait until (rising_edge(psclk_dly));
+      wait until (rising_edge(psclk_dly));
+      psdone_out <= '1';
+      wait until (rising_edge(psclk_dly));
+      psdone_out <= '0';
+      ps_lock_reg <= '0';
+    end if;
+    wait on ps_lock;
+  end process determine_psdone_out;      
+  
+--
+--determine clock period
+--    
+  determine_clock_period : process
+    variable clkin_edge_previous : time := 0 ps; 
+    variable clkin_edge_current : time := 0 ps;
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      clkin_period_real(0) <= 0 ps;
+      clkin_period_real(1) <= 0 ps;
+      clkin_period_real(2) <= 0 ps;
+      clkin_edge_previous := 0 ps;      
+      clkin_edge_current := 0 ps;      
+    elsif (rising_edge(clkin_div)) then
+      clkin_edge_previous := clkin_edge_current;
+      clkin_edge_current := NOW;
+      clkin_period_real(2) <= clkin_period_real(1);
+      clkin_period_real(1) <= clkin_period_real(0);      
+      if (clkin_edge_previous /= 0 ps) then
+	clkin_period_real(0) <= clkin_edge_current - clkin_edge_previous;
+      end if;
+    end if;      
+    if (no_stop'event) then
+      clkin_period_real(0) <= clkin_period_real0_temp;
+    end if;
+    wait on clkin_div, no_stop, rst_ipd;
+  end process determine_clock_period;
+  
+  evaluate_clock_period : process
+    variable Message : line;
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      lock_period <= '0';
+      clock_stopped <= '1';
+      clkin_period_real0_temp <= 0 ps;                        
+    else
+      if (falling_edge(clkin_div)) then
+        if (lock_period = '0') then
+          if ((clkin_period_real(0) /= 0 ps ) and (clkin_period_real(0) - cycle_jitter <= clkin_period_real(1)) and (clkin_period_real(1) <= clkin_period_real(0) + cycle_jitter) and (clkin_period_real(1) - cycle_jitter <= clkin_period_real(2)) and (clkin_period_real(2) <= clkin_period_real(1) + cycle_jitter)) then
+            lock_period <= '1';
+            period_orig <= (clkin_period_real(0) + clkin_period_real(1) + clkin_period_real(2)) / 3;
+            period <= clkin_period_real(0);
+          end if;
+        elsif (lock_period = '1') then
+          if (100000000 ns < clkin_period_real(0)) then
+            Write ( Message, string'(" Warning : CLKIN stopped toggling on instance "));
+            Write ( Message, Instancepath );          
+            Write ( Message, string'(" exceeds "));
+            Write ( Message, string'(" 100 ms "));
+            Write ( Message, string'(" Current CLKIN Period = "));
+            Write ( Message, clkin_period_real(0));
+            assert false report Message.all severity warning;
+            DEALLOCATE (Message);
+            lock_period <= '0';
+            wait until (falling_edge(rst_reg(2)));            
+          elsif ((period_orig * 2 < clkin_period_real(0)) and (clock_stopped = '0')) then
+              clkin_period_real0_temp <= clkin_period_real(1);            
+              no_stop <= not no_stop;
+              clock_stopped <= '1';              
+          elsif ((clkin_period_real(0) < period_orig - period_jitter) or (period_orig + period_jitter < clkin_period_real(0))) then
+            Write ( Message, string'(" Warning : Input Clock Period Jitter on instance "));
+            Write ( Message, Instancepath );          
+            Write ( Message, string'(" exceeds "));
+            Write ( Message, period_jitter );
+            Write ( Message, string'(" Locked CLKIN Period =  "));
+            Write ( Message, period_orig );
+            Write ( Message, string'(" Current CLKIN Period =  "));
+            Write ( Message, clkin_period_real(0) );
+            assert false report Message.all severity warning;
+            DEALLOCATE (Message);
+            lock_period <= '0';
+            wait until (falling_edge(rst_reg(2)));                                  
+          elsif ((clkin_period_real(0) < clkin_period_real(1) - cycle_jitter) or (clkin_period_real(1) + cycle_jitter < clkin_period_real(0))) then
+            Write ( Message, string'(" Warning : Input Clock Cycle Jitter on on instance "));
+            Write ( Message, Instancepath );
+            Write ( Message, string'(" exceeds "));
+            Write ( Message, cycle_jitter );
+            Write ( Message, string'(" Previous CLKIN Period =  "));
+            Write ( Message, clkin_period_real(1) );
+            Write ( Message, string'(" Current CLKIN Period =  "));
+            Write ( Message, clkin_period_real(0) );                    
+            assert false report Message.all severity warning;
+            DEALLOCATE (Message);
+            lock_period <= '0';
+            wait until (falling_edge(rst_reg(2)));
+          else           
+            period <= clkin_period_real(0);
+            clock_stopped <= '0';            
+          end if;
+        end if;  
+      end if;          
+    end if;
+    wait on clkin_div, rst_ipd;
+  end process evaluate_clock_period;    
+
+  lock_period_dly1 <= transport lock_period after 1 ps;
+  lock_period_dly <= transport lock_period_dly1 after period_50;
+
+  lock_period_pulse <= '1' when ((lock_period = '1') and (lock_period_dly = '0')) else '0';  
+  
+--
+--determine clock delay
+--  
+  
+  determine_clock_delay : process
+    variable delay_edge : time := 0 ps;
+    variable temp1 : integer := 0;
+    variable temp2 : integer := 0;        
+    variable temp : integer := 0;
+    variable delay_edge_current : time := 0 ps;    
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      fb_delay <= 0 ps;      
+      fb_delay_found <= '0';                        
+    else
+      if (rising_edge(lock_out(0))) then
+        if  ((fb_delay_found = '0') and (clkfb_type /= 0)) then
+          if (clkfb_type = 1) then
+            wait until ((rising_edge(clk0_sig)) or (rst_ipd'event));                    
+            delay_edge := NOW;
+          elsif (clkfb_type = 2) then
+            wait until ((rising_edge(clk2x_sig)) or (rst_ipd'event));
+            delay_edge := NOW;
+          end if;
+          wait until ((rising_edge(clkfb_ipd)) or (rst_ipd'event));
+          temp1 := ((NOW*1) - (delay_edge*1))/ (1 ps);
+          if (clkfb_type = 2) then
+             temp2 := (period_orig * 1)/ (2 ps);
+          else
+             temp2 := (period_orig * 1)/ (1 ps);
+          end if;
+          temp := temp1 mod temp2;
+          fb_delay <= temp * 1 ps;
+          fb_delay_found <= '1';          
+        end if;
+      end if;
+    end if;
+    wait on lock_out(0), rst_ipd;
+  end process determine_clock_delay;
+--
+--  determine feedback lock
+--  
+  GEN_CLKFB_WINDOW : process
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      clkfb_window <= '0';  
+    else
+      if (rising_edge(clkfb_chk)) then
+        wait for 0 ps;
+        clkfb_window <= '1';
+        wait for cycle_jitter;        
+        clkfb_window <= '0';
+      end if;          
+    end if;      
+    wait on clkfb_chk, rst_ipd;
+  end process GEN_CLKFB_WINDOW;
+
+  GEN_CLKIN_WINDOW : process
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      clkin_window <= '0';
+    else
+      if (rising_edge(clkin_fb)) then
+        wait for 0 ps;
+        clkin_window <= '1';
+        wait for cycle_jitter;        
+        clkin_window <= '0';
+      end if;          
+    end if;      
+    wait on clkin_fb, rst_ipd;
+  end process GEN_CLKIN_WINDOW;  
+
+  set_reset_lock_clkin : process
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      lock_clkin <= '0';                  
+    else
+      if (rising_edge(clkin_fb)) then
+        wait for 1 ps;
+        if (((clkfb_window = '1') and (fb_delay_found = '1')) or ((clkin_lost_out = '1') and (lock_out(0) = '1'))) then
+          lock_clkin <= '1';
+        else
+          if (chk_enable = '1' and ps_lock = '0') then
+            lock_clkin <= '0';
+          end if;
+        end if;
+      end if;          
+    end if;
+    wait on clkin_fb, rst_ipd;
+  end process set_reset_lock_clkin;
+
+  set_reset_lock_clkfb : process
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      lock_clkfb <= '0';                  
+    else
+      if (rising_edge(clkfb_chk)) then
+        wait for 1 ps;
+        if (((clkin_window = '1') and (fb_delay_found = '1')) or ((clkin_lost_out = '1') and (lock_out(0) = '1')))then
+          lock_clkfb <= '1';
+        else
+          if (chk_enable = '1' and ps_lock = '0') then          
+            lock_clkfb <= '0';
+          end if;
+        end if;
+      end if;          
+    end if;
+    wait on clkfb_chk, rst_ipd;
+  end process set_reset_lock_clkfb;
+
+  assign_lock_delay : process
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      lock_delay <= '0';          
+    else
+      if (falling_edge(clkin_fb)) then
+        lock_delay <= lock_clkin or lock_clkfb;
+      end if;
+    end if;
+    wait on clkin_fb, rst_ipd;    
+  end process;
+
+--
+--generate lock signal
+--  
+  
+  generate_lock : process(clkin_ps, rst_ipd)
+  begin
+    if (rst_ipd='1') then
+      lock_out <= "00";
+      locked_out <= '0';
+      locked_out0 <= '0';
+      lock_out1_neg <= '0';
+    elsif (rising_edge(clkin_ps)) then
+        lock_out(0) <= lock_period;
+        lock_out(1) <= lock_out(0);
+        if (lock_fb_dly_tmp = '1') then
+          locked_out0 <= lock_out(1);
+          locked_out <= locked_out0;
+        end if;
+    elsif (falling_edge(clkin_ps)) then
+--        lock_out1_neg <= lock_out(1);
+        lock_out1_neg <= locked_out0;
+    end if;
+  end process generate_lock;
+
+--
+--generate the clk1x_out
+--  
+  
+  gen_clk1x : process( clkin_ps, rst_ipd)
+  begin
+    if ((rising_edge(rst_ipd)) or (rst_ipd = '1')) then
+      clk0_out <= '0';
+    elsif (clkin_ps'event) then
+      if (clkin_ps = '1' ) then
+        if ((clk1x_type = 1) and (lock_out(0) = '1')) then
+          clk0_out <= '1', '0' after period_50;
+        else
+          clk0_out <= '1';
+        end if;
+      else
+        if ((clkin_ps = '0') and ((((clk1x_type = 1) and (lock_out(0) = '1')) = false) or ((lock_out(0) = '1') and (lock_out(1) = '0')))) then                
+          clk0_out <= '0';
+        end if;
+      end if;          
+    end if;
+  end process gen_clk1x;
+
+
+
+
+  
+--
+--generate the clk2x_out
+--    
+
+                                                                                  
+  gen_clk2x : process
+  begin
+    if (rst_ipd='1') then
+       clk2x_out <= '0';
+    elsif (rising_edge(clkin_ps)) then
+      clk2x_out <= '1';
+      wait for period_25;
+      clk2x_out <= '0';
+      if (lock_out(0) = '1') then
+        wait for period_25;
+        clk2x_out <= '1';
+        wait for period_25;
+        clk2x_out <= '0';
+      else
+        wait for period_50;
+      end if;
+    end if;
+    wait on clkin_ps, rst_ipd;
+  end process gen_clk2x;
+
+-- 
+--generate the clkdv_out
+-- 
+
+  gen_clkdv : process (clkin_ps, rst_ipd)
+  begin
+    if (rst_ipd='1') then
+       clkdv_out <= '0';
+       clkdv_cnt <= 0;
+    elsif ((rising_edge(clkin_ps)) or (falling_edge(clkin_ps))) then
+      if (lock_out1_neg = '1') then
+         if (clkdv_cnt >= divide_type -1) then
+           clkdv_cnt <= 0;
+         else
+           clkdv_cnt <= clkdv_cnt + 1;
+         end if;
+
+         if (clkdv_cnt < divide_type /2) then
+            clkdv_out <= '1';
+         else
+           if ( ((divide_type rem (2)) > 0) and (dll_mode_type = 0)) then
+             clkdv_out <= '0' after (period_25);
+           else
+            clkdv_out <= '0';
+           end if;
+         end if;
+      end if;
+    end if;
+  end process;
+
+--
+-- generate fx output signal
+--
+  
+  calculate_period_fx : process
+  begin
+    if (lock_period = '1') then
+      period_fx <= (period * denominator) / (numerator * 2);
+      remain_fx <= (((period/1 ps) * denominator) mod (numerator * 2)) * 1 ps;        
+    end if;
+    wait on lock_period, period, denominator, numerator;
+  end process calculate_period_fx;
+
+  generate_clkfx : process
+    variable temp : integer;
+  begin
+    if (rst_ipd = '1') then
+      clkfx_out <= '0';
+    elsif (clkin_lost_out_ext = '1') then
+       wait until (rising_edge(rst_ipd));
+       clkfx_out <= '0';            
+      wait until (falling_edge(rst_reg(2)));              
+    elsif (rising_edge(clkin_ps)) then
+      if (locked_out0 = '1') then
+        clkfx_out <= '1';
+        temp := numerator * 2 - 1 - 1;
+        for p in 0 to temp loop
+          wait for (period_fx);
+          clkfx_out <= not clkfx_out;
+        end loop;
+        if (period_fx > (period_50)) then
+          wait for (period_fx - (period_50));
+        end if;
+      end if;
+      if (clkin_lost_out_ext = '1') then
+        wait until (rising_edge(rst_ipd));
+        clkfx_out <= '0';      
+        wait until (falling_edge(rst_reg(2)));
+      end if;      
+    end if;
+    wait on clkin_lost_out_ext, clkin_ps, rst_ipd, rst_reg(2);
+  end process generate_clkfx;
+
+
+--
+--generate all output signal
+--
+
+  STATUS(7) <= CLKIN_ipd;
+  STATUS(5) <= CLKFX_sig;
+
+  schedule_p1_outputs : process
+  begin
+    if (CLK0_out'event) then
+      if (clkfb_type /= 0) then
+        CLK0 <= transport CLK0_out after clkout_delay;
+        clk0_sig <= transport CLK0_out after clkout_delay; 
+      end if;                 
+      if ((dll_mode_type = 0) and (clkfb_type /= 0)) then
+        CLK90 <= transport clk0_out after (clkout_delay + period_25);
+      end if;
+    end if;
+
+    if (CLK0_out'event or rst_ipd'event)then
+      if (rst_ipd = '1') then
+        CLK180 <= '0';
+        CLK270 <= '0';
+      elsif (CLK0_out'event) then 
+        if (clkfb_type /= 0) then        
+          CLK180 <= transport (not clk0_out) after clkout_delay;
+        end if;
+        if ((dll_mode_type = 0) and (clkfb_type /= 0)) then        
+          CLK270 <= transport (not clk0_out) after (clkout_delay + period_25);
+        end if;
+      end if;
+    end if;
+
+    if (clk2x_out'event) then
+      if ((dll_mode_type = 0) and (clkfb_type /= 0)) then
+        CLK2X <= transport clk2x_out after clkout_delay;
+        clk2x_sig <= transport clk2x_out after clkout_delay;  
+      end if;
+    end if;
+
+    if (CLK2X_out'event or rst_ipd'event) then
+      if (rst_ipd = '1') then
+        CLK2X180 <= '0';
+      elsif (CLK2X_out'event) then
+        if ((dll_mode_type = 0) and (clkfb_type /= 0)) then
+          CLK2X180 <= transport (not CLK2X_out) after clkout_delay;  
+        end if;
+      end if;
+    end if;
+      
+
+    if (clkdv_out'event) then
+      if (clkfb_type /= 0) then                
+        CLKDV <= transport clkdv_out after clkout_delay;
+      end if;
+    end if;
+
+    if (clkfx_out'event or rst_ipd'event) then
+      if (rst_ipd = '1') then
+        CLKFX <= '0';
+      elsif (clkfx_out'event) then
+        CLKFX <= transport clkfx_out after clkout_delay;                
+        CLKFX_sig <= transport clkfx_out after clkout_delay;                    
+      end if;
+    end if;
+
+    if (clkfx_out'event or (rising_edge(rst_ipd)) or first_time_locked'event or locked_out'event) then
+      if ((rst_ipd = '1') or (not first_time_locked)) then
+        CLKFX180 <= '0';
+      else
+        CLKFX180 <= transport (not clkfx_out) after clkout_delay;  
+      end if;
+    end if;
+
+    if (status_out(0)'event) then
+      status(0) <= status_out(0);
+    end if;
+
+    if (status_out(1)'event) then
+      status(1) <= status_out(1);
+    end if;
+
+    if (status_out(2)'event) then
+      status(2) <= status_out(2);
+    end if;    
+   
+   wait on clk0_out, clk2x_out, clkdv_out, clkfx_out, first_time_locked, locked_out, rst_ipd, status_out;
+   end process;
+ 
+  assign_status_out : process
+    begin
+      if (rst_ipd = '1') then
+        status_out(0) <= '0';
+        status_out(1) <= '0';
+        status_out(2) <= '0';
+      elsif (ps_overflow_out_ext'event) then
+        status_out(0) <= ps_overflow_out_ext;
+      elsif (clkin_lost_out_ext'event) then
+        status_out(1) <= clkin_lost_out_ext;
+      elsif (clkfx_lost_out_ext'event) then
+        status_out(2) <= clkfx_lost_out_ext;
+      end if;
+      wait on clkin_lost_out_ext, clkfx_lost_out_ext, ps_overflow_out_ext, rst_ipd;
+    end process assign_status_out;
+
+   locked_out_out <= 'X' when rst_flag = '1' else locked_out after clkout_delay;
+
+   LOCKED <= locked_out_out after 100 ps;
+   PSDONE <= psdone_out;
+   LOCKED_sig <= locked_out_out after 100 ps;    
+
+end DCM_SP_V;
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 
@@ -7965,7 +9835,7 @@ library STD;
 use STD.TEXTIO.all;
 
 library unisim;
---use unisim.vpkg.all;
+use unisim.vcomponents.all;
 use unisim.vpkg.all;
 
 entity SYSMON is
@@ -11952,6 +13822,1435 @@ begin
 
 end IODELAY_V;
 
+-------------------------------------------------------
+--  Copyright (c) 2009 Xilinx Inc.
+--  All Right Reserved.
+-------------------------------------------------------
+--
+--   ____  ____
+--  /   /\/   / 
+-- /___/  \  /     Vendor      : Xilinx 
+-- \   \   \/      Version : 11.1
+--  \   \          Description : Xilinx Functional Simulation Library Component
+--  /   /                        Input and/or Output Fixed or Variable Delay Element.
+-- /___/   /\      Filename    : IODELAY2.vhd
+-- \   \  /  \      
+--  \__ \/\__ \                  
+--                                  
+--  Revision Date:  Comment
+--     02/15/2008:  Initial version.
+--     08/21/2008:  CR479980 fix T polarity.
+--     09/05/2008:  CR480001 fix calibration.
+--     09/19/2008:  CR480004 fix phase detector. string handling changes
+--     10/03/2008:  Add DATA_RATE attribute
+--                  Add clock doubler
+--                  Change RDY to BUSY
+--     11/05/2008   I/O, structure change
+--                  Correct BKST functionality
+--     11/19/2008   Change SIM_TAP_DELAY to SIM_TAPDELAY_VALUE
+--     02/12/2009   CR1016 update DOUT to match HW
+--                  CR480001 Diff phase detector changes
+--                  CR506027 sync_to_data off
+--     03/05/2009   CR511015 VHDL - VER sync
+--                  CR511054 Output at time 0 fix
+--     04/09/2009   CR480001 fix calibration.
+--     04/22/2009   CR518721 ODELAY value fix at time 0
+--     07/23/2009   CR527208 Race condition in cal sig
+--     08/07/2009   CR511054 Time 0 output initialization
+--                  CR529368 Input bypass ouput when delay line idle
+--     08/27/2009   CR531567 Fix ignore first edge
+--     09/01/2009   CR531995 sync_to_data on
+--     11/04/2009   CR538116 fix calibrate_done when cal_delay saturates
+--     11/30/2009   CR538638 add parameter SIM_IDATAIN_INDELAY and SIM_ODATAIN_INDELAY
+--     01/28/2010   CR544661 transport SIM_*_INDELAY in case delay > period
+--     07/07/2010   CR565218 IDELAY_MODE=PCI fix
+--     08/30/2010   CR573470 default delay value
+--     09/23/2010   CR575368 IDELAY_VALUE = 0 check
+--     10/22/2010   CR578478 Update delay values when T_INDELAY changes
+--     11/22/2010   CR583988 remove COUNTER_WRAPAROUND check in DIFF_PHASE_DETECTOR
+--     01/06/2011   CR587485 behaviour change for delay increments or decrements
+--     01/12/2012   CR639067 data transitions not required after CAL
+--     01/12/2012   CR639265 X input causes delay line in PCI mode to lock up in X
+--     01/12/2012   CR639618 Change delay line update after INC
+--     04/05/2012   CR652228 INC, RST, BUSY inconsistent between ver vhdl
+--  End Revision
+-------------------------------------------------------
+
+----- CELL IODELAY2 -----
+
+library IEEE;
+use IEEE.STD_LOGIC_arith.all;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.STD_LOGIC_unsigned.all;
+
+library unisim;
+use unisim.vpkg.all;
+use unisim.vcomponents.all;
+
+  entity IODELAY2 is
+    generic (
+      COUNTER_WRAPAROUND : string := "WRAPAROUND";
+      DATA_RATE : string := "SDR";
+      DELAY_SRC : string := "IO";
+      IDELAY2_VALUE : integer := 0;
+      IDELAY_MODE : string := "NORMAL";
+      IDELAY_TYPE : string := "DEFAULT";
+      IDELAY_VALUE : integer := 0;
+      ODELAY_VALUE : integer := 0;
+      SERDES_MODE : string := "NONE";
+      SIM_TAPDELAY_VALUE : integer := 75
+    );
+
+    port (
+      BUSY                 : out std_ulogic;
+      DATAOUT              : out std_ulogic;
+      DATAOUT2             : out std_ulogic;
+      DOUT                 : out std_ulogic;
+      TOUT                 : out std_ulogic;
+      CAL                  : in std_ulogic;
+      CE                   : in std_ulogic;
+      CLK                  : in std_ulogic;
+      IDATAIN              : in std_ulogic;
+      INC                  : in std_ulogic;
+      IOCLK0               : in std_ulogic;
+      IOCLK1               : in std_ulogic;
+      ODATAIN              : in std_ulogic;
+      RST                  : in std_ulogic;
+      T                    : in std_ulogic      
+    );
+    end IODELAY2;
+
+    architecture IODELAY2_V of IODELAY2 is
+
+    constant IN_DELAY : time := 110 ps;
+    constant OUT_DELAY : time := 0 ps;
+    constant INCLK_DELAY : time := 1 ps;
+    constant OUTCLK_DELAY : time := 0 ps;
+    constant WRAPAROUND : std_ulogic := '0';
+    constant STAY_AT_LIMIT : std_ulogic := '1';
+    constant SDR : std_ulogic := '1';
+    constant DDR : std_ulogic := '0';
+    constant IO : std_logic_vector(1 downto 0) := "00";
+    constant I : std_logic_vector(1 downto 0) := "01";
+    constant O : std_logic_vector(1 downto 0) := "11";
+    constant PCI : std_ulogic := '0';
+    constant NORMAL : std_ulogic := '1';
+    constant DEFAULT : std_logic_vector(3 downto 0) := "1001";
+    constant FIXED : std_logic_vector(3 downto 0) := "1000";
+    constant VAR : std_logic_vector(3 downto 0) := "1100";
+    constant DIFF_PHASE_DETECTOR : std_logic_vector(3 downto 0) := "1111";
+    constant NONE : std_ulogic := '1';
+    constant MASTER : std_ulogic := '1';
+    constant SLAVE : std_ulogic := '0';
+    constant SIM_IDATAIN_DELAY : time := 110 ps;
+    constant SIM_ODATAIN_DELAY : time := 110 ps;
+    constant MODULE_NAME : string  := "IODELAY2";
+    constant PAD_STRING : string := "                                                                                                   ";
+    constant WRAPAROUND_STRING    : string  := "WRAPAROUND   ";
+    constant STAY_AT_LIMIT_STRING : string  := "STAY_AT_LIMIT";
+    constant IO_STRING      : string := "IO     ";
+    constant IDATAIN_STRING : string := "IDATAIN";
+    constant ODATAIN_STRING : string := "ODATAIN";
+    constant NORMAL_STRING : string := "NORMAL";
+    constant PCI_STRING    : string := "PCI   ";
+    constant NONE_STRING   : string := "NONE  ";
+    constant MASTER_STRING : string := "MASTER";
+    constant SLAVE_STRING  : string := "SLAVE ";
+    constant DEFAULT_STRING                : string := "DEFAULT               ";
+    constant DIFF_PHASE_DETECTOR_STRING    : string := "DIFF_PHASE_DETECTOR   ";
+    constant FIXED_STRING                  : string := "FIXED                 ";
+    constant VARIABLE_FROM_HALF_MAX_STRING : string := "VARIABLE_FROM_HALF_MAX";
+    constant VARIABLE_FROM_ZERO_STRING     : string := "VARIABLE_FROM_ZERO    ";
+    constant COUNTER_WRAPAROUND_MAX : integer := STAY_AT_LIMIT_STRING'length;
+    constant DELAY_SRC_MAX          : integer := ODATAIN_STRING'length;
+    constant IDELAY_MODE_MAX        : integer := NORMAL_STRING'length;
+    constant IDELAY_TYPE_MAX        : integer := VARIABLE_FROM_HALF_MAX_STRING'length;
+    constant SERDES_MODE_MAX        : integer := MASTER_STRING'length;
+
+function boolean_to_string(bool: boolean)
+    return string is
+    begin
+      if bool then
+        return "TRUE";
+      else
+        return "FALSE";
+      end if;
+    end boolean_to_string;
+
+    signal COUNTER_WRAPAROUND_BINARY : std_ulogic := WRAPAROUND;
+    signal DATA_RATE_BINARY : std_ulogic := SDR;
+    signal DELAY_SRC_BINARY : std_logic_vector(1 downto 0) := IO;
+    signal IDELAY2_VALUE_BINARY : std_logic_vector(7 downto 0) := "00000000";
+    signal IDELAY_MODE_BINARY : std_ulogic := NORMAL;
+    signal IDELAY_TYPE_BINARY : std_logic_vector(3 downto 0) := DEFAULT;
+    signal IDELAY_VALUE_BINARY : std_logic_vector(7 downto 0) := "00000000";
+    signal ODELAY_VALUE_BINARY : std_logic_vector(7 downto 0) := "00000000";
+    signal SERDES_MODE_BINARY : std_ulogic := NONE;
+    signal SIM_TAPDELAY_VALUE_BINARY : std_logic_vector(6 downto 0) := CONV_STD_LOGIC_VECTOR(75, 7);
+    signal Tstep : time := 75 ps;
+
+    signal COUNTER_WRAPAROUND_PAD   : string(1 to COUNTER_WRAPAROUND_MAX) := (others => ' ');
+    signal DELAY_SRC_PAD            : string(1 to DELAY_SRC_MAX) := (others => ' ');
+    signal IDELAY_MODE_PAD          : string(1 to IDELAY_MODE_MAX) := (others => ' ');
+    signal IDELAY_TYPE_PAD          : string(1 to IDELAY_TYPE_MAX) := (others => ' ');
+    signal SERDES_MODE_PAD          : string(1 to SERDES_MODE_MAX) := (others => ' ');
+
+    signal GSR_INDELAY : std_ulogic;
+    signal rst_sig       : std_ulogic := '0';
+    signal ce_sig        : std_ulogic := '0';
+    signal inc_sig       : std_ulogic := '0';
+    signal cal_sig       : std_ulogic := '0';
+
+-- FF outputs
+    signal delay1_out_sig: std_ulogic := '0';
+    signal delay1_out    : std_ulogic := '0';
+    signal delay2_out    : std_ulogic := '0';
+    signal delay1_out_dly: std_ulogic := '0';
+    signal tout_out_int  : std_ulogic := '0';
+    signal busy_out_int  : std_ulogic := '1';
+    signal busy_out_pe_one_shot : std_ulogic := '1';
+    signal busy_out_ne_one_shot : std_ulogic := '1';
+    signal busy_out_dly  : std_ulogic := '1';
+    signal busy_out_pe_dly  : std_ulogic := '1';
+    signal busy_out_pe_dly1 : std_ulogic := '1';
+    signal busy_out_ne_dly  : std_ulogic := '1';
+    signal busy_out_ne_dly1 : std_ulogic := '1';
+    signal sdo_out_int   : std_ulogic := '0';
+
+-- clk doubler signals 
+    signal ioclk0_int       : std_ulogic := '0';
+    signal ioclk1_int       : std_ulogic := '0';
+    signal ioclk_int        : std_ulogic := '0';
+    signal first_edge       : std_ulogic := '0';
+
+-- Attribute settings 
+    signal sat_at_max_reg        : std_ulogic := '0';
+    signal rst_to_half_reg       : std_ulogic := '0';
+    signal ignore_rst            : std_ulogic := '0';
+    signal force_rx_reg          : std_ulogic := '0';
+    signal force_dly_dir_reg     : std_ulogic := '0';
+    signal output_delay_off      : std_ulogic := '0';
+    signal input_delay_off       : std_ulogic := '0';
+    signal isslave               : std_ulogic := '0';
+    signal encasc                : std_ulogic := '0';
+
+
+-- Error flags
+    signal counter_wraparound_err_flag : boolean := FALSE;
+    signal data_rate_err_flag          : boolean := FALSE;
+    signal serdes_mode_err_flag        : boolean := FALSE;
+    signal odelay_value_err_flag       : boolean := FALSE;
+    signal idelay_value_err_flag       : boolean := FALSE;
+    signal sim_tap_delay_err_flag      : boolean := FALSE;
+    signal idelay_type_err_flag        : boolean := FALSE;
+    signal idelay_mode_err_flag        : boolean := FALSE;
+    signal delay_src_err_flag          : boolean := FALSE;
+    signal idelay2_value_err_flag      : boolean := FALSE;
+    signal attr_err_flag               : std_ulogic := '0';
+
+-- internal logic
+    signal cal_count          : std_logic_vector(3 downto 0) := "1011"; -- 0 to 11
+    signal cal_delay          : std_logic_vector(7 downto 0) := (others => '0');
+    signal max_delay          : std_logic_vector(7 downto 0) := (others => '0');
+    signal half_max           : std_logic_vector(7 downto 0) := (others => '0');
+    signal delay_val_pe_1     : std_logic_vector(7 downto 0) := (others => '0');
+    signal delay_val_ne_1     : std_logic_vector(7 downto 0) := (others => '0');
+    signal delay_val_pe_clk   : std_ulogic;
+    signal delay_val_ne_clk   : std_ulogic;
+    signal first_time_pe      : std_ulogic := '1';
+    signal first_time_ne      : std_ulogic := '1';
+    signal idelay_val_pe_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_pe_m_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_pe_s_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_pe_m_reg1 : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_pe_s_reg1 : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_ne_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_ne_m_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_ne_s_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_ne_m_reg1 : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal idelay_val_ne_s_reg1 : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    signal delay1_reached     : std_ulogic := '0';
+    signal delay1_reached_1   : std_ulogic := '0';
+    signal delay1_reached_2   : std_ulogic := '0';
+    signal delay1_working     : std_ulogic := '0';
+    signal delay1_working_1   : std_ulogic := '0';
+    signal delay1_working_2   : std_ulogic := '0';
+    signal delay1_ignore      : std_ulogic := '0';
+    signal delay_val_pe_2     : std_logic_vector(7 downto 0) := (others => '0');
+    signal delay_val_ne_2     : std_logic_vector(7 downto 0) := (others => '0');
+    signal odelay_val_pe_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(ODELAY_VALUE, 8);
+    signal odelay_val_ne_reg  : std_logic_vector(7 downto 0) :=  CONV_STD_LOGIC_VECTOR(ODELAY_VALUE, 8);
+    signal delay2_reached     : std_ulogic := '0';
+    signal delay2_reached_1   : std_ulogic := '0';
+    signal delay2_reached_2   : std_ulogic := '0';
+    signal delay2_working     : std_ulogic := '0';
+    signal delay2_working_1   : std_ulogic := '0';
+    signal delay2_working_2   : std_ulogic := '0';
+    signal delay2_ignore      : std_ulogic := '0';
+    signal delay1_in          : std_ulogic := '0';
+    signal delay2_in          : std_ulogic := '0';
+    signal calibrate          : std_ulogic := '0';
+    signal calibrate_done     : std_ulogic := '0';
+    signal sync_to_data_reg   : std_ulogic := '1';
+    signal pci_ce_reg         : std_ulogic := '0';
+    signal BUSY_OUT : std_ulogic;
+    signal DATAOUT2_OUT : std_ulogic;
+    signal DATAOUT_OUT : std_ulogic;
+    signal DOUT_OUT : std_ulogic;
+    signal TOUT_OUT : std_ulogic;
+    
+    signal BUSY_OUTDELAY : std_ulogic;
+    signal DATAOUT2_OUTDELAY : std_ulogic;
+    signal DATAOUT_OUTDELAY : std_ulogic;
+    signal DOUT_OUTDELAY : std_ulogic;
+    signal TOUT_OUTDELAY : std_ulogic;
+    
+  signal CAL_ipd : std_ulogic;
+  signal CE_ipd : std_ulogic;
+  signal CLK_ipd : std_ulogic;
+  signal IDATAIN_ipd : std_ulogic;
+  signal INC_ipd : std_ulogic;
+  signal IOCLK0_ipd : std_ulogic;
+  signal IOCLK1_ipd : std_ulogic;
+  signal ODATAIN_ipd : std_ulogic;
+  signal RST_ipd : std_ulogic;
+  signal T_ipd : std_ulogic;
+    
+    signal CAL_INDELAY : std_ulogic;
+    signal CE_INDELAY : std_ulogic;
+    signal CLK_INDELAY : std_ulogic;
+    signal IDATAIN_INDELAY : std_ulogic;
+    signal INC_INDELAY : std_ulogic;
+    signal IOCLK0_INDELAY : std_ulogic;
+    signal IOCLK1_INDELAY : std_ulogic;
+    signal ODATAIN_INDELAY : std_ulogic;
+    signal RST_INDELAY : std_ulogic;
+    signal T_INDELAY : std_ulogic := '1';
+    
+
+  procedure inc_dec(
+  signal rst_sig                       : in std_ulogic;
+  signal GSR_INDELAY                   : in std_ulogic;
+  signal CLK_INDELAY                   : in std_ulogic;
+  signal busy_out                      : in std_ulogic;
+  signal ce_sig                        : in std_ulogic;
+  signal pci_ce_reg                    : in std_ulogic;
+  signal inc_sig                       : in std_ulogic;
+  signal IDELAY_TYPE_BINARY            : in std_logic_vector(3 downto 0);
+  signal SERDES_MODE_BINARY            : in std_ulogic;
+  signal sat_at_max_reg                : in std_ulogic;
+  signal max_delay                     : in std_logic_vector(7 downto 0);
+  signal half_max                      : in std_logic_vector(7 downto 0);
+  signal rst_to_half_reg               : in std_ulogic;
+  signal ignore_rst                    : inout std_ulogic;
+  signal idelay_val_pe_m_reg             : inout std_logic_vector(7 downto 0);
+  signal idelay_val_pe_s_reg             : inout std_logic_vector(7 downto 0);
+  signal idelay_val_ne_m_reg             : inout std_logic_vector(7 downto 0);
+  signal idelay_val_ne_s_reg             : inout std_logic_vector(7 downto 0)
+     ) is
+  begin
+     if (GSR_INDELAY = '1') then
+        idelay_val_pe_m_reg <= IDELAY_VALUE_BINARY;
+        idelay_val_pe_s_reg <= IDELAY_VALUE_BINARY;
+        if (pci_ce_reg = '1') then -- PCI
+           idelay_val_ne_m_reg <= IDELAY2_VALUE_BINARY;
+           idelay_val_ne_s_reg <= IDELAY2_VALUE_BINARY;
+        else
+           idelay_val_ne_m_reg <= IDELAY_VALUE_BINARY;
+           idelay_val_ne_s_reg <= IDELAY_VALUE_BINARY;
+        end if;
+     elsif (rst_sig= '1') then
+        if (rst_to_half_reg = '1') then
+           if (SERDES_MODE_BINARY = SLAVE) then
+              if ((ignore_rst = '0') and (IDELAY_TYPE_BINARY = DIFF_PHASE_DETECTOR)) then
+              -- slave phase detector first rst
+                 idelay_val_pe_m_reg <= half_max;
+                 idelay_val_ne_m_reg <= half_max;
+                 idelay_val_pe_s_reg <= half_max(6 downto 0) & '0';
+                 idelay_val_ne_s_reg <= half_max(6 downto 0) & '0';
+                 ignore_rst <= '1';
+              elsif (ignore_rst = '0') then
+              -- all non diff phase detector slave rst
+                 idelay_val_pe_s_reg <= half_max;
+                 idelay_val_ne_s_reg <= half_max;
+              else
+              -- slave phase detector second or more rst
+                 if ((idelay_val_pe_m_reg + half_max) > max_delay) then
+                    idelay_val_pe_s_reg <= idelay_val_pe_m_reg + half_max - max_delay - 1;
+                    idelay_val_ne_s_reg <= idelay_val_ne_m_reg + half_max - max_delay - 1;
+                 else
+                    idelay_val_pe_s_reg <= idelay_val_pe_m_reg + half_max;
+                    idelay_val_ne_s_reg <= idelay_val_ne_m_reg + half_max;
+                 end if;
+              end if;
+           elsif ((ignore_rst = '0') or (IDELAY_TYPE_BINARY /= DIFF_PHASE_DETECTOR)) then
+           -- master or none first diff phase rst or all others
+              idelay_val_pe_m_reg <= half_max;
+              idelay_val_ne_m_reg <= half_max;
+              ignore_rst <= '1';
+           end if;
+        else
+           idelay_val_pe_m_reg <= "00000000";
+           idelay_val_ne_m_reg <= "00000000";
+           idelay_val_pe_s_reg <= "00000000";
+           idelay_val_ne_s_reg <= "00000000";
+        end if;
+--     elsif ( rising_edge(CLK_INDELAY) and (busy_out = '0') and
+--             (ce_sig = '1') and (rst_sig = '0') and
+-- CR652228 - inc/dec one tap per clock regardless of busy
+     elsif ( rising_edge(CLK_INDELAY) and (ce_sig = '1') and
+             ( (IDELAY_TYPE_BINARY = VAR) or
+               (IDELAY_TYPE_BINARY = DIFF_PHASE_DETECTOR) ) ) then  -- variable
+        if (inc_sig = '1') then -- inc
+           -- MASTER OR NONE
+           -- (lt max_delay inc)
+           if (idelay_val_pe_m_reg < max_delay) then
+              idelay_val_pe_m_reg <= idelay_val_pe_m_reg + "00000001";
+           -- wrap to 0 wrap (gte max_delay and wrap to 0)
+           elsif (sat_at_max_reg = WRAPAROUND) then
+              idelay_val_pe_m_reg <= "00000000";
+           -- stay at max (gte max_delay and stay at max)
+           else
+              idelay_val_pe_m_reg <= max_delay;
+           end if;
+           -- SLAVE
+           -- (lt max_delay inc)
+           if (idelay_val_pe_s_reg < max_delay) then
+              idelay_val_pe_s_reg <= idelay_val_pe_s_reg + "00000001";
+           -- wrap to 0 wrap (gte max_delay and wrap to 0)
+           elsif (sat_at_max_reg = WRAPAROUND) then
+              idelay_val_pe_s_reg <= "00000000";
+           -- stay at max (gte max_delay and stay at max)
+           else
+              idelay_val_pe_s_reg <= max_delay;
+           end if;
+           -- MASTER OR NONE
+           -- (lt max_delay inc)
+           if (idelay_val_ne_m_reg < max_delay) then
+              idelay_val_ne_m_reg <= idelay_val_ne_m_reg + "00000001";
+           -- wrap to 0 wrap (gte max_delay and wrap to 0)
+           elsif (sat_at_max_reg = WRAPAROUND) then
+              idelay_val_ne_m_reg <= "00000000";
+           -- stay at max (gte max_delay and stay at max)
+           else
+              idelay_val_ne_m_reg <= max_delay;
+           end if;
+           -- SLAVE
+           -- (lt max_delay inc)
+           if (idelay_val_ne_s_reg < max_delay) then
+              idelay_val_ne_s_reg <= idelay_val_ne_s_reg + "00000001";
+           -- wrap to 0 wrap (gte max_delay and wrap to 0)
+           elsif (sat_at_max_reg = WRAPAROUND) then
+              idelay_val_ne_s_reg <= "00000000";
+           -- stay at max (gte max_delay and stay at max)
+           else
+              idelay_val_ne_s_reg <= max_delay;
+           end if;
+        else -- dec
+           -- MASTER OR NONE
+           -- (between 0 and max_delay dec)
+           if ((idelay_val_pe_m_reg > "00000000") and (idelay_val_pe_reg <= max_delay)) then
+              idelay_val_pe_m_reg <= idelay_val_pe_m_reg - "00000001";
+           -- stay at min (eq 0 and stay at max/min)
+           elsif ((sat_at_max_reg = STAY_AT_LIMIT) and (idelay_val_pe_m_reg = "00000000")) then
+              idelay_val_pe_m_reg <= "00000000";
+           -- wrap to 0 wrap (gte max_delay or (eq 0 and wrap to max))
+           else
+              idelay_val_pe_m_reg <= max_delay;
+           end if;
+           -- SLAVE
+           -- (between 0 and max_delay dec)
+           if ((idelay_val_pe_s_reg > "00000000") and (idelay_val_pe_reg <= max_delay)) then
+              idelay_val_pe_s_reg <= idelay_val_pe_s_reg - "00000001";
+           -- stay at min (eq 0 and stay at max/min)
+           elsif ((sat_at_max_reg = STAY_AT_LIMIT) and (idelay_val_pe_s_reg = "00000000")) then
+              idelay_val_pe_s_reg <= "00000000";
+           -- wrap to 0 wrap (gte max_delay or (eq 0 and wrap to max))
+           else
+              idelay_val_pe_s_reg <= max_delay;
+           end if;
+           -- MASTER OR NONE
+           -- (between 0 and max_delay dec)
+           if ((idelay_val_ne_m_reg > "00000000") and (idelay_val_ne_m_reg <= max_delay)) then
+              idelay_val_ne_m_reg <= idelay_val_ne_m_reg - "00000001";
+           -- stay at min (eq 0 and stay at max/min)
+           elsif ((sat_at_max_reg = STAY_AT_LIMIT) and (idelay_val_ne_m_reg = "00000000")) then
+              idelay_val_ne_m_reg <= "00000000";
+           -- wrap to 0 wrap (gte max_delay or (eq 0 and wrap to max))
+           else
+              idelay_val_ne_m_reg <= max_delay;
+           end if;
+           -- SLAVE
+           -- (between 0 and max_delay dec)
+           if ((idelay_val_ne_s_reg > "00000000") and (idelay_val_ne_s_reg <= max_delay)) then
+              idelay_val_ne_s_reg <= idelay_val_ne_s_reg - "00000001";
+           -- stay at min (eq 0 and stay at max/min)
+           elsif ((sat_at_max_reg = STAY_AT_LIMIT) and (idelay_val_ne_s_reg = "00000000")) then
+              idelay_val_ne_s_reg <= "00000000";
+           -- wrap to 0 wrap (gte max_delay or (eq 0 and wrap to max))
+           else
+              idelay_val_ne_s_reg <= max_delay;
+           end if;
+        end if;
+     end if;
+  end inc_dec;
+
+    begin
+    BUSY_OUTDELAY <= BUSY_OUT after OUT_DELAY;
+    DATAOUT2_OUTDELAY <= DATAOUT2_OUT after OUT_DELAY;
+    DATAOUT_OUTDELAY <= DATAOUT_OUT after OUT_DELAY;
+    DOUT_OUTDELAY <= DOUT_OUT after OUT_DELAY;
+    TOUT_OUTDELAY <= TOUT_OUT after OUT_DELAY;
+    
+    CLK_ipd <= CLK;
+    IOCLK0_ipd <= IOCLK0;
+    IOCLK1_ipd <= IOCLK1;
+    
+    CAL_ipd <= CAL;
+    CE_ipd <= CE;
+    IDATAIN_ipd <= IDATAIN;
+    INC_ipd <= INC;
+    ODATAIN_ipd <= ODATAIN;
+    RST_ipd <= RST;
+    T_ipd <= T;
+    
+    CLK_INDELAY <= CLK_ipd after INCLK_DELAY;
+    IOCLK0_INDELAY <= IOCLK0_ipd after INCLK_DELAY;
+    IOCLK1_INDELAY <= IOCLK1_ipd after INCLK_DELAY;
+    
+    CAL_INDELAY <= CAL_ipd after IN_DELAY;
+    CE_INDELAY <= CE_ipd after IN_DELAY;
+    IDATAIN_INDELAY <= transport IDATAIN_ipd after SIM_IDATAIN_DELAY;
+    INC_INDELAY <= INC_ipd after IN_DELAY;
+    ODATAIN_INDELAY <= transport ODATAIN_ipd after SIM_ODATAIN_DELAY;
+    RST_INDELAY <= RST_ipd after IN_DELAY;
+    T_INDELAY <= T_ipd after IN_DELAY;
+
+    rst_sig          <= RST_INDELAY;
+    ce_sig           <= CE_INDELAY;
+    inc_sig          <= INC_INDELAY;
+    cal_sig          <= CAL_INDELAY;
+    GSR_INDELAY <= GSR;
+    output_delay_off <= force_dly_dir_reg and force_rx_reg;
+    input_delay_off  <= force_dly_dir_reg and not force_rx_reg;
+    delay1_reached <= delay1_reached_1 or delay1_reached_2;
+    delay2_reached <= delay2_reached_1 or delay2_reached_2;
+    delay1_working <= delay1_working_1 or delay1_working_2;
+    delay2_working <= delay2_working_1 or delay2_working_2;
+  --------------------
+  --  BEHAVIOR SECTION
+  --------------------
+--####################################################################
+--#####                     Param Check                          #####
+--####################################################################
+
+    INIPROC : process
+
+    variable COUNTER_WRAPAROUND_STRING : string(1 to 100) := COUNTER_WRAPAROUND & PAD_STRING(1 to 100-COUNTER_WRAPAROUND'length);
+    variable DELAY_SRC_STRING : string(1 to 100) := DELAY_SRC & PAD_STRING(1 to 100-DELAY_SRC'length);
+    variable IDELAY_MODE_STRING : string(1 to 100) := IDELAY_MODE & PAD_STRING(1 to 100-IDELAY_MODE'length);
+    variable IDELAY_TYPE_STRING : string(1 to 100) := IDELAY_TYPE & PAD_STRING(1 to 100-IDELAY_TYPE'length);
+    variable SERDES_MODE_STRING : string(1 to 100) := SERDES_MODE & PAD_STRING(1 to 100-SERDES_MODE'length);
+begin
+    DELAY_SRC_PAD <= DELAY_SRC_STRING(1 to DELAY_SRC_PAD'length);
+    IDELAY_MODE_PAD <= IDELAY_MODE_STRING(1 to IDELAY_MODE_PAD'length);
+    IDELAY_TYPE_PAD <= IDELAY_TYPE_STRING(1 to IDELAY_TYPE_PAD'length);
+    COUNTER_WRAPAROUND_PAD <= COUNTER_WRAPAROUND_STRING(1 to COUNTER_WRAPAROUND_PAD'length);
+    SERDES_MODE_PAD <= SERDES_MODE_STRING(1 to SERDES_MODE_PAD'length);
+-------------------------------------------------
+------ COUNTER_WRAPAROUND Check
+-------------------------------------------------
+    -- case COUNTER_WRAPAROUND is
+      if   (COUNTER_WRAPAROUND_STRING(1 to COUNTER_WRAPAROUND_MAX) = WRAPAROUND_STRING) then
+        COUNTER_WRAPAROUND_BINARY <= WRAPAROUND;
+        sat_at_max_reg <= WRAPAROUND;
+      elsif(COUNTER_WRAPAROUND_STRING(1 to COUNTER_WRAPAROUND_MAX) = STAY_AT_LIMIT_STRING) then 
+        COUNTER_WRAPAROUND_BINARY <= STAY_AT_LIMIT;
+        sat_at_max_reg <= STAY_AT_LIMIT;
+      else
+        wait for 1 ps;
+        assert FALSE report "Error : COUNTER_WRAPAROUND = is not WRAPAROUND, STAY_AT_LIMIT." severity warning;
+        counter_wraparound_err_flag <= TRUE;
+      end if;
+    -- endcase;
+-------------------------------------------------
+------ DATA_RATE Check
+-------------------------------------------------
+    -- case DATA_RATE is
+    if((DATA_RATE = "SDR") or (DATA_RATE = "sdr"))then
+       DATA_RATE_BINARY <= SDR;
+    elsif((DATA_RATE = "DDR") or (DATA_RATE = "ddr")) then
+       DATA_RATE_BINARY <= DDR;
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " DATA_RATE ",
+           EntityName => MODULE_NAME,
+           GenericValue => DATA_RATE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " DDR or SDR.",
+           TailMsg => "",
+           MsgSeverity => Warning
+       );
+       data_rate_err_flag <= TRUE;
+    end if;
+    -- endcase;
+-------------------------------------------------
+------ DELAY_SRC  Check
+-------------------------------------------------
+    -- case DELAY_SRC is
+    if   (DELAY_SRC_STRING(1 to DELAY_SRC_MAX) = IO_STRING) then
+       DELAY_SRC_BINARY <= IO;
+       force_rx_reg      <= '0';
+       force_dly_dir_reg <= '0';
+    elsif(DELAY_SRC_STRING(1 to DELAY_SRC_MAX) = IDATAIN_STRING) then 
+       DELAY_SRC_BINARY <= I;
+       force_rx_reg      <= '1';
+       force_dly_dir_reg <= '1';
+    elsif(DELAY_SRC_STRING(1 to DELAY_SRC_MAX) = ODATAIN_STRING) then 
+       DELAY_SRC_BINARY <= O;
+       force_rx_reg      <= '0';
+       force_dly_dir_reg <= '1';
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " DELAY_SRC ",
+           EntityName => MODULE_NAME,
+           GenericValue => DELAY_SRC,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " IO, IDATAIN or ODATAIN.",
+           TailMsg => "",
+           MsgSeverity => Warning 
+       );
+       delay_src_err_flag <= TRUE;
+    end if;
+    -- endcase;
+-------------------------------------------------
+------ IDELAY_TYPE Check
+-------------------------------------------------
+    -- case IDELAY_TYPE is
+    if   (IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = DEFAULT_STRING) then
+       IDELAY_TYPE_BINARY <= DEFAULT;
+    elsif(IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = DIFF_PHASE_DETECTOR_STRING) then
+       IDELAY_TYPE_BINARY <= DIFF_PHASE_DETECTOR;
+       rst_to_half_reg <= '1';
+       if(DELAY_SRC_STRING(1 to DELAY_SRC_MAX) /= IDATAIN_STRING) then 
+          wait for 1 ps;
+          GenericValueCheckMessage
+           (  HeaderMsg  => " Attribute Syntax Error ",
+              GenericName => " DELAY_SRC ",
+              EntityName => MODULE_NAME,
+              GenericValue => DELAY_SRC,
+              Unit => "",
+              ExpectedValueMsg => " DELAY_SRC must be set to ",
+              ExpectedGenericValue => "IDATAIN ",
+              TailMsg => "when IDELAY_TYPE is set to DIFF_PHASE_DETECTOR.",
+              MsgSeverity => Warning 
+          );
+          idelay_type_err_flag <= TRUE;
+       end if;
+         if(IDELAY_MODE_STRING(1 to IDELAY_MODE_MAX) /= NORMAL_STRING) then 
+          wait for 1 ps;
+          GenericValueCheckMessage
+           (  HeaderMsg  => " Attribute Syntax Error ",
+              GenericName => " IDELAY_MODE ",
+              EntityName => MODULE_NAME,
+              GenericValue => IDELAY_MODE,
+              Unit => "",
+              ExpectedValueMsg => " IDELAY_MODE must be set to ",
+              ExpectedGenericValue => "NORMAL ",
+              TailMsg => "when IDELAY_TYPE is set to DIFF_PHASE_DETECTOR.",
+              MsgSeverity => Warning 
+          );
+          idelay_type_err_flag <= TRUE;
+       end if;
+         if((SERDES_MODE_STRING(1 to SERDES_MODE_MAX) /= SLAVE_STRING) and 
+          (SERDES_MODE_STRING(1 to SERDES_MODE_MAX) /= MASTER_STRING)) then 
+          wait for 1 ps;
+          GenericValueCheckMessage
+           (  HeaderMsg  => " Attribute Syntax Error ",
+              GenericName => " SERDES_MODE ",
+              EntityName => MODULE_NAME,
+              GenericValue => SERDES_MODE,
+              Unit => "",
+              ExpectedValueMsg => " SERDES_MODE must be set to ",
+              ExpectedGenericValue => "MASTER or SLAVE ",
+              TailMsg => "when IDELAY_TYPE is set to DIFF_PHASE_DETECTOR.",
+              MsgSeverity => Warning 
+          );
+          idelay_type_err_flag <= TRUE;
+       end if;
+   
+    elsif(IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = FIXED_STRING) then
+       IDELAY_TYPE_BINARY <= FIXED;
+    elsif(IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = VARIABLE_FROM_HALF_MAX_STRING) then
+       IDELAY_TYPE_BINARY <= VAR;
+       rst_to_half_reg <= '1';
+    elsif(IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = VARIABLE_FROM_ZERO_STRING) then
+       IDELAY_TYPE_BINARY <= VAR;
+       rst_to_half_reg <= '0';
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " IDELAY_TYPE ",
+           EntityName => MODULE_NAME,
+           GenericValue => IDELAY_TYPE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " DEFAULT, DIFF_PHASE_DETECTOR, FIXED, VARIABLE_FROM_HALF_MAX, or VARIABLE_FROM_ZERO.",
+           TailMsg => "",
+           MsgSeverity => Warning 
+       );
+       idelay_type_err_flag <= TRUE;
+    end if;
+    -- endcase;
+-------------------------------------------------
+------ IDELAY2_VALUE Check
+-------------------------------------------------
+  -- case IDELAY2_VALUE is
+    if((IDELAY2_VALUE >= 0) and (IDELAY2_VALUE <= 255)) then
+       if (IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = DEFAULT_STRING) then
+           IDELAY2_VALUE_BINARY <= "00001010";
+       else
+           IDELAY2_VALUE_BINARY <= CONV_STD_LOGIC_VECTOR(IDELAY2_VALUE, 8);
+       end if;
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " IDELAY2_VALUE ",
+           EntityName => MODULE_NAME,
+           GenericValue => IDELAY2_VALUE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " 0, 1, 2, ..., 253, 254, 255.",
+           TailMsg => "",
+           MsgSeverity => Warning
+       );
+       idelay2_value_err_flag <= TRUE;
+    end if;
+  -- endcase;
+      if ((IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = VARIABLE_FROM_HALF_MAX_STRING) or
+          (IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = VARIABLE_FROM_ZERO_STRING) or
+          (IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = DEFAULT_STRING) or
+          (IDELAY_TYPE_STRING(1 to IDELAY_TYPE_MAX) = DIFF_PHASE_DETECTOR_STRING)) then
+         if (IDELAY_VALUE /= 0) then
+            wait for 1 ps;
+            GenericValueCheckMessage
+             (  HeaderMsg  => " Attribute Syntax Error ",
+                GenericName => " IDELAY_TYPE ",
+                EntityName => MODULE_NAME,
+                GenericValue => IDELAY_TYPE,
+                Unit => "",
+                ExpectedValueMsg => " and IDELAY_VALUE is non zero.",
+                ExpectedGenericValue => " Non zero IDELAY_VALUE is only allowed when IDELAY_TYPE=FIXED.",
+                TailMsg => "",
+                MsgSeverity => Warning
+            );
+            idelay_value_err_flag <= TRUE;
+         end if;
+         if (IDELAY2_VALUE /= 0) then
+            wait for 1 ps;
+            GenericValueCheckMessage
+             (  HeaderMsg  => " Attribute Syntax Error ",
+                GenericName => " IDELAY_TYPE ",
+                EntityName => MODULE_NAME,
+                GenericValue => IDELAY_TYPE,
+                Unit => "",
+                ExpectedValueMsg => " and IDELAY2_VALUE is non zero.",
+                ExpectedGenericValue => " Non zero IDELAY2_VALUE is only allowed when IDELAY_TYPE=FIXED.",
+                TailMsg => "",
+                MsgSeverity => Warning
+            );
+            idelay2_value_err_flag <= TRUE;
+         end if;
+      end if;
+-------------------------------------------------
+------ IDELAY_VALUE Check
+-------------------------------------------------
+  -- case IDELAY_VALUE is
+    if((IDELAY_VALUE >= 0) and (IDELAY_VALUE <= 255)) then
+       IDELAY_VALUE_BINARY <= CONV_STD_LOGIC_VECTOR(IDELAY_VALUE, 8);
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " IDELAY_VALUE ",
+           EntityName => MODULE_NAME,
+           GenericValue => IDELAY_VALUE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " 0, 1, 2, ..., 253, 254, 255.",
+           TailMsg => "",
+           MsgSeverity => Warning
+       );
+       idelay_value_err_flag <= TRUE;
+    end if;
+  -- endcase;
+-------------------------------------------------
+------ IDELAY_MODE Check
+-------------------------------------------------
+  -- case IDELAY_MODE is
+    if   (IDELAY_MODE_STRING(1 to IDELAY_MODE_MAX) = NORMAL_STRING) then
+       IDELAY_MODE_BINARY    <= NORMAL;
+       pci_ce_reg            <= '0';
+    elsif(IDELAY_MODE_STRING(1 to IDELAY_MODE_MAX) = PCI_STRING) then 
+       IDELAY_MODE_BINARY    <= PCI;
+       pci_ce_reg            <= '1';
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " IDELAY_MODE ",
+           EntityName => MODULE_NAME,
+           GenericValue => IDELAY_MODE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " NORMAL or PCI.",
+           TailMsg => "",
+         MsgSeverity => Warning 
+       );
+       idelay_mode_err_flag <= TRUE;
+    end if;
+  -- endcase;
+-------------------------------------------------
+------ ODELAY_VALUE Check
+-------------------------------------------------
+
+    if((ODELAY_VALUE >= 0) and (ODELAY_VALUE <= 255)) then
+       ODELAY_VALUE_BINARY <= CONV_STD_LOGIC_VECTOR(ODELAY_VALUE, 8);
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " ODELAY_VALUE ",
+           EntityName => MODULE_NAME,
+           GenericValue => ODELAY_VALUE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " 0, 1, 2, ..., 253, 254, 255.",
+           TailMsg => "",
+           MsgSeverity => Warning
+       );
+       odelay_value_err_flag <= TRUE;
+    end if;
+
+-------------------------------------------------
+------ SERDES_MODE Check
+-------------------------------------------------
+    if    (SERDES_MODE_STRING(1 to SERDES_MODE_MAX) = NONE_STRING) then
+       SERDES_MODE_BINARY <= NONE;
+    elsif (SERDES_MODE_STRING(1 to SERDES_MODE_MAX) = MASTER_STRING) then
+       SERDES_MODE_BINARY <= MASTER;
+    elsif (SERDES_MODE_STRING(1 to SERDES_MODE_MAX) = SLAVE_STRING) then
+       SERDES_MODE_BINARY <= SLAVE;
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " SERDES_MODE ",
+           EntityName => MODULE_NAME,
+           GenericValue => SERDES_MODE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => " NONE, MASTER or SLAVE.",
+           TailMsg => "",
+           MsgSeverity => Warning 
+       );
+       serdes_mode_err_flag <= TRUE;
+    end if;
+
+-------------------------------------------------
+------ SIM_TAPDELAY_VALUE Check
+-------------------------------------------------
+    if((SIM_TAPDELAY_VALUE >= 10) and (SIM_TAPDELAY_VALUE <= 90)) then
+       SIM_TAPDELAY_VALUE_BINARY <= CONV_STD_LOGIC_VECTOR(SIM_TAPDELAY_VALUE, 7);
+       Tstep <= SIM_TAPDELAY_VALUE * 1 ps;
+    else
+       wait for 1 ps;
+       GenericValueCheckMessage
+        (  HeaderMsg  => " Attribute Syntax Error ",
+           GenericName => " SIM_TAPDELAY_VALUE ",
+           EntityName => MODULE_NAME,
+           GenericValue => SIM_TAPDELAY_VALUE,
+           Unit => "",
+           ExpectedValueMsg => " The Legal values for this attribute are ",
+           ExpectedGenericValue => "between 10 and 90 ps inclusive.",
+           TailMsg => "",
+           MsgSeverity => Warning
+       );
+       sim_tap_delay_err_flag <= TRUE;
+   end if;
+   wait for 1 ps;
+    if ( counter_wraparound_err_flag or serdes_mode_err_flag or
+         odelay_value_err_flag or idelay_value_err_flag or
+         idelay_type_err_flag or idelay_mode_err_flag or
+         delay_src_err_flag or idelay2_value_err_flag or
+         sim_tap_delay_err_flag or data_rate_err_flag) then
+       wait for 1 ps;
+       ASSERT FALSE REPORT "Attribute Errors detected, simulation cannot continue. Exiting ..." SEVERITY Error;
+    end if;
+
+    wait;
+    end process INIPROC;
+
+  prcs_init:process
+  begin
+      first_edge  <= '1' after 150 ps;
+      if (GSR_INDELAY = '1') then
+         wait on GSR_INDELAY;
+      end if;
+     wait;
+
+  end process prcs_init;
+
+--####################################################################
+--#####                       DDR doubler                        #####
+--####################################################################
+  prcs_ddr_dblr_clk0:process(IOCLK0_INDELAY)
+  begin
+     if(rising_edge(IOCLK0_INDELAY)) then
+        if (first_edge = '1') then
+           ioclk0_int <= '1', '0' after 100 ps;
+        end if;
+     end if;
+  end process prcs_ddr_dblr_clk0;
+
+
+  prcs_ddr_dblr_clk1:process(IOCLK1_INDELAY)
+  begin
+     if(rising_edge(IOCLK1_INDELAY) and (DATA_RATE_BINARY = DDR)) then -- DDR
+        if (first_edge = '1') then
+           ioclk1_int <= '1', '0' after 100 ps;
+        end if;
+     end if;
+  end process prcs_ddr_dblr_clk1;
+
+  ioclk_int <= ioclk0_int or ioclk1_int;
+
+  prcs_delay1_out_dly:process(ioclk_int)
+  begin
+     if (rising_edge(ioclk_int)) then
+        delay1_out_dly <= delay1_out;
+     end if;
+  end process prcs_delay1_out_dly;
+
+--####################################################################
+--#####               Delay Line Inputs                          #####
+--####################################################################
+  prcs_dly1_in:process
+  begin
+     if((T_INDELAY = '1' or output_delay_off = '1') and input_delay_off = '0') then
+        if(pci_ce_reg = '0')     then delay1_in <= IDATAIN_INDELAY;  -- NORMAL
+        elsif(DATAOUT_OUT = 'X') then delay1_in <= not IDATAIN_INDELAY;  -- PCI break X loop
+        else                          delay1_in <= IDATAIN_INDELAY xor DATAOUT_OUT; -- PCI
+        end if;  
+     else
+        if(output_delay_off = '1') then delay1_in <= '0'; 
+        else delay1_in <= ODATAIN_INDELAY; 
+        end if;
+     end if;
+     wait on IDATAIN_INDELAY, DATAOUT_OUT, T_INDELAY, ODATAIN_INDELAY, output_delay_off, input_delay_off;
+   end process prcs_dly1_in;
+
+  prcs_dly2_in:process
+  begin
+     if((T_INDELAY = '1' or output_delay_off = '1') and input_delay_off = '0') then
+        if(pci_ce_reg = '0')      then delay2_in <= not IDATAIN_INDELAY;  -- NORMAL
+        elsif(DATAOUT2_OUT = 'X') then delay2_in <= not IDATAIN_INDELAY;  -- PCI break X loop
+        else                           delay2_in <= IDATAIN_INDELAY xor DATAOUT2_OUT; -- PCI
+        end if;  
+     else
+        if(output_delay_off = '1') then delay2_in <= '0'; 
+        else delay2_in <= not ODATAIN_INDELAY; 
+        end if;
+     end if;
+     wait on IDATAIN_INDELAY, DATAOUT2_OUT, T_INDELAY, ODATAIN_INDELAY, output_delay_off, input_delay_off;
+  end process prcs_dly2_in;
+
+--####################################################################
+--#####                         Delay Lines                      #####
+--####################################################################
+  prcs_delay_line1:process
+  begin
+     if(GSR_INDELAY = '1')then 
+         delay1_reached_1 <= '0';
+         delay1_reached_2 <= '0';
+         delay1_working_1 <= '0';
+         delay1_working_2 <= '0';
+         delay1_ignore  <= '0';
+--     elsif(rising_edge(delay1_in)) then
+     elsif(delay1_in'event and delay1_in = '1') then
+        if(delay1_working = '0' or delay1_reached = '1') then
+           if(delay1_working_1 = '0') then
+               delay1_working_1 <= '1';
+           else
+               delay1_working_2 <= '1';
+           end if;
+           if (input_delay_off = '0' and (T_INDELAY = '1' or output_delay_off = '1'))then -- input
+              if (IDATAIN_INDELAY = '1') then -- positive edge
+                 if (delay1_reached_1 = '0') then
+                    delay1_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_1));
+                 else
+                    delay1_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_1));
+                 end if;
+              else -- negative edge
+                 if (delay1_reached_1 = '0') then
+                    delay1_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_1));
+                 else
+                    delay1_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_1));
+                 end if;
+              end if;
+           else -- output
+              if (ODATAIN_INDELAY = '1') then -- positive edge
+                 if (delay1_reached_1 = '0') then
+                    delay1_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_1));
+                 else
+                    delay1_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_1));
+                 end if;
+              else -- negative edge
+                 if (delay1_reached_1 = '0') then
+                    delay1_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_1));
+                 else
+                    delay1_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_1));
+                 end if;
+              end if;
+           end if;
+        else
+           delay1_ignore <= '1';
+        end if;
+     end if;
+     if (delay1_reached = '1') then
+        delay1_ignore    <= '0' after 1 ps;
+     end if;
+     if (delay1_reached_1 = '1') then
+        delay1_working_1 <= '0' after 1 ps;
+        delay1_reached_1 <= '0' after 1 ps;
+     end if;
+     if (delay1_reached_2 = '1') then
+        delay1_working_2 <= '0' after 1 ps;
+        delay1_reached_2 <= '0' after 1 ps;
+     end if;
+     wait on delay1_in, delay1_reached, GSR_INDELAY;
+  end process prcs_delay_line1;
+    
+  prcs_delay_line2:process
+  begin
+     if(GSR_INDELAY = '1')then 
+         delay2_reached_1 <= '0';
+         delay2_reached_2 <= '0';
+         delay2_working_1 <= '0';
+         delay2_working_2 <= '0';
+         delay2_ignore  <= '0';
+--     elsif(rising_edge(delay2_in)) then
+     elsif(delay2_in'event and delay2_in = '1') then
+        if(delay2_working = '0' or delay2_reached = '1') then
+           if(delay2_working_1 = '0') then
+              delay2_working_1 <= '1';
+           else
+              delay2_working_2 <= '1';
+           end if;
+           if (input_delay_off = '0' and (T_INDELAY = '1' or output_delay_off = '1'))then -- input
+              if (IDATAIN_INDELAY = '1') then -- pos edge
+                 if (delay2_reached_1 = '0') then
+                    delay2_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_2));
+                 else
+                    delay2_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_2));
+                 end if;
+              else -- neg edge
+                 if (delay2_reached_1 = '0') then
+                    delay2_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_2));
+                 else
+                    delay2_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_2));
+                 end if;
+              end if;
+           else -- output
+              if (ODATAIN_INDELAY = '1') then -- pos edge
+                 if (delay2_reached_1 = '0') then
+                    delay2_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_2));
+                 else
+                    delay2_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_pe_2));
+                 end if;
+              else -- neg edge
+                 if (delay2_reached_1 = '0') then
+                    delay2_reached_1 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_2));
+                 else
+                    delay2_reached_2 <= '1' after (Tstep * CONV_INTEGER(delay_val_ne_2));
+                 end if;
+              end if;
+           end if;
+        else
+           delay2_ignore <= '1';
+        end if;
+     end if;
+     if (delay2_reached = '1') then
+        delay2_ignore  <= '0' after 1 ps;
+     end if;
+     if (delay2_reached_1 = '1') then
+        delay2_working_1 <= '0' after 1 ps;
+        delay2_reached_1 <= '0' after 1 ps;
+     end if;
+     if (delay2_reached_2 = '1') then
+        delay2_working_2 <= '0' after 1 ps;
+        delay2_reached_2 <= '0' after 1 ps;
+     end if;
+     wait on delay2_in, delay2_reached, GSR_INDELAY;
+  end process prcs_delay_line2;
+    
+--####################################################################
+--#####                    Output FF                             #####
+--####################################################################
+  prcs_delay_out:process
+  begin
+     if((pci_ce_reg = '0') or ((T_INDELAY = '0') and (output_delay_off = '0')) or (input_delay_off = '1')) then -- NORMAL in or output
+        if ((GSR_INDELAY  = '1') or (first_edge = '0') or ((delay1_working  = '0') and (delay2_working  = '0'))) then
+           delay1_out <= delay1_in;
+        elsif ((rising_edge(delay1_reached) and (delay1_ignore = '0')) or
+               (rising_edge(delay1_ignore) and (delay1_out = '0'))) then
+           delay1_out <= '1';
+        elsif ((rising_edge(delay2_reached) and (delay2_ignore = '0')) or
+               (rising_edge(delay2_ignore) and (delay1_out = '1'))) then
+           delay1_out <= '0';
+        end if;
+        delay2_out <= '0';
+     else -- PCI in
+        if ((GSR_INDELAY  = '1') or (delay1_reached  = '1') or (first_edge = '0')) then
+           delay1_out <= IDATAIN_INDELAY;
+        end if;
+        if ((GSR_INDELAY  = '1') or (delay2_reached  = '1') or (first_edge = '0')) then
+           delay2_out <= IDATAIN_INDELAY;
+        end if;
+     end if;
+     wait on delay1_reached, delay2_reached, delay1_working, delay2_working, delay1_ignore, delay2_ignore, T_INDELAY, GSR_INDELAY, first_edge, IDATAIN_INDELAY;
+  end process prcs_delay_out;
+--####################################################################
+--#####                    TOUT delay                            #####
+--####################################################################
+  --prcs_tout_out_int:process(T_INDELAY)
+  prcs_tout_out_int:process
+  begin
+     if (T_INDELAY = '0') then
+        tout_out_int <= '0' after Tstep;
+     else
+        tout_out_int <= '1' after Tstep;
+     end if;
+     wait on T_INDELAY;
+  end process prcs_tout_out_int;
+--####################################################################
+--#####                    Delay Preset Values                   #####
+--####################################################################
+  prcs_delay_val_pe_clk:process(ioclk_int, delay1_in)
+  begin
+     if (sync_to_data_reg = '1') then
+        delay_val_pe_clk <= delay1_in;
+     else
+        delay_val_pe_clk <= ioclk_int;
+     end if;
+  end process prcs_delay_val_pe_clk;
+
+  prcs_delay_val_ne_clk:process(ioclk_int, delay2_in)
+  begin
+     if (sync_to_data_reg = '1') then
+        delay_val_ne_clk <= delay2_in;
+     else
+        delay_val_ne_clk <= ioclk_int;
+     end if;
+  end process prcs_delay_val_ne_clk;
+
+  prcs_busy_out_dly:process(busy_out_pe_dly, busy_out_ne_dly)
+  begin
+        busy_out_dly <= busy_out_pe_dly or busy_out_ne_dly;
+  end process prcs_busy_out_dly;
+
+  prcs_busy_out_pe_dly:process(delay_val_pe_clk, rst_sig, busy_out_int, calibrate_done)
+  begin
+     if ((rst_sig = '1') or 
+         (((busy_out_int = '1') and (busy_out_pe_one_shot = '0')) or 
+          (cal_count < "1011"))) then
+        busy_out_pe_dly <= '1';
+        busy_out_pe_dly1 <= '1';
+        busy_out_pe_one_shot <= '1';
+     elsif (falling_edge(calibrate_done)) then
+           busy_out_pe_dly <= '0';
+           busy_out_pe_dly1 <= '0';
+     elsif (rising_edge(delay_val_pe_clk)) then
+--        if (busy_out_dly = '1') then
+        if ((busy_out_dly = '1') and (busy_out_int = '0')) then -- CR652228
+           busy_out_pe_dly <= busy_out_pe_dly1;
+           busy_out_pe_dly1 <= '0';
+        end if;
+        if ((busy_out_int = '0') and (busy_out_dly = '0')) then
+           busy_out_pe_one_shot <= '0';
+        end if;
+     end if;
+  end process prcs_busy_out_pe_dly;
+
+  prcs_busy_out_ne_dly:process(delay_val_ne_clk, rst_sig, busy_out_int, calibrate_done)
+  begin
+     if ((rst_sig = '1') or 
+         (((busy_out_int = '1') and (busy_out_ne_one_shot = '0')) or 
+          (cal_count < "1011"))) then
+        busy_out_ne_dly <= '1';
+        busy_out_ne_dly1 <= '1';
+        busy_out_ne_one_shot <= '1';
+     elsif (falling_edge(calibrate_done)) then
+           busy_out_ne_dly <= '0';
+           busy_out_ne_dly1 <= '0';
+     elsif (rising_edge(delay_val_ne_clk)) then
+--        if (busy_out_dly = '1') then
+        if ((busy_out_dly = '1') and (busy_out_int = '0')) then -- CR652228
+           busy_out_ne_dly <= busy_out_ne_dly1;
+           busy_out_ne_dly1 <= '0';
+        end if;
+        if ((busy_out_int = '0') and (busy_out_dly = '0')) then
+           busy_out_ne_one_shot <= '0';
+        end if;
+     end if;
+  end process prcs_busy_out_ne_dly;
+
+  prcs_idelay_val_pe_reg:process(delay_val_pe_clk, rst_sig)
+  begin
+     if (rising_edge(delay_val_pe_clk) or falling_edge(rst_sig)) then
+        if (SERDES_MODE_BINARY = SLAVE) then
+           idelay_val_pe_reg <= idelay_val_pe_s_reg;
+        else
+           idelay_val_pe_reg <= idelay_val_pe_m_reg;
+        end if;
+     end if;
+  end process prcs_idelay_val_pe_reg;
+
+  prcs_idelay_val_ne_reg:process(delay_val_ne_clk, rst_sig)
+  begin
+     if (rising_edge(delay_val_ne_clk) or falling_edge(rst_sig)) then
+        if (SERDES_MODE_BINARY = SLAVE) then
+           idelay_val_ne_reg <= idelay_val_ne_s_reg;
+        else
+           idelay_val_ne_reg <= idelay_val_ne_m_reg;
+        end if;
+     end if;
+  end process prcs_idelay_val_ne_reg;
+
+  prcs_delay_pe_preset:process
+  begin
+     if (rising_edge(delay_val_pe_clk) or rising_edge(rst_sig) or falling_edge(rst_sig) or first_time_pe = '1' or rising_edge(T_INDELAY) or falling_edge(T_INDELAY)) then
+        if (first_time_pe = '1') then
+           first_time_pe <= '0' after 100 ps;
+        end if;
+        if ((T_INDELAY = '0' and output_delay_off = '0') or input_delay_off = '1') then -- OUTPUT
+           delay_val_pe_1 <= odelay_val_pe_reg;
+           delay_val_pe_2 <= odelay_val_pe_reg;
+        -- input delays
+        elsif ((IDELAY_TYPE_BINARY = FIXED) or (IDELAY_TYPE_BINARY = DEFAULT)) then
+           if (pci_ce_reg = '1') then -- PCI
+              delay_val_pe_1 <= IDELAY_VALUE_BINARY(7 downto 0);
+              delay_val_pe_2 <= IDELAY2_VALUE_BINARY(7 downto 0);
+           else -- NORMAL
+              delay_val_pe_1 <= IDELAY_VALUE_BINARY(7 downto 0);
+              delay_val_pe_2 <= IDELAY_VALUE_BINARY(7 downto 0);
+           end if;
+        elsif (IDELAY_TYPE_BINARY = VAR) then
+           if ((rst_sig = '1') or falling_edge(rst_sig)) then
+              if (rst_to_half_reg = '1') then
+                 delay_val_pe_1 <= half_max;
+                 delay_val_pe_2 <= half_max;
+              else
+                 delay_val_pe_1 <= "00000000";
+                 delay_val_pe_2 <= "00000000";
+              end if;
+           else
+              if (pci_ce_reg = '1') then -- PCI
+                 delay_val_pe_1 <= idelay_val_pe_reg;
+                 delay_val_pe_2 <= idelay_val_ne_reg;
+              else -- NORMAL
+                 delay_val_pe_1 <= idelay_val_pe_reg;
+                 delay_val_pe_2 <= idelay_val_ne_reg;
+              end if;  
+           end if;  
+        elsif (IDELAY_TYPE_BINARY = DIFF_PHASE_DETECTOR) then
+           delay_val_pe_1 <= idelay_val_pe_reg;
+           delay_val_pe_2 <= idelay_val_ne_reg;
+        else
+           delay_val_pe_1 <= IDELAY_VALUE_BINARY(7 downto 0);
+           delay_val_pe_2 <= IDELAY_VALUE_BINARY(7 downto 0);
+        end if;
+     end if;
+     wait on delay_val_pe_clk, rst_sig, T_INDELAY;
+  end process prcs_delay_pe_preset;
+
+  prcs_delay_ne_preset:process
+  begin
+     if (rising_edge(delay_val_ne_clk) or rising_edge(rst_sig) or falling_edge(rst_sig) or first_time_ne = '1' or rising_edge(T_INDELAY) or falling_edge(T_INDELAY)) then
+        if (first_time_ne = '1') then
+           first_time_ne <= '0' after 100 ps;
+        end if;
+        if ((T_INDELAY = '0' and output_delay_off = '0') or input_delay_off = '1') then -- OUTPUT
+           delay_val_ne_1 <= odelay_val_ne_reg;
+           delay_val_ne_2 <= odelay_val_ne_reg;
+        -- input delays
+        elsif ((IDELAY_TYPE_BINARY = FIXED) or (IDELAY_TYPE_BINARY = DEFAULT)) then
+           if (pci_ce_reg = '1') then -- PCI
+              delay_val_ne_1 <= IDELAY_VALUE_BINARY(7 downto 0);
+              delay_val_ne_2 <= IDELAY2_VALUE_BINARY(7 downto 0);
+           else -- NORMAL
+              delay_val_ne_1 <= IDELAY_VALUE_BINARY(7 downto 0);
+              delay_val_ne_2 <= IDELAY_VALUE_BINARY(7 downto 0);
+           end if;
+        elsif (IDELAY_TYPE_BINARY = VAR) then
+           if ((rst_sig = '1') or falling_edge(rst_sig)) then
+              if (rst_to_half_reg = '1') then
+                 delay_val_ne_1 <= half_max;
+                 delay_val_ne_2 <= half_max;
+              else
+                 delay_val_ne_1 <= "00000000";
+                 delay_val_ne_2 <= "00000000";
+              end if;
+           else
+              if (pci_ce_reg = '1') then -- PCI
+                 delay_val_ne_1 <= idelay_val_pe_reg;
+                 delay_val_ne_2 <= idelay_val_ne_reg;
+              else -- NORMAL
+                 delay_val_ne_1 <= idelay_val_pe_reg;
+                 delay_val_ne_2 <= idelay_val_ne_reg;
+              end if;  
+           end if;  
+        elsif (IDELAY_TYPE_BINARY = DIFF_PHASE_DETECTOR) then
+           delay_val_ne_1 <= idelay_val_pe_reg;
+           delay_val_ne_2 <= idelay_val_ne_reg;
+        else
+           delay_val_ne_1 <= IDELAY_VALUE_BINARY(7 downto 0);
+           delay_val_ne_2 <= IDELAY_VALUE_BINARY(7 downto 0);
+        end if;
+     end if;
+     wait on delay_val_ne_clk, rst_sig, T_INDELAY;
+  end process prcs_delay_ne_preset;
+
+--####################################################################
+--#####                Max delay CAL                             #####
+--####################################################################
+  prcs_cal_delay:process(CLK_INDELAY, GSR_INDELAY)
+  begin
+     if (GSR_INDELAY = '1') then
+        cal_count <= "1011";
+        busy_out_int <= '1'; -- reset
+     elsif (rising_edge(CLK_INDELAY)) then
+        if ((cal_sig = '1') and (busy_out_int = '0')) then
+           cal_count <= "0000";
+           busy_out_int <= '1'; -- begin cal
+--        elsif ((ce_sig = '1') and (busy_out_int = '0')) then
+        elsif (ce_sig = '1') then -- CR652228
+           cal_count <= "1011";
+           busy_out_int <= '1'; -- begin inc, busy high 1 clock after CE low
+        elsif ((busy_out_int = '1') and (cal_count < "1011")) then
+           cal_count <= cal_count + '1';
+           busy_out_int <= '1'; -- continue
+        else
+           busy_out_int <= '0'; -- done
+        end if;
+     end if;
+  end process prcs_cal_delay;
+ 
+  prcs_cal_done:process(ioclk_int)
+  begin
+     if (rising_edge(ioclk_int)) then
+        if ((calibrate = '0') and (calibrate_done = '0') and (busy_out_int = '1') and (cal_count = "0100") ) then
+           calibrate <= '1';
+        elsif (calibrate = '1') then
+           calibrate <= '0';
+        end if;
+     end if;
+  end process prcs_cal_done;
+
+  prcs_max_delay:process
+  begin
+     if ((GSR_INDELAY = '1') or ((cal_sig = '1') and (busy_out_int = '0'))) then
+        cal_delay <= "00000000";
+        calibrate_done <= '0';
+     elsif ((calibrate = '1') and (cal_delay /= "11111111")) then
+        wait for Tstep;
+        if (calibrate = '1') then
+           cal_delay <= cal_delay + "00000001";
+        else 
+           if ((pci_ce_reg = '1') and (DATA_RATE_BINARY = SDR)) then
+              cal_delay <= '0' & cal_delay(7 downto 1);
+           end if;
+           calibrate_done <= '1';
+        end if;
+     elsif ((calibrate = '1') and (cal_delay = "11111111")) then
+        calibrate_done <= '1';
+     else
+        wait for Tstep;
+        calibrate_done <= '0';
+     end if;
+     wait on GSR_INDELAY, cal_sig, calibrate, cal_delay, busy_out_int;
+  end process prcs_max_delay;
+
+--####################################################################
+--#####          Delay Value Registers (INC/DEC)                 #####
+--####################################################################
+   prcs_delay_val:process(CLK_INDELAY, rst_sig, GSR_INDELAY, calibrate_done)
+     begin
+     inc_dec( rst_sig, GSR_INDELAY, CLK_INDELAY, busy_out_dly, ce_sig, pci_ce_reg, inc_sig, IDELAY_TYPE_BINARY, SERDES_MODE_BINARY, sat_at_max_reg, max_delay, half_max, rst_to_half_reg, ignore_rst, idelay_val_pe_m_reg, idelay_val_pe_s_reg, idelay_val_ne_m_reg, idelay_val_ne_s_reg);
+
+     if (calibrate_done = '1') then
+        max_delay <= cal_delay;
+        half_max  <= '0' & cal_delay(7 downto 1);
+     end if;
+
+   end process prcs_delay_val;
+
+  prcs_delay1_out_sig:process(delay1_out_dly, delay1_out)
+     begin
+     if ((IDELAY_TYPE_BINARY = DIFF_PHASE_DETECTOR) and
+         (SERDES_MODE_BINARY = SLAVE) and
+         (delay_val_pe_1 < half_max)) then
+        delay1_out_sig <= delay1_out_dly;
+     else
+        delay1_out_sig <= delay1_out;
+     end if;
+  end process prcs_delay1_out_sig;
+--####################################################################
+--#####                      OUTPUT MUXES                        #####
+--####################################################################
+-- input delay paths
+   DATAOUT_OUT <= delay1_out_sig;
+   DATAOUT2_OUT <= delay1_out_sig when (pci_ce_reg = '0') else
+                        delay2_out;
+
+-- output delay paths
+  prcs_dout:process(output_delay_off, input_delay_off, T_INDELAY, delay1_out)
+  begin
+     if (output_delay_off = '0' and (T_INDELAY = '0' or input_delay_off = '1')) then
+        DOUT_OUT <= delay1_out;
+     else
+        DOUT_OUT <= '0';
+     end if;
+  end process prcs_dout;
+
+  prcs_tout:process(output_delay_off, input_delay_off, tout_out_int, T_INDELAY)
+  begin
+     if (output_delay_off = '0' and (T_INDELAY = '0' or input_delay_off = '1')) then
+        TOUT_OUT <= tout_out_int;
+     else
+        TOUT_OUT <= T_INDELAY;
+     end if;
+  end process prcs_tout;
+
+  prcs_busy:process(busy_out_dly)
+  begin
+     BUSY_OUT <= busy_out_dly;
+  end process prcs_busy;
+
+    BUSY <= BUSY_OUTDELAY;
+    DATAOUT <= DATAOUT_OUTDELAY;
+    DATAOUT2 <= DATAOUT2_OUTDELAY;
+    DOUT <= DOUT_OUTDELAY;
+    TOUT <= TOUT_OUTDELAY;
+end IODELAY2_V;
 
 ----- CELL ISERDES -----
 library IEEE;
@@ -20317,6 +23616,3533 @@ begin
     end if;
   end process;
 end LUT6_L_V;
+
+-------------------------------------------------------------------------------
+-- Copyright (c) 1995/2004 Xilinx, Inc.
+-- All Right Reserved.
+-------------------------------------------------------------------------------
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /    Vendor : Xilinx
+-- \   \   \/     Version : 11.1
+--  \   \         Description : Xilinx Functional Simulation Library Component
+--  /   /                 Phase Lock Loop Clock 
+-- /___/   /\     Filename : PLL_ADV.vhd
+-- \   \  /  \    Timestamp : Fri Mar 26 08:18:19 PST 2004
+--  \___\/\___\
+-- Revision:
+--     10/02/08 - Initial version
+--     11/21/08 - Add wait on init_done to DRP process.
+--    12/02/08 - Fix bug of Duty cycle calculation (CR498696)
+--    12/04/08 - make clkfb_tst at least 1 ns wide (CR499318)
+--    12/05/08 - change pll_res according to hardware spreadsheet (CR496137)
+--    01/09/09 - make pll_res same for BANDWIDTH=HIGH and OPTIMIZED (CR496137)
+--    02/02/09 - Add drp_init_done (CR506382)
+--    02/10/09 - Change error to warning for phase check (CR507632)
+--    02/11/09 - Change VCO_FREQ_MAX and MIN to 1441 and 399 to cover the rounded
+--               error (CR507969)
+--    05/13/09 - Use period_avg for clkvco_delay calculation (CR521120)
+--    06/02/09 - Not check RST pulse at time 0 (CR523850)
+--    06/11/09 - When calculate clk0_div1, set clk0_nocnt to 1 if CLKOUT0 as feedback (CR524704)
+--    09/02/09 - Add SIM_DEVICE attribute (CR532327)
+--    09/16/09 - Add DRP support for Spartan6 (CR532327)
+--    10/08/09 - Change  CLKIN_FREQ MAX & MIN, CLKPFD_FREQ
+--               MAX & MIN to parameter (CR535828)
+--    10/14/09 - Add clkin_chk_t1 and clkin_chk_t2 to handle check (CR535662)
+--    12/02/09 - not stop clkvco_lk when jitter (CR538717)
+--   12/16/09 - Move deallocate statement before return statement(CR541730)
+--    01/05/10 - Use real() for integer to real conversion (CR542934)
+--    01/10/10 - Add VCO frequency check for CLKOUT0 feedback case (544278)
+--    02/09/10 - Divide clk0 when CLKOUT0 as feedback (CR548329)
+--             - Add global PLL_LOCKG support (CR547918)
+--    05/07/10 - Use period_vco_half_rm1 to reduce jitter (CR558966)
+--             - Support CLK_FEEDBACK=CLKOUT0 and CLKOUT0_PHASE set(CR559360)
+--    03/08/11 - Keep 0.001 resolution for CLKIN period check (CR594003)
+--    08/25/11 - Fix typo error for VIRTEX (CR621971)
+--    02/13/12 - 639574 - correct clk to out delay with non 50/50 duty cycle clkin
+--    03/07/12 - added vcoflag (CR 638088, CR 636493)
+--    04/19/13 - 652888 - lock after reset
+--   05/03/12 - jittery clock (CR 652401)
+--   05/03/12 - incorrect period (CR 654951)
+--   08/15/12 - 673328 - remove 1 ps jitter in clockout period.
+-- End Revision
+
+----- CELL PLL_ADV -----
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.NUMERIC_STD.all;
+library STD;
+use STD.TEXTIO.all;
+
+
+library unisim;
+use unisim.VPKG.all;
+use unisim.VCOMPONENTS.all;
+
+entity PLL_ADV is
+generic (
+
+                BANDWIDTH : string := "OPTIMIZED";
+                CLK_FEEDBACK : string := "CLKFBOUT";
+                CLKFBOUT_DESKEW_ADJUST : string := "NONE";
+                CLKFBOUT_MULT : integer := 1;
+                CLKFBOUT_PHASE : real := 0.0;
+                CLKIN1_PERIOD : real := 0.000;
+                CLKIN2_PERIOD : real := 0.000;
+                CLKOUT0_DESKEW_ADJUST : string := "NONE";
+                CLKOUT0_DIVIDE : integer := 1;
+                CLKOUT0_DUTY_CYCLE : real := 0.5;
+                CLKOUT0_PHASE : real := 0.0;
+                CLKOUT1_DESKEW_ADJUST : string := "NONE";
+                CLKOUT1_DIVIDE : integer := 1;
+                CLKOUT1_DUTY_CYCLE : real := 0.5;
+                CLKOUT1_PHASE : real := 0.0;
+                CLKOUT2_DESKEW_ADJUST : string := "NONE";
+                CLKOUT2_DIVIDE : integer := 1;
+                CLKOUT2_DUTY_CYCLE : real := 0.5;
+                CLKOUT2_PHASE : real := 0.0;
+                CLKOUT3_DESKEW_ADJUST : string := "NONE";
+                CLKOUT3_DIVIDE : integer := 1;
+                CLKOUT3_DUTY_CYCLE : real := 0.5;
+                CLKOUT3_PHASE : real := 0.0;
+                CLKOUT4_DESKEW_ADJUST : string := "NONE";
+                CLKOUT4_DIVIDE : integer := 1;
+                CLKOUT4_DUTY_CYCLE : real := 0.5;
+                CLKOUT4_PHASE : real := 0.0;
+                CLKOUT5_DESKEW_ADJUST : string := "NONE";
+                CLKOUT5_DIVIDE : integer := 1;
+                CLKOUT5_DUTY_CYCLE : real := 0.5;
+                CLKOUT5_PHASE : real := 0.0;
+                COMPENSATION : string := "SYSTEM_SYNCHRONOUS";
+                DIVCLK_DIVIDE : integer := 1;
+                EN_REL : boolean := FALSE;
+                PLL_PMCD_MODE : boolean := FALSE;
+                REF_JITTER : real := 0.100;
+                RESET_ON_LOSS_OF_LOCK : boolean := FALSE;
+                RST_DEASSERT_CLK : string := "CLKIN1";
+                SIM_DEVICE : string := "VIRTEX5"
+
+  );
+port (
+                CLKFBDCM : out std_ulogic := '0';
+                CLKFBOUT : out std_ulogic := '0';
+                CLKOUT0 : out std_ulogic := '0';
+                CLKOUT1 : out std_ulogic := '0';
+                CLKOUT2 : out std_ulogic := '0';
+                CLKOUT3 : out std_ulogic := '0';
+                CLKOUT4 : out std_ulogic := '0';
+                CLKOUT5 : out std_ulogic := '0';
+                CLKOUTDCM0 : out std_ulogic := '0';
+                CLKOUTDCM1 : out std_ulogic := '0';
+                CLKOUTDCM2 : out std_ulogic := '0';
+                CLKOUTDCM3 : out std_ulogic := '0';
+                CLKOUTDCM4 : out std_ulogic := '0';
+                CLKOUTDCM5 : out std_ulogic := '0';
+                DO : out std_logic_vector(15 downto 0);
+                DRDY : out std_ulogic := '0';
+                LOCKED : out std_ulogic := '0';
+                CLKFBIN : in std_ulogic;
+                CLKIN1 : in std_ulogic;
+                CLKIN2 : in std_ulogic;
+                CLKINSEL : in std_ulogic;
+                DADDR : in std_logic_vector(4 downto 0);
+                DCLK : in std_ulogic;
+                DEN : in std_ulogic;
+                DI : in std_logic_vector(15 downto 0);
+                DWE : in std_ulogic;
+                REL : in std_ulogic;
+                RST : in std_ulogic
+     );
+end PLL_ADV;
+
+
+-- Architecture body --
+
+architecture PLL_ADV_V of PLL_ADV is
+
+  ---------------------------------------------------------------------------
+  -- Function SLV_TO_INT converts a std_logic_vector TO INTEGER
+  ---------------------------------------------------------------------------
+  function SLV_TO_INT(SLV: in std_logic_vector
+                      ) return integer is
+
+    variable int : integer;
+  begin
+    int := 0;
+    for i in SLV'high downto SLV'low loop
+      int := int * 2;
+      if SLV(i) = '1' then
+        int := int + 1;
+      end if;
+    end loop;
+    return int;
+  end;
+
+  ---------------------------------------------------------------------------
+  -- Function ADDR_IS_VALID checks for the validity of the argument. A FALSE
+  -- is returned if any argument bit is other than a '0' or '1'.
+  ---------------------------------------------------------------------------
+  function ADDR_IS_VALID (
+    SLV : in std_logic_vector
+    ) return boolean is
+
+    variable IS_VALID : boolean := TRUE;
+
+  begin
+    for I in SLV'high downto SLV'low loop
+      if (SLV(I) /= '0' AND SLV(I) /= '1') then
+        IS_VALID := FALSE;
+      end if;
+    end loop;
+    return IS_VALID;
+  end ADDR_IS_VALID;
+
+  function real2int( real_in : in real) return integer is
+    variable int_value : integer;
+    variable int_value1 : integer;
+    variable tmps : time := 1 ps;
+    variable tmps1 : real;
+    
+  begin
+    if (real_in < 1.00000 and real_in > -1.00000) then
+        int_value1 := 0;
+    else
+      tmps := real_in * 1 ns;
+      int_value := tmps / 1 ns;
+      tmps1 := real (int_value);
+      if ( tmps1 > real_in) then
+        int_value1 := int_value - 1 ;
+      else
+        int_value1 := int_value;
+      end if;
+    end if;
+    return int_value1;
+  end real2int;
+
+  
+  procedure clkout_dly_cal (clkout_dly : out std_logic_vector(5 downto 0);
+                          clkpm_sel : out std_logic_vector(2 downto 0);
+                          clkdiv : in integer;
+                          clk_ps : in real;
+                          clk_ps_name : in string )
+  is
+    variable clk_dly_rl : real;
+    variable clk_dly_rem : real;
+    variable clk_dly_int : integer;
+    variable clk_dly_int_rl : real;
+    variable clkdiv_real : real;
+    variable clkpm_sel_rl : real;
+    variable clk_ps_rl : real;
+    variable  Message : line;
+  begin
+
+     clkdiv_real := real(clkdiv);
+     if (clk_ps < 0.0) then
+        clk_dly_rl := (360.0 + clk_ps) * clkdiv_real / 360.0;
+     else
+        clk_dly_rl := clk_ps * clkdiv_real / 360.0;
+     end if;
+     clk_dly_int := real2int (clk_dly_rl);
+
+     if (clk_dly_int > 63) then
+        Write ( Message, string'(" Warning : Attribute "));
+        Write ( Message, clk_ps_name );
+        Write ( Message, string'(" of PLL_ADV is set to "));
+        Write ( Message, clk_ps);
+        Write ( Message, string'(". Required phase shifting can not be reached since it is over the maximum phase shifting ability of PLL_ADV"));
+        Write ( Message, '.' & LF );
+--        assert false report Message.all severity error;
+        assert false report Message.all severity warning;
+        DEALLOCATE (Message);
+        clkout_dly := "111111";
+     else
+       clkout_dly := STD_LOGIC_VECTOR(TO_UNSIGNED(clk_dly_int, 6));
+     end if;
+
+     clk_dly_int_rl := real (clk_dly_int);
+     clk_dly_rem := clk_dly_rl - clk_dly_int_rl;
+
+    if (clk_dly_rem < 0.125) then
+        clkpm_sel :=  "000";
+        clkpm_sel_rl := 0.0;
+    elsif (clk_dly_rem >=  0.125 and  clk_dly_rem < 0.25) then
+        clkpm_sel(2 downto 0) :=  "001";
+        clkpm_sel_rl := 1.0;
+    elsif (clk_dly_rem >=  0.25 and clk_dly_rem < 0.375) then
+        clkpm_sel :=  "010";
+        clkpm_sel_rl := 2.0;
+    elsif (clk_dly_rem >=  0.375 and clk_dly_rem < 0.5) then
+        clkpm_sel :=  "011";
+        clkpm_sel_rl := 3.0;
+    elsif (clk_dly_rem >=  0.5 and clk_dly_rem < 0.625) then
+        clkpm_sel :=  "100";
+        clkpm_sel_rl := 4.0;
+    elsif (clk_dly_rem >=  0.625 and clk_dly_rem < 0.75) then
+        clkpm_sel :=  "101";
+        clkpm_sel_rl := 5.0;
+    elsif (clk_dly_rem >=  0.75 and clk_dly_rem < 0.875) then
+        clkpm_sel :=  "110";
+        clkpm_sel_rl := 6.0;
+    elsif (clk_dly_rem >=  0.875 ) then
+        clkpm_sel :=  "111";
+        clkpm_sel_rl := 7.0;
+    end if;
+
+    if (clk_ps < 0.0) then
+       clk_ps_rl := (clk_dly_int_rl + 0.125 * clkpm_sel_rl) * 360.0 / clkdiv_real - 360.0;
+    else
+       clk_ps_rl := (clk_dly_int_rl + 0.125 * clkpm_sel_rl) * 360.0 / clkdiv_real;
+    end if;
+
+    if (((clk_ps_rl- clk_ps) > 0.001) or ((clk_ps_rl- clk_ps) < -0.001)) then
+        Write ( Message, string'(" Warning : Attribute "));
+        Write ( Message, clk_ps_name );
+        Write ( Message, string'(" of PLL_ADV is set to "));
+        Write ( Message, clk_ps);
+        Write ( Message, string'(". Real phase shifting is "));
+        Write ( Message, clk_ps_rl);
+        Write ( Message, string'(". Required phase shifting can not be reached"));
+        Write ( Message, '.' & LF );
+        assert false report Message.all severity warning;
+        DEALLOCATE (Message);
+    end if;
+  end procedure clkout_dly_cal;
+
+procedure clk_out_para_cal (clk_ht : out std_logic_vector(6 downto 0);
+                            clk_lt : out std_logic_vector(6 downto 0);
+                            clk_nocnt : out std_ulogic;
+                            clk_edge : out std_ulogic;
+                            CLKOUT_DIVIDE : in  integer;
+                            CLKOUT_DUTY_CYCLE : in  real )
+  is 
+     variable tmp_value : real;
+     variable tmp_value0 : real;
+     variable tmp_value_l: real;
+     variable tmp_value2 : real;
+     variable tmp_value1 : integer;
+     variable clk_lt_tmp : real;
+     variable clk_ht_i : integer;
+     variable clk_lt_i : integer;
+     variable CLKOUT_DIVIDE_real : real;
+     constant O_MAX_HT_LT_real : real := 64.0;
+  begin
+     CLKOUT_DIVIDE_real := real(CLKOUT_DIVIDE);
+     tmp_value := CLKOUT_DIVIDE_real * CLKOUT_DUTY_CYCLE;
+     tmp_value0 := tmp_value * 2.0;
+     tmp_value1 := real2int(tmp_value0) mod 2;
+     tmp_value2 := CLKOUT_DIVIDE_real - tmp_value;
+
+     if ((tmp_value2) >= O_MAX_HT_LT_real) then
+       clk_lt_tmp := 64.0;
+       clk_lt := "1000000";
+     else
+       if (tmp_value2 < 1.0) then
+           clk_lt := "0000001";
+           clk_lt_tmp := 1.0;
+       else
+           if (tmp_value1 /= 0) then
+             clk_lt_i := real2int(tmp_value2) + 1;
+           else
+             clk_lt_i := real2int(tmp_value2);
+           end if;
+           clk_lt := STD_LOGIC_VECTOR(TO_UNSIGNED(clk_lt_i, 7));
+           clk_lt_tmp := real(clk_lt_i);
+       end if;
+     end if;
+
+   tmp_value_l := CLKOUT_DIVIDE_real -  clk_lt_tmp;
+
+   if ( tmp_value_l >= O_MAX_HT_LT_real) then
+       clk_ht := "1000000";
+   else
+      clk_ht_i := real2int(tmp_value_l);
+      clk_ht :=  STD_LOGIC_VECTOR(TO_UNSIGNED(clk_ht_i, 7));
+   end if;
+
+   if (CLKOUT_DIVIDE = 1) then
+      clk_nocnt := '1';
+   else
+      clk_nocnt := '0';
+   end if;
+
+   if (tmp_value < 1.0) then
+      clk_edge := '1';
+   elsif (tmp_value1 /= 0) then
+      clk_edge := '1';
+   else
+      clk_edge := '0';
+   end if;
+
+  end procedure clk_out_para_cal;
+
+ procedure clkout_pm_cal ( clk_ht1 : out integer ;
+                           clk_div : out integer;
+                           clk_div1 : out integer;
+                           clk_ht : in std_logic_vector(6 downto 0);
+                           clk_lt : in std_logic_vector(6 downto 0);
+                           clk_nocnt : in std_ulogic;
+                           clk_edge : in std_ulogic )
+  is 
+     variable clk_div_tmp : integer;
+  begin
+    if (clk_nocnt = '1') then
+        clk_div := 1;
+        clk_div1 := 1;
+        clk_ht1 := 1;
+    else 
+      if (clk_edge = '1') then
+           clk_ht1 := 2 * SLV_TO_INT(clk_ht) + 1;
+      else
+           clk_ht1 :=  2 * SLV_TO_INT(clk_ht);
+      end if;
+       clk_div_tmp := SLV_TO_INT(clk_ht) + SLV_TO_INT(clk_lt);
+       clk_div := clk_div_tmp;
+       clk_div1 :=  2 * clk_div_tmp - 1;
+    end if;
+
+  end procedure clkout_pm_cal;
+
+ procedure clkout_delay_para_drp ( clkout_dly : out std_logic_vector(5 downto 0);
+                           clk_nocnt : out std_ulogic;
+                           clk_edge : out std_ulogic;
+                           di_in : in std_logic_vector(15 downto 0);
+                           daddr_in : in std_logic_vector(4 downto 0);
+                           di_str : string ( 1 to 16);
+                           daddr_str : string ( 1 to 5))
+  is
+     variable  Message : line;
+  begin
+     clkout_dly := di_in(5 downto 0);
+     clk_nocnt := di_in(6);
+     clk_edge := di_in(7);
+ end procedure clkout_delay_para_drp;
+                           
+procedure clkout_hl_para_drp ( clk_lt : out std_logic_vector(6 downto 0) ;
+                               clk_ht : out std_logic_vector(6 downto 0) ;
+                               clkpm_sel : out std_logic_vector(2 downto 0) ;
+                           di_in : in std_logic_vector(15 downto 0);
+                           daddr_in : in std_logic_vector(4 downto 0);
+                           di_str : string ( 1 to 16);
+                           daddr_str : string ( 1 to 5))
+  is
+     variable  Message : line;
+  begin
+     if (di_in(12) /= '1')  then
+      Write ( Message, string'(" Error : PLL_ADV input DI(15 downto 0) is set to"));
+      Write ( Message, di_str);
+      Write ( Message, string'(" at address DADDR = "));
+      Write ( Message, daddr_str );
+      Write ( Message, string'(". The bit 12 need to be set to 1."));
+      Write ( Message, '.' & LF );
+      assert false report Message.all severity error;
+      DEALLOCATE (Message);
+     end if;
+  
+    if ( di_in(5 downto 0) = "000000") then
+       clk_lt := "1000000";
+    else
+       clk_lt := ( '0' & di_in(5 downto 0));
+    end if;
+    if (  di_in(11 downto 6) = "000000") then
+      clk_ht := "1000000";
+    else
+      clk_ht := ( '0' & di_in(11 downto 6));
+    end if;
+    clkpm_sel := di_in(15 downto 13);
+end procedure clkout_hl_para_drp;
+
+  function clkout_duty_chk (CLKOUT_DIVIDE : in integer;
+                            CLKOUT_DUTY_CYCLE : in real;
+                            CLKOUT_DUTY_CYCLE_N : in string)
+                          return std_ulogic is
+   constant O_MAX_HT_LT_real : real := 64.0;
+   variable CLKOUT_DIVIDE_real : real;
+   variable CLK_DUTY_CYCLE_MIN : real;
+   variable CLK_DUTY_CYCLE_MIN_rnd : real;
+   variable CLK_DUTY_CYCLE_MAX : real;
+   variable CLK_DUTY_CYCLE_STEP : real;
+   variable clk_duty_tmp_int : integer;
+   variable  duty_cycle_valid : std_ulogic;
+   variable tmp_duty_value : real;
+   variable  tmp_j : real; 
+   variable Message : line;
+   variable step_round_tmp : integer;
+   variable step_round_tmp1 : real;
+
+  begin
+   CLKOUT_DIVIDE_real := real(CLKOUT_DIVIDE);
+   step_round_tmp := 1000 /CLKOUT_DIVIDE;
+   step_round_tmp1 := real(step_round_tmp);
+   if (CLKOUT_DIVIDE_real > O_MAX_HT_LT_real) then 
+      CLK_DUTY_CYCLE_MIN := (CLKOUT_DIVIDE_real - O_MAX_HT_LT_real)/CLKOUT_DIVIDE_real;
+      CLK_DUTY_CYCLE_MAX := (O_MAX_HT_LT_real + 0.5)/CLKOUT_DIVIDE_real;
+      CLK_DUTY_CYCLE_MIN_rnd := CLK_DUTY_CYCLE_MIN;
+   else  
+      if (CLKOUT_DIVIDE = 1) then
+          CLK_DUTY_CYCLE_MIN_rnd := 0.0;
+          CLK_DUTY_CYCLE_MIN := 0.0;
+      else
+          CLK_DUTY_CYCLE_MIN_rnd := step_round_tmp1 / 1000.00;
+          CLK_DUTY_CYCLE_MIN := 1.0 / CLKOUT_DIVIDE_real;
+      end if;
+      CLK_DUTY_CYCLE_MAX := 1.0;
+   end if;
+
+   if ((CLKOUT_DUTY_CYCLE > CLK_DUTY_CYCLE_MAX) or (CLKOUT_DUTY_CYCLE < CLK_DUTY_CYCLE_MIN_rnd)) then 
+     Write ( Message, string'(" Attribute Syntax Warning : "));
+     Write ( Message, CLKOUT_DUTY_CYCLE_N);
+     Write ( Message, string'(" is set to "));
+     Write ( Message, CLKOUT_DUTY_CYCLE);
+     Write ( Message, string'(" and is not in the allowed range "));
+     Write ( Message, CLK_DUTY_CYCLE_MIN);
+     Write ( Message, string'("  to "));
+     Write ( Message, CLK_DUTY_CYCLE_MAX);
+     Write ( Message, '.' & LF );
+      assert false report Message.all severity warning;
+      DEALLOCATE (Message);
+     end if;
+
+    CLK_DUTY_CYCLE_STEP := 0.5 / CLKOUT_DIVIDE_real;
+    tmp_j := 0.0;
+    duty_cycle_valid := '0';
+    clk_duty_tmp_int := 0;
+    for j in 0 to  (2 * CLKOUT_DIVIDE ) loop
+      tmp_duty_value := CLK_DUTY_CYCLE_MIN + CLK_DUTY_CYCLE_STEP * tmp_j;
+      if (abs(tmp_duty_value - CLKOUT_DUTY_CYCLE) < 0.001 and (tmp_duty_value <= CLK_DUTY_CYCLE_MAX)) then
+          duty_cycle_valid := '1';
+      end if;
+      tmp_j := tmp_j + 1.0;
+    end loop;
+
+   if (duty_cycle_valid /= '1') then
+    Write ( Message, string'(" Attribute Syntax Warning : "));
+    Write ( Message, CLKOUT_DUTY_CYCLE_N);
+    Write ( Message, string'(" =  "));
+    Write ( Message, CLKOUT_DUTY_CYCLE);
+    Write ( Message, string'(" which is  not an allowed value. Allowed value s are: "));
+    Write ( Message,  LF );
+    tmp_j := 0.0;
+    for j in 0 to  (2 * CLKOUT_DIVIDE ) loop
+      tmp_duty_value := CLK_DUTY_CYCLE_MIN + CLK_DUTY_CYCLE_STEP * tmp_j;
+      if ( (tmp_duty_value <= CLK_DUTY_CYCLE_MAX) and (tmp_duty_value < 1.0)) then
+       Write ( Message,  tmp_duty_value);
+       Write ( Message,  LF );
+      end if;
+      tmp_j := tmp_j + 1.0;
+    end loop;
+      assert false report Message.all severity warning;
+      DEALLOCATE (Message);
+  end if;
+    return duty_cycle_valid;
+  end function clkout_duty_chk;
+
+-- Input/Output Pin signals
+
+        constant VCOCLK_FREQ_MAX : real := 1440.0;
+        constant VCOCLK_FREQ_MIN : real := 400.0;
+        constant CLKIN_FREQ_MAX : real := 710.0;
+        constant CLKIN_FREQ_MIN : real := 19.0;   
+        constant CLKPFD_FREQ_MAX : real := 550.0;
+        constant CLKPFD_FREQ_MIN : real := 19.0; 
+        constant VCOCLK_FREQ_TARGET : real := 800.0;
+        constant O_MAX_HT_LT : integer := 64;
+        constant REF_CLK_JITTER_MAX : time := 1000 ps;
+        constant REF_CLK_JITTER_SCALE : real := 0.1;
+        constant MAX_FEEDBACK_DELAY : time := 10 ns;
+        constant MAX_FEEDBACK_DELAY_SCALE : real := 1.0;
+
+        constant  PLL_LOCK_TIME : integer := 7;
+        constant OSC_P2 : time := 250 ps;
+
+        signal   CLKIN1_ipd  :  std_ulogic;
+        signal   CLKIN2_ipd  :  std_ulogic;
+        signal   CLKFBIN_ipd  :  std_ulogic;
+        signal   RST_ipd  :  std_ulogic;
+        signal   REL_ipd  :  std_ulogic;
+        signal   CLKINSEL_ipd  :  std_ulogic;
+        signal   DADDR_ipd  :  std_logic_vector(4 downto 0);
+        signal   DI_ipd  :  std_logic_vector(15 downto 0);
+        signal   DWE_ipd  :  std_ulogic;
+        signal   DEN_ipd  :  std_ulogic;
+        signal   DCLK_ipd  :  std_ulogic;
+--        signal   GSR          : std_ulogic := '0';
+        signal   CLKOUT0_out  :  std_ulogic := '0';
+        signal   CLKOUT1_out  :  std_ulogic := '0';
+        signal   CLKOUT2_out  :  std_ulogic := '0';
+        signal   CLKOUT3_out  :  std_ulogic := '0';
+        signal   CLKOUT4_out  :  std_ulogic := '0';
+        signal   CLKOUT5_out  :  std_ulogic := '0';
+        signal   CLKFBOUT_out  :  std_ulogic := '0';
+        signal   LOCKED_out  :  std_ulogic := '0';
+        signal   do_out  :  std_logic_vector(15 downto 0);
+        signal   DRDY_out  :  std_ulogic := '0';
+        signal   CLKIN1_dly  :  std_ulogic;
+        signal   CLKIN2_dly  :  std_ulogic;
+        signal   CLKFBIN_dly  :  std_ulogic;
+        signal   RST_dly  :  std_ulogic;
+        signal   REL_dly  :  std_ulogic;
+        signal   CLKINSEL_dly1  :  std_ulogic;
+        signal   CLKINSEL_dly2  :  std_ulogic;
+        signal   DADDR_dly  :  std_logic_vector(4 downto 0);
+        signal   DI_dly  :  std_logic_vector(15 downto 0);
+        signal   DWE_dly  :  std_ulogic;
+        signal   DEN_dly  :  std_ulogic;
+        signal   DCLK_dly  :  std_ulogic;
+
+        signal sim_d : std_ulogic := '0';
+        signal di_in : std_logic_vector (15 downto 0);
+        signal dwe_in : std_ulogic := '0';
+        signal den_in : std_ulogic := '0';
+        signal dclk_in : std_ulogic := '0';
+        signal rst_in : std_ulogic := '0';
+        signal rst_input : std_ulogic := '0';
+        signal rel_in : std_ulogic := '0';
+        signal clkfb_in : std_ulogic := '0';
+        signal clkin1_in : std_ulogic := '0';
+        signal clkin1_in_dly : std_ulogic := '0';
+        signal clkin2_in : std_ulogic := '0';
+        signal clkinsel_in : std_ulogic := '0';
+        signal clkinsel_tmp : std_ulogic := '0';
+        signal daddr_in :  std_logic_vector(4 downto 0);
+        signal daddr_in_lat :  integer := 0;
+        signal drp_lock :  std_ulogic := '0';
+        signal drp_lock1  :  std_ulogic := '0';
+        type   drp_array is array (31 downto 0) of std_logic_vector(15 downto 0);
+        signal dr_sram : drp_array;
+        signal clk_osc :  std_ulogic := '0';
+        signal clkin_p :  std_ulogic := '0';
+        signal clkfb_p :  std_ulogic := '0';
+        signal clkin_lost_val : integer := 0;
+        signal clkfb_lost_val : integer := 0;
+        signal clkin_stopped :  std_ulogic := '0';
+        signal clkfb_stopped :  std_ulogic := '0';
+        signal clkin_lost_cnt : integer := 0;
+        signal clkfb_lost_cnt : integer := 0;
+         
+        signal clk0in :  std_ulogic := '0';
+        signal clk1in :  std_ulogic := '0';
+        signal clk2in :  std_ulogic := '0';
+        signal clk3in :  std_ulogic := '0';
+        signal clk4in :  std_ulogic := '0';
+        signal clk5in :  std_ulogic := '0';
+        signal clkfbm1in :  std_ulogic := '0';
+        signal clk0_out :  std_ulogic := '0';
+        signal clk1_out :  std_ulogic := '0';
+        signal clk2_out :  std_ulogic := '0';
+        signal clk3_out :  std_ulogic := '0';
+        signal clk4_out :  std_ulogic := '0';
+        signal clk5_out :  std_ulogic := '0';
+        signal clkfb_out :  std_ulogic := '0';
+        signal clkfbm1_out :  std_ulogic := '0';
+        signal clkout_en :  std_ulogic := '0';
+        signal clkout_en1 :  std_ulogic := '0';
+        signal clkout_en0 :  std_ulogic := '0';
+        signal clkout_en0_tmp :  std_ulogic := '0';
+        signal clkout_cnt : integer := 0;
+        signal clkin_cnt : integer := 0;
+        signal clkin_lock_cnt : integer := 0;
+        signal clkout_en_time : integer := PLL_LOCK_TIME + 2;
+        signal locked_en_time : integer := 0;
+        signal lock_cnt_max : integer := 0;
+        signal clkvco_lk :  std_ulogic := '0';
+        signal clkvco_lk_rst :  std_ulogic := '0';
+        signal clkvco_free :  std_ulogic := '0';
+        signal clkvco :  std_ulogic := '0';
+        signal clkfb_mult_tl : integer;
+        signal fbclk_tmp :  std_ulogic := '0';
+        signal clkfb_src :  integer;
+
+        signal rst_in1 :  std_ulogic := '0';
+        signal rst_unlock :  std_ulogic := '0';
+        signal rst_on_loss :  std_ulogic := '0';
+        signal rst_edge : time := 0 ps;
+        signal rst_ht : time := 0 ps;
+        signal fb_delay_found :  std_ulogic := '0';
+        signal fb_delay_found_tmp :  std_ulogic := '0';
+        signal clkfb_tst :  std_ulogic := '0';
+        constant fb_delay_max : time := MAX_FEEDBACK_DELAY * MAX_FEEDBACK_DELAY_SCALE;
+        signal fb_delay : time := 0 ps;
+        signal clkvco_delay : time := 0 ps;
+        signal val_tmp : time := 0 ps;
+        signal clkin_edge : time := 0 ps;
+        signal delay_edge : time := 0 ps;
+
+        type   real_array_usr is array (4 downto 0) of time;
+        signal clkin_period : real_array_usr := (others => 0.0 ns);
+        signal period_vco : time := 0.000 ns;
+        signal period_vco_rm : integer := 0;
+        signal period_vco_cmp_cnt : integer := 0;
+        signal clkvco_tm_cnt : integer := 0;
+        signal period_vco_cmp_flag : integer := 0;
+        signal period_vco1 : time := 0.000 ns;
+        signal period_vco2 : time := 0.000 ns;
+        signal period_vco3 : time := 0.000 ns;
+        signal period_vco4 : time := 0.000 ns;
+        signal period_vco5 : time := 0.000 ns;
+        signal period_vco6 : time := 0.000 ns;
+        signal period_vco7 : time := 0.000 ns;
+        signal period_vco_half : time := 0.000 ns;
+        signal period_vco_half1 : time := 0.000 ns;
+        signal period_vco_half_rm : time := 0.000 ns;
+        signal period_vco_half_rm1 : time := 0.000 ns;
+        signal period_vco_half_rm2 : time := 0.000 ns;
+        constant period_vco_max : time := 1 ns * 1000 / VCOCLK_FREQ_MIN;
+        constant period_vco_min : time := 1 ns * 1000 / VCOCLK_FREQ_MAX;
+        constant period_vco_target : time := 1 ns * 1000 / VCOCLK_FREQ_TARGET;
+        constant period_vco_target_half : time := 1 ns * 500 / VCOCLK_FREQ_TARGET;
+        signal period_fb : time := 0.000 ns;
+        signal period_avg : time := 0.000 ns;
+
+        signal clkvco_freq_init_chk : real := 0.0;
+        signal md_product : integer := CLKFBOUT_MULT * DIVCLK_DIVIDE;
+        signal m_product : integer := CLKFBOUT_MULT;
+        signal m_product2 : integer := CLKFBOUT_MULT / 2;
+        signal drp_init_done : integer := 0;
+
+        signal pll_locked_delay : time := 0 ps;
+        signal clkin_dly_t : time := 0 ps;
+        signal clkfb_dly_t : time := 0 ps;
+        signal clkpll : std_ulogic := '0';
+        signal clkpll_dly : std_ulogic := '0';
+        signal clkfb_in_dly : std_ulogic := '0';
+        signal pll_unlock : std_ulogic := '0';
+        signal pll_locked_tm : std_ulogic := '0';
+        signal pll_locked_tmp1 : std_ulogic := '0';
+        signal pll_locked_tmp2 : std_ulogic := '0';
+        signal lock_period : std_ulogic := '0';
+        signal pll_lock_tm: std_ulogic := '0';
+        signal unlock_recover : std_ulogic := '0';
+        signal clkpll_jitter_unlock : std_ulogic := '0';
+        signal clkin_jit : time := 0 ps;
+        constant ref_jitter_max_tmp : time := REF_CLK_JITTER_MAX;
+        
+        signal clka1_out : std_ulogic := '0';
+        signal clkb1_out : std_ulogic := '0';
+        signal clka1d2_out : std_ulogic := '0';
+        signal clka1d4_out : std_ulogic := '0';
+        signal clka1d8_out : std_ulogic := '0';
+        signal clkdiv_rel_rst : std_ulogic := '0';
+        signal qrel_o_reg1 : std_ulogic := '0';
+        signal qrel_o_reg2 : std_ulogic := '0';
+        signal qrel_o_reg3 : std_ulogic := '0';
+        signal rel_o_mux_sel : std_ulogic := '0';
+        signal pmcd_mode : std_ulogic := '0';
+        signal rel_rst_o : std_ulogic := '0';
+        signal rel_o_mux_clk : std_ulogic := '0';
+        signal rel_o_mux_clk_tmp : std_ulogic := '0';
+        signal clka1_in : std_ulogic := '0';
+        signal clkb1_in : std_ulogic := '0';
+        signal clkout0_out_out : std_ulogic := '0';
+        signal clkout1_out_out : std_ulogic := '0';
+        signal clkout2_out_out : std_ulogic := '0';
+        signal clkout3_out_out : std_ulogic := '0';
+        signal clkout4_out_out : std_ulogic := '0';
+        signal clkout5_out_out : std_ulogic := '0';
+        signal clkfbout_out_out : std_ulogic := '0';
+        signal clk0ps_en : std_ulogic := '0';
+        signal clk1ps_en : std_ulogic := '0';
+        signal clk2ps_en : std_ulogic := '0';
+        signal clk3ps_en : std_ulogic := '0';
+        signal clk4ps_en : std_ulogic := '0';
+        signal clk5ps_en : std_ulogic := '0';
+        signal clkfbm1ps_en : std_ulogic := '0';
+        signal clkout_mux : std_logic_vector (7 downto 0) := X"00";
+        signal clk0pm_sel : integer := 0;
+        signal clk1pm_sel : integer := 0;
+        signal clk2pm_sel : integer := 0;
+        signal clk3pm_sel : integer := 0; 
+        signal clk4pm_sel : integer := 0;
+        signal clk5pm_sel : integer := 0;
+        signal clkfbm1pm_sel : integer := 0;
+        signal clkfbmpm_sel : integer := 0;
+        signal clkfbm2pm_sel : integer := 0;
+        signal clkfbm1pm_rl : real := 0.0;
+        signal clkfbm2pm_rl : real := 0.0;
+        signal clk0_edge  : std_ulogic := '0';
+        signal clk1_edge  : std_ulogic := '0';
+        signal clk2_edge  : std_ulogic := '0';
+        signal clk3_edge  : std_ulogic := '0';
+        signal clk4_edge  : std_ulogic := '0';
+        signal clk5_edge  : std_ulogic := '0';
+        signal clkfbm1_edge  : std_ulogic := '0';
+        signal clkfbm2_edge  : std_ulogic := '0';
+        signal clkind_edge  : std_ulogic := '0';
+        signal clk0_nocnt  : std_ulogic := '0';
+        signal clk1_nocnt  : std_ulogic := '0';
+        signal clk2_nocnt  : std_ulogic := '0';
+        signal clk3_nocnt  : std_ulogic := '0';
+        signal clk4_nocnt  : std_ulogic := '0';
+        signal clk5_nocnt  : std_ulogic := '0';
+        signal clkfbm1_nocnt  : std_ulogic := '0';
+        signal clkfbm2_nocnt  : std_ulogic := '0';
+        signal clkind_nocnt  : std_ulogic := '0';
+        signal clk0_dly_cnt : integer := 0;
+        signal clk1_dly_cnt : integer := 0;
+        signal clk2_dly_cnt : integer := 0;
+        signal clk3_dly_cnt : integer := 0;
+        signal clk4_dly_cnt : integer := 0;
+        signal clk5_dly_cnt : integer := 0;
+        signal clkfbm1_dly_cnt : integer := 0;
+        signal clkfbm2_dly_cnt : integer := 0;
+        signal clk0_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clk1_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clk2_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clk3_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clk4_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clk5_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clkfbm1_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clkfbm2_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clk0_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clk1_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clk2_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clk3_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clk4_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clk5_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clkfbm1_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clkfbm2_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clk0_dlyi : std_logic_vector (5 downto 0);
+        signal clk1_dlyi : std_logic_vector (5 downto 0);
+        signal clk2_dlyi : std_logic_vector (5 downto 0);
+        signal clk3_dlyi : std_logic_vector (5 downto 0);
+        signal clk4_dlyi : std_logic_vector (5 downto 0);
+        signal clk5_dlyi : std_logic_vector (5 downto 0);
+        signal clkfbm1_dlyi : std_logic_vector (5 downto 0);
+        signal clkfbm2_dlyi : std_logic_vector (5 downto 0);
+        signal clkout0_dly : integer := 0;
+        signal clkout1_dly : integer := 0;
+        signal clkout2_dly : integer := 0;
+        signal clkout3_dly : integer := 0;
+        signal clkout4_dly : integer := 0;
+        signal clkout5_dly : integer := 0;
+        signal clkfbm1_dly : integer := 0;
+        signal clkfbm2_dly : integer := 0;
+        signal clkfbm_dly : integer := 0;
+        signal clkind_ht : std_logic_vector (6 downto 0) := "0000000";
+        signal clkind_lt : std_logic_vector (6 downto 0) := "0000000";
+        signal clk0_ht1 : integer := 0;
+        signal clk1_ht1 : integer := 0;
+        signal clk2_ht1 : integer := 0;
+        signal clk3_ht1 : integer := 0;
+        signal clk4_ht1 : integer := 0;
+        signal clk5_ht1 : integer := 0;
+        signal clkfbm1_ht1 : integer := 0;
+        signal clkfbm2_ht1 : integer := 0;
+        signal clk0_cnt : integer := 0;
+        signal clk1_cnt : integer := 0;
+        signal clk2_cnt : integer := 0;
+        signal clk3_cnt : integer := 0;
+        signal clk4_cnt : integer := 0;
+        signal clk5_cnt : integer := 0;
+        signal clkfbm1_cnt : integer := 0;
+        signal clkfbm2_cnt : integer := 0;
+        signal clk0_div : integer := 0;
+        signal clk1_div : integer := 0;
+        signal clk2_div : integer := 0;
+        signal clk3_div : integer := 0;
+        signal clk4_div : integer := 0;
+        signal clk5_div : integer := 0;
+        signal clkfbm1_div : integer := 1;
+        signal clkfbm2_div : integer := 1;
+        signal clk0_div1 : integer := 0;
+        signal clk1_div1 : integer := 0;
+        signal clk2_div1 : integer := 0;
+        signal clk3_div1 : integer := 0;
+        signal clk4_div1 : integer := 0;
+        signal clk5_div1 : integer := 0;
+        signal clkfbm1_div1 : integer := 0;
+        signal clkfbm2_div1 : integer := 0;
+        signal clkfbm_div1 : integer := 0;
+        signal clkfbm_div : integer := 0;
+        signal clkind_div : integer := 0;
+        signal init_done : integer := 0;
+
+begin
+
+        CLKOUT0 <=  clkout0_out_out;
+        CLKOUT1 <=  clkout1_out_out;
+        CLKOUT2 <=  clkout2_out_out;
+        CLKOUT3 <=   clkout3_out_out;
+        CLKOUT4 <=   clkout4_out_out;
+        CLKOUT5 <=   clkout5_out_out;
+        CLKFBOUT <=   clkfbout_out_out;
+        CLKOUTDCM0 <=  clkout0_out_out;
+        CLKOUTDCM1 <=  clkout1_out_out;
+        CLKOUTDCM2 <=  clkout2_out_out;
+        CLKOUTDCM3 <=  clkout3_out_out;
+        CLKOUTDCM4 <=  clkout4_out_out;
+        CLKOUTDCM5 <=  clkout5_out_out;
+        CLKFBDCM <=   clkfbout_out_out;
+        unisim.VCOMPONENTS.PLL_LOCKG <= '0' when (locked_out = '0') else 'H';
+
+        DO <=   do_out(15 downto 0) after 100 ps;
+        DRDY <=   DRDY_out after 100 ps;
+        LOCKED <= locked_out after 100 ps;
+        clkin1_in <= CLKIN1;
+        clkin2_in <= CLKIN2;
+        clkinsel_in <= CLKINSEL;
+        clkfb_in <= CLKFBIN;
+        rst_input <= RST;
+        rel_in <= REL;
+        clkin1_in_dly <= CLKIN1;
+        daddr_in(4 downto 0) <= DADDR(4 downto 0);
+        di_in(15 downto 0) <= DI(15 downto 0);
+        dwe_in <= DWE;
+        den_in <= DEN;
+        dclk_in <= DCLK;
+
+        INIPROC : process
+            variable Message : line;
+            variable con_line : line;
+            variable tmpvalue : real;
+            variable chk_ok : std_ulogic;
+            variable tmp_string : string(1 to 18);
+            variable skipspace : character;
+            variable CLK_DUTY_CYCLE_MIN : real;
+            variable CLK_DUTY_CYCLE_MAX : real;
+            variable  CLK_DUTY_CYCLE_STEP : real;
+            variable O_MAX_HT_LT_real : real;
+            variable duty_cycle_valid : std_ulogic;
+            variable CLKOUT0_DIVIDE_real : real;
+            variable CLKOUT1_DIVIDE_real : real;
+            variable CLKOUT2_DIVIDE_real : real;
+            variable CLKOUT3_DIVIDE_real : real;
+            variable CLKOUT4_DIVIDE_real : real;
+            variable CLKOUT5_DIVIDE_real : real;
+            variable tmp_j : real;
+            variable tmp_duty_value : real;
+            variable clk_ht_i : std_logic_vector(5 downto 0);
+            variable clk_lt_i : std_logic_vector(5 downto 0);
+            variable clk_nocnt_i : std_ulogic;
+            variable clk_edge_i : std_ulogic;
+            variable clkfb_src_tmp : integer;
+            variable clkfb_mult_tl_tmp : integer;
+            variable clkin_chk_t1 : real;
+            variable clkin_chk_t1_tmp1 : real;
+            variable clkin_chk_t1_tmp2 : real;
+            variable clkin_chk_t1_tmpi : time;
+            variable clkin_chk_t1_tmpi1 : integer;
+            variable clkin_chk_t2 : real;
+            variable clkin_chk_t2_tmp1 : real;
+            variable clkin_chk_t2_tmp2 : real;
+            variable clkin_chk_t2_tmpi : time;
+            variable clkin_chk_t2_tmpi1 : integer;
+            
+        begin
+           if (SIM_DEVICE = "SPARTAN6" or SIM_DEVICE = "spartan6") then
+              sim_d <= '1';
+           elsif (SIM_DEVICE = "VIRTEX5" or SIM_DEVICE = "virtex5") then
+              sim_d <= '0';
+           else
+              sim_d <= '0';
+             assert FALSE report "Attribute Syntax Error : SIM_DEVICE is not VIRTEX5 or SPARTAN6." severity error;
+           end if;
+
+           if((BANDWIDTH /= "HIGH") and (BANDWIDTH /= "high") and
+                 (BANDWIDTH /= "LOW") and (BANDWIDTH /= "low") and
+                 (BANDWIDTH /= "OPTIMIZED") and (BANDWIDTH /= "optimized")) then
+             assert FALSE report "Attribute Syntax Error : BANDWIDTH  is not HIGH, LOW, OPTIMIZED." severity error;
+            end if;
+
+           if((COMPENSATION /= "INTERNAL") and (COMPENSATION /= "internal") and
+                 (COMPENSATION /= "EXTERNAL") and (COMPENSATION /= "external") and
+                 (COMPENSATION /= "SYSTEM_SYNCHRONOUS") and (COMPENSATION /= "system_synchronous") and
+                 (COMPENSATION /= "SOURCE_SYNCHRONOUS") and (COMPENSATION /= "source_synchronous") and
+                 (COMPENSATION /= "DCM2PLL") and (COMPENSATION /= "dcm2pll") and
+                 (COMPENSATION /= "PLL2DCM") and (COMPENSATION /= "pll2dcm")) then 
+             assert FALSE report "Attribute Syntax Error : COMPENSATION  is not INTERNAL, EXTERNAL, SYSTEM_SYNCHRONOUS, SOURCE_SYNCHRONOUS , DCM2PLL, PLL2DCM." severity error;
+            end if;
+
+           if((BANDWIDTH /= "HIGH") and (BANDWIDTH /= "high") and
+                 (BANDWIDTH /= "LOW") and (BANDWIDTH /= "low") and
+                 (BANDWIDTH /= "OPTIMIZED") and (BANDWIDTH /= "optimized")) then
+             assert FALSE report "Attribute Syntax Error : BANDWIDTH  is not HIGH, LOW, OPTIMIZED." severity error;
+            end if;
+
+           if (CLK_FEEDBACK = "CLKFBOUT" or CLK_FEEDBACK = "clkfbout") then
+                clkfb_src_tmp := 0;
+                clkfb_mult_tl_tmp := CLKFBOUT_MULT;
+                clkfb_mult_tl <= clkfb_mult_tl_tmp;
+                clkfb_src <= clkfb_src_tmp;
+           elsif (CLK_FEEDBACK = "CLKOUT0" or CLK_FEEDBACK = "clkout0") then
+                clkfb_src_tmp := 1;
+                clkfb_mult_tl_tmp := CLKFBOUT_MULT * CLKOUT0_DIVIDE;
+                clkfb_mult_tl <= clkfb_mult_tl_tmp;
+                clkfb_src <= clkfb_src_tmp;
+           else
+             assert FALSE report "Attribute Syntax Error : CLK_FEEDBACK  is not CLKFBOUT or CLKOUT0.";
+           end if;
+
+
+       if ((CLKOUT0_DESKEW_ADJUST /= "NONE") and (CLKOUT0_DESKEW_ADJUST /= "none")
+            and (CLKOUT0_DESKEW_ADJUST /= "PPC") and (CLKOUT0_DESKEW_ADJUST /= "ppc")
+            ) then 
+          assert FALSE report "Error : CLKOUT0_DESKEW_ADJUST is not NONE or PPC." severity error;
+       end if;  
+
+       if ((CLKOUT1_DESKEW_ADJUST /= "NONE") and (CLKOUT1_DESKEW_ADJUST /= "none")
+            and (CLKOUT1_DESKEW_ADJUST /= "PPC") and (CLKOUT1_DESKEW_ADJUST /= "ppc")
+            ) then
+          assert FALSE report "Error : CLKOUT1_DESKEW_ADJUST is not NONE or PPC." severity error;
+       end if;  
+
+       if ((CLKOUT2_DESKEW_ADJUST /= "NONE") and (CLKOUT2_DESKEW_ADJUST /= "none")
+            and (CLKOUT2_DESKEW_ADJUST /= "PPC") and (CLKOUT2_DESKEW_ADJUST /= "ppc")
+            ) then
+          assert FALSE report "Error : CLKOUT2_DESKEW_ADJUST is not NONE or PPC." severity error;
+       end if;  
+
+       if ((CLKOUT3_DESKEW_ADJUST /= "NONE") and (CLKOUT3_DESKEW_ADJUST /= "none")
+            and (CLKOUT3_DESKEW_ADJUST /= "PPC") and (CLKOUT3_DESKEW_ADJUST /= "ppc")
+            ) then
+          assert FALSE report "Error : CLKOUT3_DESKEW_ADJUST is not NONE or PPC." severity error;
+       end if;  
+
+       if ((CLKOUT4_DESKEW_ADJUST /= "NONE") and (CLKOUT4_DESKEW_ADJUST /= "none")
+            and (CLKOUT4_DESKEW_ADJUST /= "PPC") and (CLKOUT4_DESKEW_ADJUST /= "ppc")
+            ) then
+          assert FALSE report "Error : CLKOUT4_DESKEW_ADJUST is not NONE or PPC." severity error;
+       end if;  
+
+       if ((CLKOUT5_DESKEW_ADJUST /= "NONE") and (CLKOUT5_DESKEW_ADJUST /= "none")
+            and (CLKOUT5_DESKEW_ADJUST /= "PPC") and (CLKOUT5_DESKEW_ADJUST /= "ppc")
+            ) then
+          assert FALSE report "Error : CLKOUT5_DESKEW_ADJUST is not NONE or PPC." severity error;
+       end if;  
+
+       if ((CLKFBOUT_DESKEW_ADJUST /= "NONE") and (CLKFBOUT_DESKEW_ADJUST /= "none")
+            and (CLKFBOUT_DESKEW_ADJUST /= "PPC") and (CLKFBOUT_DESKEW_ADJUST /= "ppc")
+            ) then
+          assert FALSE report "Error : CLKFBOUT_DESKEW_ADJUST is not NONE or PPC." severity error;
+       end if;  
+
+       case PLL_PMCD_MODE is
+          when TRUE => pmcd_mode <= '1';
+          when FALSE => pmcd_mode <= '0';
+           when others  =>  assert FALSE report "Attribute Syntax Error : PLL_PMCD_MODE is not TRUE or FALSE." severity error;
+       end case;
+
+       case CLKOUT0_DIVIDE is
+           when   1 to 128 => NULL ;
+           when others  =>  assert FALSE report "Attribute Syntax Error : CLKOUT0_DIVIDE is not in range 1...128." severity error;
+       end case;
+
+        if ((CLKOUT0_PHASE < -360.0) or (CLKOUT0_PHASE > 360.0)) then
+            assert FALSE report "Attribute Syntax Error : CLKOUT0_PHASE is not in range -360.0 to 360.0" severity error;
+        elsif (pmcd_mode = '1' and CLKOUT0_PHASE /= 0.0) then
+           assert FALSE report "Attribute Syntax Error : CLKOUT0_PHASE need set to 0.0 when attribute PLL_PMCD_MODE is set to TRUE." severity error; 
+        end if;
+
+        if ((CLKOUT0_DUTY_CYCLE < 0.0) or (CLKOUT0_DUTY_CYCLE > 1.0)) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT0_DUTY_CYCLE is not real in range 0.0 to 1.0 pecentage."severity error;
+        elsif (pmcd_mode = '1' and CLKOUT0_DUTY_CYCLE /= 0.5) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT0_DUTY_CYCLE need set to 0.5 when attribute PLL_PMCD_MODE is set to TRUE." severity error;
+        end if;
+
+       case CLKOUT1_DIVIDE is
+           when   1 to 128 => NULL ;
+           when others  =>  assert FALSE report "Attribute Syntax Error : CLKOUT1_DIVIDE is not in range 1...128." severity error;
+       end case;
+
+        if ((CLKOUT1_PHASE < -360.0) or (CLKOUT1_PHASE > 360.0)) then
+            assert FALSE report "Attribute Syntax Error : CLKOUT1_PHASE is not in range -360.0 to 360.0" severity error;
+        elsif (pmcd_mode = '1' and CLKOUT1_PHASE /= 0.0) then
+           assert FALSE report "Attribute Syntax Error : CLKOUT1_PHASE need set to 0.0 when attribute PLL_PMCD_MODE is set to TRUE." severity error; 
+        end if;
+
+        if ((CLKOUT1_DUTY_CYCLE < 0.0) or (CLKOUT1_DUTY_CYCLE > 1.0)) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT1_DUTY_CYCLE is not real in range 0.0 to 1.0 pecentage."severity error;
+        elsif (pmcd_mode = '1' and CLKOUT1_DUTY_CYCLE /= 0.5) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT1_DUTY_CYCLE need set to 0.5 when attribute PLL_PMCD_MODE is set to TRUE." severity error;
+        end if;
+
+       case CLKOUT2_DIVIDE is
+           when   1 to 128 => NULL ;
+           when others  =>  assert FALSE report "Attribute Syntax Error : CLKOUT2_DIVIDE is not in range 1...128." severity error;
+       end case;
+
+        if ((CLKOUT2_PHASE < -360.0) or (CLKOUT2_PHASE > 360.0)) then
+            assert FALSE report "Attribute Syntax Error : CLKOUT2_PHASE is not in range -360.0 to 360.0" severity error;
+        elsif (pmcd_mode = '1' and CLKOUT2_PHASE /= 0.0) then
+           assert FALSE report "Attribute Syntax Error : CLKOUT2_PHASE need set to 0.0 when attribute PLL_PMCD_MODE is set to TRUE." severity error; 
+        end if;
+
+        if ((CLKOUT2_DUTY_CYCLE < 0.0) or (CLKOUT2_DUTY_CYCLE > 1.0)) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT2_DUTY_CYCLE is not real in range 0.0 to 1.0 pecentage."severity error;
+        elsif (pmcd_mode = '1' and CLKOUT2_DUTY_CYCLE /= 0.5) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT2_DUTY_CYCLE need set to 0.5 when attribute PLL_PMCD_MODE is set to TRUE." severity error;
+        end if;
+
+
+       case CLKOUT3_DIVIDE is
+           when   1 to 128 => NULL ;
+           when others  =>  assert FALSE report "Attribute Syntax Error : CLKOUT3_DIVIDE is not in range 1...128." severity error;
+       end case;
+
+        if ((CLKOUT3_PHASE < -360.0) or (CLKOUT3_PHASE > 360.0)) then
+            assert FALSE report "Attribute Syntax Error : CLKOUT3_PHASE is not in range -360.0 to 360.0" severity error;
+        elsif (pmcd_mode = '1' and CLKOUT3_PHASE /= 0.0) then
+           assert FALSE report "Attribute Syntax Error : CLKOUT3_PHASE need set to 0.0 when attribute PLL_PMCD_MODE is set to TRUE." severity error; 
+        end if;
+
+        if ((CLKOUT3_DUTY_CYCLE < 0.0) or (CLKOUT3_DUTY_CYCLE > 1.0)) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT3_DUTY_CYCLE is not real in range 0.0 to 1.0 pecentage."severity error;
+        elsif (pmcd_mode = '1' and CLKOUT3_DUTY_CYCLE /= 0.5) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT3_DUTY_CYCLE need set to 0.5 when attribute PLL_PMCD_MODE is set to TRUE." severity error;
+        end if;
+
+
+       case CLKOUT4_DIVIDE is
+           when   1 to 128 => NULL ;
+           when others  =>  assert FALSE report "Attribute Syntax Error : CLKOUT4_DIVIDE is not in range 1...128." severity error;
+       end case;
+
+        if ((CLKOUT4_PHASE < -360.0) or (CLKOUT4_PHASE > 360.0)) then
+            assert FALSE report "Attribute Syntax Error : CLKOUT4_PHASE is not in range -360.0 to 360.0" severity error;
+        end if;
+
+        if ((CLKOUT4_DUTY_CYCLE < 0.0) or (CLKOUT4_DUTY_CYCLE > 1.0)) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT4_DUTY_CYCLE is not real in range 0.0 to 1.0 pecentage."severity error;
+        end if;
+
+       case CLKOUT5_DIVIDE is
+           when   1 to 128 => NULL ;
+           when others  =>  assert FALSE report "Attribute Syntax Error : CLKOUT5_DIVIDE is not in range 1...128." severity error;
+       end case;
+
+        if ((CLKOUT5_PHASE < -360.0) or (CLKOUT5_PHASE > 360.0)) then
+            assert FALSE report "Attribute Syntax Error : CLKOUT5_PHASE is not in range 360.0 to 360.0" severity error;
+        end if;
+
+        if ((CLKOUT5_DUTY_CYCLE < 0.0) or (CLKOUT5_DUTY_CYCLE > 1.0)) then
+             assert FALSE report "Attribute Syntax Error : CLKOUT5_DUTY_CYCLE is not real in range 0.0 to 1.0 pecentage."severity error;
+        end if;
+
+
+       case CLKFBOUT_MULT is
+           when   1 to 74 =>  NULL;
+           when others  =>  assert FALSE report "Attribute Syntax Error : CLKFBOUT_MULT is not in range 1...74." severity error;
+       end case;
+
+          if (clkfb_src = 1) then
+             if (CLKFBOUT_PHASE > 0.001 or CLKFBOUT_PHASE < -0.001) then
+              assert FALSE report "Attribute Syntax Error : The Attribute CLKFBOUT_PHASE should be set to 0.0 when attribute CLKFB_FEEDBACK set to CLKOUT0." severity error;
+             end if;
+        else
+             if ( CLKFBOUT_PHASE < -360.0 or CLKFBOUT_PHASE > 360.0 ) then
+             assert FALSE report "Attribute Syntax Error : CLKFBOUT_PHASE is not in range -360.0 to 360.0" severity error;
+             elsif (pmcd_mode = '1' and CLKFBOUT_PHASE /= 0.0) then
+           assert FALSE report "Attribute Syntax Error : CLKFBOUT_PHASE need set to 0.0 when attribute PLL_PMCD_MODE is set to TRUE." severity error; 
+             end if;
+       end if;
+
+       case DIVCLK_DIVIDE is
+       when    1  to 52 => NULL;
+
+           when others  =>  assert FALSE report "Attribute Syntax Error : DIVCLK_DIVIDE is not in range 1...52." severity error;
+       end case;
+
+           if ((REF_JITTER < 0.0) or (REF_JITTER > 0.999)) then
+             assert FALSE report "Attribute Syntax Error : REF_JITTER is not in range 0.0 ... 1.0." severity error;
+           end if;
+           
+           clkin_chk_t1_tmp1 := 1000.0 / CLKIN_FREQ_MIN;
+           clkin_chk_t1_tmp2 := 1000.0 * clkin_chk_t1_tmp1;
+           clkin_chk_t1_tmpi := clkin_chk_t1_tmp2 * 1 ps;
+           clkin_chk_t1_tmpi1 := clkin_chk_t1_tmpi / 1 ps;
+           clkin_chk_t1 := real(clkin_chk_t1_tmpi1) / 1000.0;
+ 
+           clkin_chk_t2_tmp1 := 1000.0 / CLKIN_FREQ_MAX;
+           clkin_chk_t2_tmp2 := 1000.0 * clkin_chk_t2_tmp1;
+           clkin_chk_t2_tmpi := clkin_chk_t2_tmp2 * 1 ps;
+           clkin_chk_t2_tmpi1 := clkin_chk_t2_tmpi / 1 ps;
+           clkin_chk_t2 := real(clkin_chk_t2_tmpi1) / 1000.0;
+           
+          if (((CLKIN1_PERIOD < clkin_chk_t2) or (CLKIN1_PERIOD > clkin_chk_t1)) and (pmcd_mode = '0') and (CLKINSEL = '1')) then
+        Write ( Message, string'(" Attribute Syntax Error : The attribute CLKIN1_PERIOD is set to "));
+        Write ( Message, CLKIN1_PERIOD);
+        Write ( Message, string'(" ns and out the allowed range "));
+        Write ( Message, clkin_chk_t2);
+        Write ( Message, string'(" ns to "));
+        Write ( Message, clkin_chk_t1);
+        Write ( Message, string'(" ns" ));
+        Write ( Message, '.' & LF );
+        assert false report Message.all severity error;
+        DEALLOCATE (Message);
+          end if;
+
+          if (((CLKIN2_PERIOD < clkin_chk_t2) or (CLKIN2_PERIOD > clkin_chk_t1)) and (pmcd_mode = '0') and (CLKINSEL = '0')) then
+        Write ( Message, string'(" Attribute Syntax Error : The attribute CLKIN2_PERIOD is set to "));
+        Write ( Message, CLKIN2_PERIOD);
+        Write ( Message, string'(" ns and out the allowed range "));
+        Write ( Message, clkin_chk_t2);
+        Write ( Message, string'(" ns to ")); 
+        Write ( Message, clkin_chk_t1);
+        Write ( Message, string'(" ns"));
+        Write ( Message, '.' & LF );
+        assert false report Message.all severity error; 
+        DEALLOCATE (Message);
+          end if;
+
+       case RESET_ON_LOSS_OF_LOCK is
+           when FALSE   =>  rst_on_loss <= '0';
+--           when TRUE    =>  rst_on_loss <= '1';
+           when others  =>  assert FALSE report " Attribute Syntax Error : generic RESET_ON_LOSS_OF_LOCK must be set to FALSE for PLL_ADV to function correctly. Please correct the setting for the attribute and re-run the simulation." severity error;
+       end case;
+
+   write (con_line, O_MAX_HT_LT);
+   write (con_line, string'(".0 "));
+   write (con_line, CLKOUT0_DIVIDE);
+   write (con_line, string'(".0 "));
+   write (con_line, CLKOUT1_DIVIDE);
+   write (con_line, string'(".0 "));
+   write (con_line, CLKOUT2_DIVIDE);
+   write (con_line, string'(".0 "));
+   write (con_line, CLKOUT3_DIVIDE);
+   write (con_line, string'(".0 "));
+   write (con_line, CLKOUT4_DIVIDE);
+   write (con_line, string'(".0 "));
+   write (con_line, CLKOUT5_DIVIDE);
+   write (con_line, string'(".0 "));
+   read (con_line, tmpvalue);
+   O_MAX_HT_LT_real := tmpvalue;
+   read (con_line, skipspace);
+   read (con_line, tmpvalue);
+   CLKOUT0_DIVIDE_real := tmpvalue;
+   read (con_line, skipspace);
+   read (con_line, tmpvalue);
+   CLKOUT1_DIVIDE_real := tmpvalue;
+   read (con_line, skipspace);
+   read (con_line, tmpvalue);
+   CLKOUT2_DIVIDE_real := tmpvalue;
+   read (con_line, skipspace);
+   read (con_line, tmpvalue);
+   CLKOUT3_DIVIDE_real := tmpvalue;
+   read (con_line, skipspace);
+   read (con_line, tmpvalue);
+   CLKOUT4_DIVIDE_real := tmpvalue;
+   read (con_line, skipspace);
+   read (con_line, tmpvalue);
+   CLKOUT5_DIVIDE_real := tmpvalue;
+   DEALLOCATE (con_line);
+
+    chk_ok := clkout_duty_chk (CLKOUT0_DIVIDE, CLKOUT0_DUTY_CYCLE, "CLKOUT0_DUTY_CYCLE");
+    chk_ok := clkout_duty_chk (CLKOUT1_DIVIDE, CLKOUT1_DUTY_CYCLE, "CLKOUT1_DUTY_CYCLE");
+    chk_ok := clkout_duty_chk (CLKOUT2_DIVIDE, CLKOUT2_DUTY_CYCLE, "CLKOUT2_DUTY_CYCLE");
+    chk_ok := clkout_duty_chk (CLKOUT3_DIVIDE, CLKOUT3_DUTY_CYCLE, "CLKOUT3_DUTY_CYCLE");
+    chk_ok := clkout_duty_chk (CLKOUT4_DIVIDE, CLKOUT4_DUTY_CYCLE, "CLKOUT4_DUTY_CYCLE");
+    chk_ok := clkout_duty_chk (CLKOUT5_DIVIDE, CLKOUT5_DUTY_CYCLE, "CLKOUT5_DUTY_CYCLE");
+
+   locked_en_time <= clkfb_mult_tl_tmp * DIVCLK_DIVIDE +  clkout_en_time + 2;
+   lock_cnt_max <= clkfb_mult_tl_tmp * DIVCLK_DIVIDE +  clkout_en_time + 10 + CLKFBOUT_MULT;
+   init_done <= 1;
+
+--------PMCD --------------
+
+    if (RST_DEASSERT_CLK = "CLKIN1") then
+         rel_o_mux_sel <= '1';
+    elsif (RST_DEASSERT_CLK = "CLKFBIN") then
+         rel_o_mux_sel <= '0';
+    else
+     assert false report "Attribute Syntax Error : The attribute RST_DEASSERT_CLK on PLL_ADV should be CLKIN1 or CLKFBIN." severity error;
+     end if;
+
+        case EN_REL is
+          when FALSE => clkdiv_rel_rst <= '0';
+          when TRUE => clkdiv_rel_rst <= '1';
+          when others   => assert false report "Attribute Syntax Error : The attribute EN_REL on PLL_ADV should be TRUE or FALSE." severity error;
+        end case;
+
+     wait;
+  end process INIPROC;
+
+
+--
+-- PMCD function
+--
+
+-- *** Clocks MUX
+--   rel_o_mux_clk_tmp <= clkin1_in when rel_o_mux_sel = '1' else clkfb_in;
+   rel_o_mux_clk_tmp <= clkin1_in_dly when rel_o_mux_sel = '1' else clkfb_in;
+   rel_o_mux_clk <= rel_o_mux_clk_tmp when (pmcd_mode = '1') else '0';
+   clka1_in <= clkin1_in when (pmcd_mode = '1') else '0';
+   clkb1_in <= clkfb_in when (pmcd_mode = '1')  else '0';
+
+--*** Rel and Rst
+    rel_rst_P : process(rel_o_mux_clk, rst_input)
+    begin
+      if (rst_input = '1') then
+         qrel_o_reg1 <= '1';
+         qrel_o_reg2 <= '1';
+      else
+         if (rising_edge(rel_o_mux_clk)) then
+            qrel_o_reg1 <= '0';
+         end if;
+
+         if (falling_edge(rel_o_mux_clk)) then
+            qrel_o_reg2 <= qrel_o_reg1;
+          end if;
+      end if;
+   end process;
+
+    qrel_o_reg3_P : process ( rel_in, rst_input)
+    begin
+      if (rst_input = '1') then
+          qrel_o_reg3 <= '1';
+      elsif (rising_edge(rel_in)) then
+            qrel_o_reg3 <= '0';
+      end if;
+    end process;
+
+    rel_rst_o <= (qrel_o_reg3 or qrel_o_reg1) when clkdiv_rel_rst = '1' else qrel_o_reg1;
+
+--*** CLKA
+    clka1_out_P : process (clka1_in, qrel_o_reg2)
+    begin
+        if (qrel_o_reg2 = '1') then
+            clka1_out <= '0';
+        elsif (qrel_o_reg2 = '0') then
+            clka1_out <= clka1_in;
+        end if;
+    end process;
+
+---** CLKB
+    clkb1_out_P : process (clkb1_in, qrel_o_reg2)
+    begin
+        if (qrel_o_reg2 = '1') then
+            clkb1_out <= '0';
+        elsif (qrel_o_reg2 = '0') then
+            clkb1_out <= clkb1_in;
+        end if;
+    end process;
+
+--*** Clock divider
+    clka1d2_out_P : process(clka1_in, rel_rst_o) 
+    begin
+        if (rel_rst_o = '1') then
+            clka1d2_out <= '0';
+        elsif (rising_edge(clka1_in)) then
+            clka1d2_out <= not clka1d2_out;
+       end if;
+    end process;
+
+    clka1d4_out_P : process (clka1d2_out, rel_rst_o) 
+    begin
+        if (rel_rst_o = '1') then
+            clka1d4_out <= '0';
+        elsif (rising_edge(clka1d2_out)) then
+            clka1d4_out <= not clka1d4_out;
+       end if;
+    end process;
+
+    clka1d8_out_P : process (clka1d4_out, rel_rst_o)
+     begin
+        if (rel_rst_o = '1') then
+            clka1d8_out <= '0';
+        elsif (rising_edge(clka1d4_out)) then
+            clka1d8_out <= not clka1d8_out;
+        end if;
+    end process;
+
+          clkout5_out_out <=  '0' when (pmcd_mode = '1') else clkout5_out;
+          clkout4_out_out <= '0' when (pmcd_mode = '1') else clkout4_out;
+          clkout3_out_out <= clka1_out  when (pmcd_mode = '1') else clkout3_out;
+          clkout2_out_out <= clka1d2_out when (pmcd_mode = '1') else clkout2_out;
+          clkout1_out_out <=  clka1d4_out when (pmcd_mode = '1') else  clkout1_out;
+          clkout0_out_out <= clka1d8_out when (pmcd_mode = '1') else clkout0_out;
+          clkfbout_out_out <=  clkb1_out when (pmcd_mode = '1') else clkfb_out;
+
+--
+-- PLL  function start
+--  
+
+    clkinsel_tmp <= clkinsel_in after 1 ps;
+
+    clkinsel_p : process 
+          variable period_clkin : real;
+          variable clkvco_freq_init_chk : real;
+          variable Message : line;
+          variable tmpreal1 : real;
+          variable tmpreal2 : real;
+          variable tmpva1 : integer;
+          variable tmpva1r : real;
+
+    begin
+      if (NOW > 1 ps  and  rst_in = '0' and (clkinsel_tmp = '0' or clkinsel_tmp = '1')) then
+          assert false report
+            "Input Error : PLL input clock can only be switched when RST=1.  CLKINSEL is changed when RST low, should be changed at RST high." 
+          severity error;
+      end if;
+
+      if (NOW = 0 ps) then
+         wait for 1 ps;
+      end if;
+
+      if ( clkinsel_in='1') then
+         period_clkin :=  CLKIN1_PERIOD;
+      else
+         period_clkin := CLKIN2_PERIOD;
+      end if;
+      tmpva1 := CLKFBOUT_MULT * CLKOUT0_DIVIDE;
+      tmpva1r := real(tmpva1); 
+      tmpreal1 := real(CLKFBOUT_MULT);
+      tmpreal2 := real(DIVCLK_DIVIDE);
+      if (clkfb_src = 1) then
+      clkvco_freq_init_chk :=  (tmpva1r / ( period_clkin * tmpreal2)) * 1000.0;
+      else
+      clkvco_freq_init_chk :=  (tmpreal1 / ( period_clkin * tmpreal2)) * 1000.0;
+      end if;
+      
+      if ((clkvco_freq_init_chk > VCOCLK_FREQ_MAX) or (clkvco_freq_init_chk < VCOCLK_FREQ_MIN)) then
+         Write ( Message, string'(" Attribute Syntax Error : The calculation of VCO frequency="));
+         Write ( Message, clkvco_freq_init_chk);
+         Write ( Message, string'(" Mhz. This exceeds the permitted VCO frequency range of "));
+         Write ( Message, VCOCLK_FREQ_MIN);
+          Write ( Message, string'(" MHz to "));
+          Write ( Message, VCOCLK_FREQ_MAX);
+          if (clkfb_src = 1) then
+          Write ( Message, string'(" MHz. The VCO frequency is calculated with formula: VCO frequency =  CLKFBOUT_MULT * CLKOUT0_DIVIDE / (DIVCLK_DIVIDE * CLKIN_PERIOD)."));
+          else
+          Write ( Message, string'(" MHz. The VCO frequency is calculated with formula: VCO frequency =  CLKFBOUT_MULT / (DIVCLK_DIVIDE * CLKIN_PERIOD)."));
+          end if;
+         Write ( Message, string'(" Please adjust the attributes to the permitted VCO frequency range."));
+          assert false report Message.all severity error;
+              DEALLOCATE (Message);
+      end if;   
+
+     wait on clkinsel_in;
+     end process;
+
+   clkpll <= clkin1_in when clkinsel_in = '1' else clkin2_in;
+   
+   RST_SYNC_P : process (clkpll, rst_input)
+   begin
+     if (rst_input = '1') then
+        rst_in1 <= '1';
+     elsif (rising_edge (clkpll)) then
+        rst_in1 <= rst_input;
+     end if;
+   end process;
+
+   rst_in <= rst_in1 or rst_unlock;
+
+   RST_ON_LOSS_P : process (pll_unlock)
+   begin
+     if (rising_edge(pll_unlock)) then
+      if (rst_on_loss = '1' and locked_out = '1') then
+          rst_unlock <= '1', '0' after 10 ns;
+      end if;
+     end if;
+   end process;
+
+   RST_PW_P : process (rst_input)
+      variable rst_edge : time := 0 ps;
+      variable rst_ht : time := 0 ps;
+   begin
+      if (rising_edge(rst_input)) then
+         rst_edge := NOW;
+      elsif ((falling_edge(rst_input)) and (rst_edge > 1 ps)) then
+         rst_ht := NOW - rst_edge;
+         if (rst_ht < 10 ns and rst_ht > 0 ps) then
+            assert false report
+               "Input Error : RST must be asserted at least for 10 ns."
+            severity error;
+         end if;
+      end if;
+   end process;
+     
+---- 
+----  DRP port read and write
+----
+
+   do_out <= dr_sram(daddr_in_lat);
+
+  DRP_PROC : process
+    variable address : integer;
+    variable valid_daddr : boolean := false;
+    variable Message : line;
+    variable di_str : string (1 to 16);
+    variable daddr_str : string ( 1 to 5);
+    variable first_time : boolean := true;
+    variable clk_ht : std_logic_vector (6 downto 0);
+    variable tmp_ht : std_logic_vector (6 downto 0);
+    variable clk_lt : std_logic_vector (6 downto 0);
+    variable tmp_lt : std_logic_vector (6 downto 0);
+    variable clk_nocnt : std_ulogic;
+    variable clk_edge : std_ulogic;
+    variable clkout_dly : std_logic_vector (5 downto 0);
+    variable clkpm_sel : std_logic_vector (2 downto 0);
+    variable tmpx : std_logic_vector (7 downto 0);
+    variable clk0_hti : std_logic_vector (6 downto 0);
+    variable clk1_hti : std_logic_vector (6 downto 0);
+    variable clk2_hti : std_logic_vector (6 downto 0);
+    variable clk3_hti : std_logic_vector (6 downto 0);
+    variable clk4_hti : std_logic_vector (6 downto 0);
+    variable clk5_hti : std_logic_vector (6 downto 0);
+    variable clkfbm1_hti : std_logic_vector (6 downto 0);
+    variable clkfbm2_hti : std_logic_vector (6 downto 0);
+    variable clk0_lti : std_logic_vector (6 downto 0);
+    variable clk1_lti : std_logic_vector (6 downto 0);
+    variable clk2_lti : std_logic_vector (6 downto 0);
+    variable clk3_lti : std_logic_vector (6 downto 0);
+    variable clk4_lti : std_logic_vector (6 downto 0);
+    variable clk5_lti : std_logic_vector (6 downto 0);
+    variable clkfbm1_lti : std_logic_vector (6 downto 0);
+    variable clkfbm2_lti : std_logic_vector (6 downto 0);
+    variable clk0_nocnti : std_ulogic;
+    variable clk1_nocnti : std_ulogic;
+    variable clk2_nocnti : std_ulogic;
+    variable clk3_nocnti : std_ulogic;
+    variable clk4_nocnti : std_ulogic;
+    variable clk5_nocnti : std_ulogic;
+    variable clkfbm1_nocnti : std_ulogic;
+    variable clkfbm2_nocnti : std_ulogic;
+    variable clk0_edgei  : std_ulogic;
+    variable clk1_edgei  : std_ulogic;
+    variable clk2_edgei  : std_ulogic;
+    variable clk3_edgei  : std_ulogic;
+    variable clk4_edgei  : std_ulogic;
+    variable clk5_edgei  : std_ulogic;
+    variable clkfbm1_edgei  : std_ulogic;
+    variable clkfbm2_edgei  : std_ulogic;
+    variable clkout0_dlyi : std_logic_vector (5 downto 0);
+    variable clkout1_dlyi : std_logic_vector (5 downto 0);
+    variable clkout2_dlyi : std_logic_vector (5 downto 0);
+    variable clkout3_dlyi : std_logic_vector (5 downto 0);
+    variable clkout4_dlyi : std_logic_vector (5 downto 0);
+    variable clkout5_dlyi : std_logic_vector (5 downto 0);
+    variable clkfbm1_dlyi : std_logic_vector (5 downto 0);
+    variable clkfbm2_dlyi : std_logic_vector (5 downto 0);
+    variable clk0pm_seli : std_logic_vector (2 downto 0);
+    variable clk1pm_seli : std_logic_vector (2 downto 0);
+    variable clk2pm_seli : std_logic_vector (2 downto 0);
+    variable clk3pm_seli : std_logic_vector (2 downto 0);
+    variable clk4pm_seli : std_logic_vector (2 downto 0);
+    variable clk5pm_seli : std_logic_vector (2 downto 0);
+    variable clkfbm1pm_seli : std_logic_vector (2 downto 0);
+    variable clkfbm2pm_seli : std_logic_vector (2 downto 0);
+    variable clk_ht1 : integer;
+    variable clk_div : integer;
+    variable  clk_div1 : integer;
+    variable clkind_hti : std_logic_vector (6 downto 0);
+    variable clkind_lti : std_logic_vector (6 downto 0);
+    variable clkind_nocnti : std_ulogic;
+    variable clkind_edgei : std_ulogic;
+    variable pll_cp : std_logic_vector (3 downto 0);
+    variable pll_res : std_logic_vector (3 downto 0);
+    variable pll_lfhf : std_logic_vector (1 downto 0);
+    variable pll_cpres : std_logic_vector (1 downto 0) := "01";
+    variable tmpadd : std_logic_vector (4 downto 0);
+    variable clkout0_ps_tmp : real;
+  begin
+
+   if (first_time = true and init_done = 1) then
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKOUT0_DIVIDE, CLKOUT0_DUTY_CYCLE);
+   clk0_hti := clk_ht;
+   clk0_lti := clk_lt;
+   clk0_nocnti := clk_nocnt;
+   clk0_edgei := clk_edge;
+   clk0_ht <= clk0_hti;
+   clk0_lt <= clk0_lti;
+   clk0_nocnt <= clk0_nocnti;
+   clk0_edge <= clk0_edgei;
+
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKOUT1_DIVIDE, CLKOUT1_DUTY_CYCLE);
+   clk1_hti := clk_ht;
+   clk1_lti := clk_lt;
+   clk1_nocnti := clk_nocnt;
+   clk1_edgei := clk_edge;
+   clk1_ht <= clk1_hti;
+   clk1_lt <= clk1_lti;
+   clk1_nocnt <= clk1_nocnti;
+   clk1_edge <= clk1_edgei;
+
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKOUT2_DIVIDE, CLKOUT2_DUTY_CYCLE);
+   clk2_hti := clk_ht;
+   clk2_lti := clk_lt;
+   clk2_nocnti := clk_nocnt;
+   clk2_edgei := clk_edge;
+   clk2_ht <= clk2_hti;
+   clk2_lt <= clk2_lti;
+   clk2_nocnt <= clk2_nocnti;
+   clk2_edge <= clk2_edgei;
+
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKOUT3_DIVIDE, CLKOUT3_DUTY_CYCLE);
+   clk3_hti := clk_ht;
+   clk3_lti := clk_lt;
+   clk3_nocnti := clk_nocnt;
+   clk3_edgei := clk_edge;
+   clk3_ht <= clk3_hti;
+   clk3_lt <= clk3_lti;
+   clk3_nocnt <= clk3_nocnti;
+   clk3_edge <= clk3_edgei;
+
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKOUT4_DIVIDE, CLKOUT4_DUTY_CYCLE);
+   clk4_hti := clk_ht;
+   clk4_lti := clk_lt;
+   clk4_nocnti := clk_nocnt;
+   clk4_edgei := clk_edge;
+   clk4_ht <= clk4_hti;
+   clk4_lt <= clk4_lti;
+   clk4_nocnt <= clk4_nocnti;
+   clk4_edge <= clk4_edgei;
+
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKOUT5_DIVIDE, CLKOUT5_DUTY_CYCLE);
+   clk5_hti := clk_ht;
+   clk5_lti := clk_lt;
+   clk5_nocnti := clk_nocnt;
+   clk5_edgei := clk_edge;
+   clk5_ht <= clk5_hti;
+   clk5_lt <= clk5_lti;
+   clk5_nocnt <= clk5_nocnti;
+   clk5_edge <= clk5_edgei;
+
+   if (clkfb_src = 1) then
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKFBOUT_MULT, 0.50);
+   clkfbm2_hti := clk_ht;
+   clkfbm2_lti := clk_lt;
+   clkfbm2_nocnti := clk_nocnt;
+   clkfbm2_edgei := clk_edge;
+   clkfbm2_ht <= clkfbm2_hti;
+   clkfbm2_lt <= clkfbm2_lti;
+   clkfbm2_nocnt <= clkfbm2_nocnti;
+   clkfbm2_edge <= clkfbm2_edgei;
+   clkout0_ps_tmp := CLKOUT0_PHASE;
+   clkfbm1_ht <= "0000000";
+   clkfbm1_lt <= "0000000";
+   clkfbm1_nocnt <= '1';
+   clkfbm1_edge <= '0';
+  else
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, CLKFBOUT_MULT, 0.50);
+   clkfbm1_hti := clk_ht;
+   clkfbm1_lti := clk_lt;
+   clkfbm1_nocnti := clk_nocnt;
+   clkfbm1_edgei := clk_edge;
+   clkfbm1_ht <= clkfbm1_hti;
+   clkfbm1_lt <= clkfbm1_lti;
+   clkfbm1_nocnt <= clkfbm1_nocnti;
+   clkfbm1_edge <= clkfbm1_edgei;
+   clkout0_ps_tmp := CLKOUT0_PHASE;
+   clkfbm2_ht <= "0000000";
+   clkfbm2_lt <= "0000000";
+   clkfbm2_nocnt <= '1';
+   clkfbm2_edge <= '0';
+   end if;
+
+   clk_out_para_cal (clk_ht, clk_lt, clk_nocnt, clk_edge, DIVCLK_DIVIDE, 0.50);
+   clkind_hti := clk_ht;
+   clkind_lti := clk_lt;
+   clkind_nocnti := clk_nocnt;
+   clkind_edgei := clk_edge;
+   clkind_ht <= clkind_hti;
+   clkind_lt <= clkind_lti;
+
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk0_hti, clk0_lti, clk0_nocnti, clk0_edgei);
+   clk0_ht1 <= clk_ht1;
+   clk0_div <= clk_div;
+   clk0_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk1_hti, clk1_lti, clk1_nocnti, clk1_edgei);
+   clk1_ht1 <= clk_ht1;
+   clk1_div <= clk_div;
+   clk1_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk2_hti, clk2_lti, clk2_nocnti, clk2_edgei);
+   clk2_ht1 <= clk_ht1;
+   clk2_div <= clk_div;
+   clk2_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk3_hti, clk3_lti, clk3_nocnti, clk3_edgei);
+   clk3_ht1 <= clk_ht1;
+   clk3_div <= clk_div;
+   clk3_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk4_hti, clk4_lti, clk4_nocnti, clk4_edgei);
+   clk4_ht1 <= clk_ht1;
+   clk4_div <= clk_div;
+   clk4_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk5_hti, clk5_lti, clk5_nocnti, clk5_edgei);
+   clk5_ht1 <= clk_ht1;
+   clk5_div <= clk_div;
+   clk5_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clkfbm1_hti, clkfbm1_lti, clkfbm1_nocnti, clkfbm1_edgei);
+   clkfbm1_ht1 <= clk_ht1;
+   clkfbm1_div <= clk_div;
+   clkfbm1_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clkfbm2_hti, clkfbm2_lti, clkfbm2_nocnti, clkfbm2_edgei);
+   clkfbm2_ht1 <= clk_ht1;
+   clkfbm2_div <= clk_div;
+   clkfbm2_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clkind_hti, clkind_lti, clkind_nocnti, '0');
+   clkind_div <= clk_div;
+
+   clkout_dly_cal (clkout_dly, clkpm_sel, CLKOUT0_DIVIDE, clkout0_ps_tmp, "CLKOUT0_PHASE");
+   clkout0_dly <= SLV_TO_INT(clkout_dly);
+   clk0pm_sel <= SLV_TO_INT(clkpm_sel);
+   clkout0_dlyi := clkout_dly;
+   clk0pm_seli := clkpm_sel;
+   
+   clkout_dly_cal (clkout_dly, clkpm_sel, CLKOUT1_DIVIDE, CLKOUT1_PHASE, "CLKOUT1_PHASE");
+   clkout1_dly <= SLV_TO_INT(clkout_dly);
+   clk1pm_sel <= SLV_TO_INT(clkpm_sel);
+   clkout1_dlyi := clkout_dly;
+   clk1pm_seli := clkpm_sel;
+
+   clkout_dly_cal (clkout_dly, clkpm_sel, CLKOUT2_DIVIDE, CLKOUT2_PHASE, "CLKOUT2_PHASE");
+   clkout2_dly <= SLV_TO_INT(clkout_dly);
+   clk2pm_sel <= SLV_TO_INT(clkpm_sel);
+   clkout2_dlyi := clkout_dly;
+   clk2pm_seli := clkpm_sel;
+   clkout_dly_cal (clkout_dly, clkpm_sel, CLKOUT3_DIVIDE, CLKOUT3_PHASE, "CLKOUT3_PHASE");
+   clkout3_dly <= SLV_TO_INT(clkout_dly);
+   clk3pm_sel <= SLV_TO_INT(clkpm_sel);
+   clkout3_dlyi := clkout_dly;
+   clk3pm_seli := clkpm_sel;
+   clkout_dly_cal (clkout_dly, clkpm_sel, CLKOUT4_DIVIDE, CLKOUT4_PHASE, "CLKOUT4_PHASE");
+   clkout4_dly <= SLV_TO_INT(clkout_dly);
+   clk4pm_sel <= SLV_TO_INT(clkpm_sel);
+   clkout4_dlyi := clkout_dly;
+   clk4pm_seli := clkpm_sel;
+   clkout_dly_cal (clkout_dly, clkpm_sel, CLKOUT5_DIVIDE, CLKOUT5_PHASE, "CLKOUT5_PHASE");
+   clkout5_dly <= SLV_TO_INT(clkout_dly);
+   clk5pm_sel <= SLV_TO_INT(clkpm_sel);
+   clkout5_dlyi := clkout_dly;
+   clk5pm_seli := clkpm_sel;
+   if (clkfb_src = 1) then
+   clkfbm1_dlyi := "000000";
+   clkfbm1pm_seli := "000";
+   clkfbm2_dlyi := "000000";
+   clkfbm2pm_seli := "000";
+   clkfbm1_dly <= 0;
+   clkfbm1pm_sel <= 0;
+   clkfbm2_dly <= 0;
+   clkfbm2pm_sel <= 0;
+   else
+   clkout_dly_cal (clkout_dly, clkpm_sel, CLKFBOUT_MULT, CLKFBOUT_PHASE, "CLKFBOUT_PHASE");
+   clkfbm1_dly <= SLV_TO_INT(clkout_dly);
+   clkfbm1pm_sel <= SLV_TO_INT(clkpm_sel);
+   clkfbm1_dlyi := clkout_dly;
+   clkfbm1pm_seli := clkpm_sel;
+   clkfbm2_dlyi := "000000";
+   clkfbm2pm_seli := "000";
+   clkfbm2_dly <= 0;
+   clkfbm2pm_sel <= 0;
+   end if;
+
+
+   if (clkfb_src = 1 and clkfb_mult_tl > 64 ) then
+      Write ( Message, string'(" Attribute Syntax Error :  The Attributes CLKFBOUT_MULT and CLKOUT0_DIVIDE are set to "));
+      Write ( Message, CLKFBOUT_MULT);
+      Write ( Message, string'(" and "));
+      Write ( Message, CLKOUT0_DIVIDE);
+      Write ( Message, string'(".  The product of CLKFBOUT_MULT and CLKOUT0_DIVIDE is ") );
+      Write ( Message, clkfb_mult_tl);
+      Write ( Message, string'(", which is over the 64 limit"));
+      Write ( Message, '.' & LF );
+      assert false report Message.all severity error;
+      DEALLOCATE (Message);
+   end if;
+  
+   pll_lfhf := "11";
+ 
+   case clkfb_mult_tl is
+when 1 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1011";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1101"; end if;
+when 2 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0101"; pll_res := "1111";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1110"; end if;
+when 3 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1100"; pll_res := "1111";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0110"; end if;
+when 4 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1111";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1010"; end if;
+when 5 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "0111";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1100"; end if;
+when 6 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1101";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1100"; end if;
+when 7 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "0011";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1100"; end if;
+when 8 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "0101";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0010"; end if;
+when 9 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1001";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0010"; end if;
+when 10 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1110"; pll_res := "1110";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 11 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1110";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 12 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1110";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 13 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "0001";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 14 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "0001";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 15 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "0001";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 16 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1110"; pll_res := "0110";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 17 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1110"; pll_res := "0110";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 18 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "0110";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "0100"; end if;
+when 19 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1110"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 20 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1110"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 21 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 22 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 23 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 24 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 25 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 26 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 27 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1101"; pll_res := "1100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 28 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1101"; pll_res := "1100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 29 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1101"; pll_res := "1100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 30 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1110"; pll_res := "1100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0001"; pll_res := "1000"; end if;
+when 31 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1101"; pll_res := "1100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "0100"; end if;
+when 32 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1100"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "0100"; end if;
+when 33 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "1111"; pll_res := "1010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "0100"; end if;
+when 34 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0111"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "0100"; end if;
+when 35 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0111"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "0100"; end if;
+when 36 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0111"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "0100"; end if;
+when 37 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0110"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "0100"; end if;
+when 38 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0110"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 39 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0110"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 40 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0110"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 41 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0110"; pll_res := "0010";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 42 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0100"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 43 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0100"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 44 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0100"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 45 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 46 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 47 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 48 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 49 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 50 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 51 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 52 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 53 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 54 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 55 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 56 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0011"; pll_res := "0100";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 57 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 58 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 59 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 60 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 61 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 62 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 63 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when 64 => if (BANDWIDTH = "HIGH" or BANDWIDTH = "OPTIMIZED") then pll_cp := "0010"; pll_res := "1000";
+  elsif (BANDWIDTH = "LOW") then pll_cp := "0010"; pll_res := "1000"; end if;
+when others => pll_cp := "0000"; pll_res := "0000";
+  end case;
+
+  if (sim_d = '1') then
+   dr_sram(5) <= (clkout0_dlyi(5) & 'X' & clkout0_dlyi(4) & 'X' & clkout0_dlyi(2) & clkout0_dlyi(3) & clkout0_dlyi(1) & clkout0_dlyi(0) & "XXXXXXXX");
+   dr_sram(6) <= (clk1_lti(4) & clk1_lti(5) & clk1_lti(3) & clk1_nocnti & clk1_lti(1) &  clk1_lti(2) & clkout1_dlyi(5) & 'X' & clkout1_dlyi(3) & clkout1_dlyi(2) &  clkout1_dlyi(0) & clkout1_dlyi(1) & 'X' & clk0_edgei & "XX");
+
+   dr_sram(7) <= ("1XX" & clk1_hti(5) & clk1_hti(3) & clk1_hti(4) & clk1_hti(2 downto 0)
+                  & clk1pm_seli(0) & 'X' & clk1_edgei & "1X" & clk1pm_seli(1) & clk1pm_seli(2));
+
+   dr_sram(8) <= (clk2pm_seli(2) & '1' & clk2_lti(5) & clk2pm_seli(1) & clk2_nocnti
+                 & clk2_lti(4) & clk2_lti(3) & clk2_lti(2) & clk2_lti(0)
+                 & clkout2_dlyi(5) & clkout2_dlyi(3) & clkout2_dlyi(4)
+                 & clkout2_dlyi(1) & clkout2_dlyi(2) & clkout2_dlyi(0) & 'X');
+   dr_sram(9) <= (clkout3_dlyi(0) & clkout3_dlyi(1) & clk0pm_seli(1)
+                   & clk0pm_seli(2) & "XX" & clk2_hti(4) & 'X' & clk2_hti(3)
+                  & clk2_hti(2) & clk2_hti(0) & clk2_hti(1) & clk2_edgei
+                  & clk2pm_seli(0) & "XX");
+
+   dr_sram(10) <= ('X' & clk3_edgei & "1X" & clk3pm_seli(1)
+                   & clk3pm_seli(2) &  clk3_lti(5) &  clk3_lti(4) &  clk3_nocnti
+                  & clk3_lti(2) &  clk3_lti(0) &  clk3_lti(1) &  clkout3_dlyi(4)
+                   & clkout3_dlyi(5) & clkout3_dlyi(3) & 'X');
+
+   dr_sram(11) <= (clk0_lti(5) & clkout4_dlyi(5) & clkout4_dlyi(0)
+                   & clkout4_dlyi(3) & clkout4_dlyi(1) & clkout4_dlyi(2)
+                  &  clk0_lti(4) & 'X' & clk3_hti(5 downto 3) & 'X' & clk3_hti(1)
+                  &  clk3_hti(2) & clk3pm_seli(0) & clk3_hti(0));
+
+   dr_sram(12) <= (clk4_hti(1) & clk4_hti(2) & clk4pm_seli(0) & clk4_hti(0)
+                  & 'X' & clk4_edgei & 'X' & '1' & clk4pm_seli(2) & clk4pm_seli(1)
+                  & clk4_lti(4) & clk4_lti(5) & clk4_lti(3) & clk4_nocnti
+                  & clk4_lti(1) & clk4_lti(2));
+
+   dr_sram(13) <= (clk5_lti(2) & clk5_lti(3) & clk5_lti(0) & clk5_lti(1)
+                  &  clkout5_dlyi(4) & clkout5_dlyi(5) & clkout5_dlyi(3)
+                  &  clkout5_dlyi(2) & clkout5_dlyi(1) & clk0_lti(3)
+                  &  clk0_lti(0) & clk0_lti(2) & 'X' & clk4_hti(5)
+                   & clk4_hti(3) & clk4_hti(4));
+
+   dr_sram(14) <= (clk5_hti(4) & clk5_hti(5) & clk5_hti(2) & clk5_hti(3)
+                  &  clk5_hti(0) & clk5_hti(1) & clk5pm_seli(0) & clk5_edgei
+                   & "XX" & clk5pm_seli(2) & '1' & clk5_lti(5) & clk5pm_seli(1)
+                   & clk5_nocnti & clk5_lti(4));
+
+   dr_sram(15) <= (clkfbm1_lti(4) & clkfbm1_lti(5) & clkfbm1_lti(3)
+                  & clkfbm1_nocnti & clkfbm1_lti(1) & clkfbm1_lti(2) & clkfbm1_lti(0)
+                  & clkfbm1_dlyi(5) & clkfbm1_dlyi(4) & clkfbm1_dlyi(3)
+                  & clkfbm1_dlyi(1) & clkfbm1_dlyi(2) & clk0_nocnti & clk0_lti(1) & "XX");
+   dr_sram(16) <= ('X' & clk0_hti(3) & clk0_hti(5) & clk0_hti(4) & clkfbm1_hti(4)
+                  & clkfbm1_hti(5) & clkfbm1_hti(3 downto 0) & clkfbm1_edgei
+                  & clkfbm1pm_seli(0) & "1X" & clkfbm1pm_seli(1) & clkfbm1pm_seli(2));
+   dr_sram(17) <= (clkfbm2_lti(0) & clkfbm2_dlyi(3) & clkfbm2_hti(2) & clkfbm2_hti(1) &
+                  clkfbm2_lti(1) & clkfbm2_hti(4) & clk3_lti(3) & clkout3_dlyi(2)
+               &   clk2_hti(5) & clk2_lti(1) & clkout1_dlyi(4) & clk1_lti(0)
+               &   clk0_hti(0) & clk0pm_seli(0) & clk0_hti(2) & clk0_hti(1));
+   dr_sram(18) <= ("XXXX" & clkout5_dlyi(0) & clkfbm1_dlyi(0) & clk4_lti(0) &
+                  clkout4_dlyi(4) & "XXXX" & clkfbm2_nocnti & 'X' & clkfbm2_dlyi(2)
+                     &   clkfbm2_lti(4));
+   dr_sram(19) <= (clkind_hti(5) & clkfbm2_hti(3) & clkind_hti(4) & 'X'
+                   & clkind_hti(1) & clkind_hti(2) & clkind_lti(0) & 'X'
+                   & clkind_lti(5) & clkind_lti(2) & 'X' & clkind_edgei & "XXXX");
+  dr_sram(20) <= ("XXXXXXX" &  pll_cpres(0) & pll_cpres(1) & clkfbm1_dlyi(1)
+                  & clkfbm2_lti(3) & clkfbm2_hti(0) & clkfbm1_dlyi(4)
+                  & clkfbm1_dlyi(0) & clkfbm1_dlyi(5) & clkfbm2_hti(5));
+   dr_sram(21) <= ('X' & clkind_nocnti & "XXXXXXX" & clkfbm2_edgei & clkfbm2_lti(5)
+                    &    clkfbm2_lti(2) & "XXXX");
+   dr_sram(22) <= ("XXXX" & pll_lfhf(0) & "XX" & clkind_hti(3) & clkind_lti(1)
+                   & 'X' & clkind_hti(0) & 'X' & clkind_lti(3) & 'X'
+                    & clkind_lt(4) & 'X');
+   dr_sram(23) <= ("XXXXXX" & pll_lfhf(1) & "XXXXXXXXX");
+   dr_sram(24) <= (pll_res(0) & pll_res(1) & pll_cp(0) & 'X' & pll_cp(2) 
+                  & pll_cp(1) & pll_cp(3) & pll_res(3) & pll_res(2) & "XXXXXXX");
+  else
+   tmpx := ('X' & 'X' & 'X' & 'X' & 'X' & 'X' & 'X' & 'X' );
+   tmpadd := "11100";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clk0_edgei & clk0_nocnti & clkout0_dlyi(5 downto 0));
+   tmpadd := "11011";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (clk0pm_seli(2 downto 0) & '1' & clk0_hti(5 downto 0) & clk0_lti(5 downto 0));
+   tmpadd := "11010";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clk1_edgei & clk1_nocnti & clkout1_dlyi(5 downto 0));
+   tmpadd := "11001";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (clk1pm_seli(2 downto 0) & '1' & clk1_hti(5 downto 0) & clk1_lti(5 downto 0));
+   tmpadd := "10111";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clk2_edgei & clk2_nocnti & clkout2_dlyi(5 downto 0));
+   tmpadd := "10110";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (clk2pm_seli(2 downto 0) & '1' & clk2_hti(5 downto 0) & clk2_lti(5 downto 0));
+   tmpadd := "10101";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clk3_edgei & clk3_nocnti & clkout3_dlyi(5 downto 0));
+   tmpadd := "10100";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (clk3pm_seli(2 downto 0) & '1' & clk3_hti(5 downto 0) & clk3_lti(5 downto 0));
+   tmpadd := "10011";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clk4_edgei & clk4_nocnti & clkout4_dlyi(5 downto 0));
+   tmpadd := "10010";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (clk4pm_seli(2 downto 0) & '1' & clk4_hti(5 downto 0) & clk4_lti(5 downto 0));
+   tmpadd := "01111";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clk5_edgei & clk5_nocnti & clkout5_dlyi(5 downto 0));
+   tmpadd := "01110";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (clk5pm_seli(2 downto 0) & '1' & clk5_hti(5 downto 0) & clk5_lti(5 downto 0));
+   tmpadd := "01101";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clkfbm1_edgei & clkfbm1_nocnti & clkfbm1_dlyi(5 downto 0));
+   tmpadd := "01100";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (clkfbm1pm_seli(2 downto 0) & '1' & clkfbm1_hti(5 downto 0) & clkfbm1_lti(5 downto 0));
+   tmpadd := "01010";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & clkfbm2_edgei & clkfbm2_nocnti & clkfbm2_dlyi(5 downto 0));
+   tmpadd := "01001";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(3 downto 0) & clkfbm2_hti(5 downto 0) & clkfbm2_lti(5 downto 0));
+   tmpadd := "00110";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(1 downto 0) & clkind_edgei & clkind_nocnti & clkind_hti(5 downto 0) & clkind_lti(5 downto 0));
+   tmpadd := "00001";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(7 downto 0) & pll_lfhf & pll_cpres & pll_cp);
+   tmpadd := "00000";
+   address := slv_to_int(tmpadd);
+   dr_sram(address) <= (tmpx(5 downto 0) & pll_res & tmpx(5 downto 0));
+   end if;
+   first_time := false;
+   drp_init_done <= 1;
+   end if;
+
+
+    if (GSR = '1') then
+       drp_lock <= '0';
+    elsif (rising_edge(dclk_in)) then 
+     if (den_in = '1') then
+       valid_daddr := addr_is_valid(daddr_in);
+       if (valid_daddr) then
+         address := slv_to_int(daddr_in);
+         daddr_in_lat <= address;
+       end if;
+
+        if (drp_lock = '1') then
+          assert false report " Warning : DEN is high at PLL_ADV before DRDY high . Need wait for DRDY signal before next read/write operation through DRP. " severity  warning;
+        else 
+          drp_lock <= '1';
+        end if;
+        if (sim_d = '1') then
+          if (valid_daddr and (address >= 5 and address <= 24)) then
+          else 
+                Write ( Message, string'(" Warning :  Address DADDR="));
+                Write ( Message,  address);
+                Write ( Message, string'(" on the PLL_ADV instance is unsupported") );
+                Write ( Message, '.' & LF );
+                assert false report Message.all severity warning;
+                DEALLOCATE (Message);
+          end if;
+        else
+          if (valid_daddr and ( address = 6  or address = 0 or address = 1 or 
+              address = 10 or address = 9 or
+             ((address >= 12 and address <= 28) and address /= 16 and 
+               address /= 17 and address /= 24))) then
+              else 
+                Write ( Message, string'(" Warning :  Address DADDR="));
+                Write ( Message,  address);
+                Write ( Message, string'(" on the PLL_ADV instance is unsupported") );
+                Write ( Message, '.' & LF );
+                assert false report Message.all severity warning;
+                DEALLOCATE (Message);
+               end if;
+        end if;
+
+        if (dwe_in = '1')  then
+          if (rst_input = '1') then
+             dr_sram(address) <= di_in;
+             di_str := SLV_TO_STR(di_in);
+          
+            if (sim_d  =  '1') then
+              if (daddr_in  =  "00101") then
+                clkout0_dlyi(5) := di_in(15);
+                clkout0_dlyi(4) := di_in(13);
+                clkout0_dlyi(2) := di_in(11);
+                clkout0_dlyi(3) := di_in(10);
+                clkout0_dlyi(1) := di_in(9);
+                clkout0_dlyi(0) := di_in(8);
+              end if;
+              if (daddr_in  =  "00110") then
+                clk1_lti(4) := di_in(15);
+                clk1_lti(5) := di_in(14);
+                clk1_lti(3) := di_in(13);
+                clk1_nocnti := di_in(12);
+                clk1_lti(1) := di_in(11);
+                clk1_lti(2) := di_in(10);
+                clkout1_dlyi(5) := di_in(9);
+                clkout1_dlyi(3) := di_in(7);
+                clkout1_dlyi(2) := di_in(6);
+                clkout1_dlyi(0) := di_in(5);
+                clkout1_dlyi(1) := di_in(4);
+                clk0_edgei := di_in(2);
+              end if;
+              if (daddr_in  =  "00111") then
+                clk1_hti(5) := di_in(12);
+                clk1_hti(3) := di_in(11);
+                 clk1_hti(4) := di_in(10);
+                clk1_hti(2 downto 0) := di_in(9 downto 7);
+                clk1pm_seli(0) := di_in(6);
+                clk1_edgei := di_in(4);
+                clk1pm_seli(1) := di_in(1);
+                clk1pm_seli(2) := di_in(0);
+              end if;
+              if (daddr_in  =  "01000") then
+                clk2pm_seli(2) := di_in(15);
+                clk2_lti(5) := di_in(13);
+                clk2pm_seli(1) := di_in(12);
+                clk2_nocnti := di_in(11);
+                clk2_lti(4) := di_in(10);
+                clk2_lti(3) := di_in(9);
+                clk2_lti(2) := di_in(8);
+                clk2_lti(0) := di_in(7);
+                clkout5_dlyi(5) := di_in(6);
+                clkout5_dlyi(3) := di_in(5);
+                clkout5_dlyi(4) := di_in(4);
+                clkout5_dlyi(1) := di_in(3);
+                clkout5_dlyi(2) := di_in(2);
+                clkout5_dlyi(0) := di_in(1);
+              end if;
+              if (daddr_in  =  "01001") then
+                clkout3_dlyi(0) := di_in(15);
+                clkout3_dlyi(1) := di_in(14);
+                clk3pm_seli(1) := di_in(13);
+                clk3pm_seli(2) := di_in(12);
+                clk2_hti(4) := di_in(9);
+                clk2_hti(3) := di_in(7);
+                clk2_hti(2) := di_in(6);
+                clk2_hti(0) := di_in(5);
+                clk2_hti(1) := di_in(4);
+                clk2_edgei := di_in(3);
+                clk2pm_seli(0) := di_in(2);
+              end if;
+              if (daddr_in  =  "01010") then
+                clk3_edgei := di_in(14);
+                clk3pm_seli(1) := di_in(11);
+                clk3pm_seli(2) := di_in(10);
+                clk3_lti(5) := di_in(9);
+                clk3_lti(4) := di_in(8);
+                clk3_nocnti := di_in(7);
+                clk3_lti(2) := di_in(6);
+                clk3_lti(0) := di_in(5);
+                clk3_lti(1) := di_in(4);
+                clkout3_dlyi(4) := di_in(3);
+                clkout3_dlyi(5) := di_in(2);
+                clkout3_dlyi(3) := di_in(1);
+              end if;
+              if (daddr_in  =  "01011") then
+                clk0_lti(5) := di_in(15);
+                clkout4_dlyi(5) := di_in(14);
+                clkout4_dlyi(0) := di_in(13);
+                clkout4_dlyi(3) := di_in(12);
+                clkout4_dlyi(1) := di_in(11);
+                clkout4_dlyi(2) := di_in(10);
+                clk0_lti(4) := di_in(9);
+                clk3_hti(5 downto 3) := di_in(7 downto 5);
+                clk3_hti(1) := di_in(3);
+                clk3_hti(2) := di_in(2);
+                clk3pm_seli(0) := di_in(1);
+                clk3_hti(0)  := di_in(0);
+              end if;
+              if (daddr_in  =  "01100") then
+                clk4_hti(1) := di_in(15);
+                clk4_hti(2) := di_in(14);
+                clk4pm_seli(0) := di_in(13);
+                clk4_hti(0) := di_in(12);
+                clk4_edgei := di_in(10);
+                clk4pm_seli(2) := di_in(7);
+                clk4pm_seli(1) := di_in(6);
+                clk4_lti(4) := di_in(5);
+                clk4_lti(5) := di_in(4);
+                clk4_lti(3) := di_in(3);
+                clk4_nocnti := di_in(2);
+                clk4_lti(1) := di_in(1);
+                clk4_lti(2) := di_in(0);
+              end if;
+              if (daddr_in  =  "01101") then
+                clk5_lti(2) := di_in(15);
+                clk5_lti(3) := di_in(14);
+                clk5_lti(0) := di_in(13);
+                clk5_lti(1) := di_in(12);
+                clkout5_dlyi(4) := di_in(11);
+                clkout5_dlyi(5) := di_in(10);
+                clkout5_dlyi(3) := di_in(9);
+                clkout5_dlyi(2) := di_in(8);
+                clkout5_dlyi(1) := di_in(7);
+                clk0_lti(3) := di_in(6);
+                clk0_lti(0) := di_in(5);
+                clk0_lti(2) := di_in(4);
+                clk4_hti(5) := di_in(2);
+                clk4_hti(3) := di_in(1);
+                clk4_hti(4) := di_in(0);
+              end if;
+              if (daddr_in  =  "01110") then
+                clk5_hti(4) := di_in(15);
+                clk5_hti(5) := di_in(14);
+                clk5_hti(2) := di_in(13);
+                clk5_hti(3) := di_in(12);
+                clk5_hti(0) := di_in(11);
+                clk5_hti(1) := di_in(10);
+                clk5pm_seli(0) := di_in(9);
+                clk5_edgei := di_in(8);
+                clk5pm_seli(2) := di_in(5);
+                clk5_lti(5) := di_in(3);
+                clk5pm_seli(1) := di_in(2);
+                clk5_nocnti := di_in(1);
+                clk5_lti(4) := di_in(0);
+              end if;
+              if (daddr_in  =  "01111") then
+                clkfbm1_lti(4) := di_in(15);
+                clkfbm1_lti(5) := di_in(14);
+                clkfbm1_lti(3) := di_in(13);
+                clkfbm1_nocnti := di_in(12);
+                clkfbm1_lti(1) := di_in(11);
+                clkfbm1_lti(2) := di_in(10);
+                clkfbm1_lti(0) := di_in(9);
+                clkfbm1_dlyi(5) := di_in(8);
+                clkfbm1_dlyi(4) := di_in(7);
+                clkfbm1_dlyi(3) := di_in(6);
+                clkfbm1_dlyi(1) := di_in(5);
+                clkfbm1_dlyi(2) := di_in(4);
+                clk0_nocnti := di_in(3);
+                clk0_lti(1) := di_in(2);
+              end if;
+              if (daddr_in  =  "10000") then
+                clk0_hti(3) := di_in(14);
+                clk0_hti(5) := di_in(13);
+                clk0_hti(4) := di_in(12);
+                clkfbm1_hti(4) := di_in(11);
+                clkfbm1_hti(5) := di_in(10);
+                clkfbm1_hti(3 downto 0) := di_in(9 downto 6);
+                clkfbm1_edgei := di_in(5);
+                clkfbm1pm_seli(0) := di_in(4);
+                clkfbm1pm_seli(1) := di_in(1);
+                clkfbm1pm_seli(2) := di_in(0);
+              end if;
+              if (daddr_in  =  "10001") then
+                clkfbm2_lti(0) := di_in(15);
+                clkfbm2_dlyi(3) := di_in(14);
+                clkfbm2_hti(2) := di_in(13);
+                clkfbm2_hti(1) := di_in(12);
+                clkfbm2_lti(1) := di_in(11);
+                clkfbm2_hti(4) := di_in(10);
+                clk3_lti(3) := di_in(9);
+                clkout3_dlyi(2) := di_in(8);
+                clk2_hti(5) := di_in(7);
+                clk2_lti(1) := di_in(6);
+                clkout1_dlyi(4) := di_in(5);
+                clk1_lti(0) := di_in(4);
+                clk0_hti(0) := di_in(3);
+                clk0pm_seli(0) := di_in(2);
+                clk0_hti(2) := di_in(1);
+                clk0_hti(1) := di_in(0);
+              end if;
+              if (daddr_in  =  "10010") then
+                clkout5_dlyi(0) := di_in(11);
+                clkfbm1_dlyi(0) := di_in(10);
+                clk4_lti(0) := di_in(9);
+                clkout4_dlyi(4) := di_in(8);
+                clkfbm2_nocnti := di_in(3);
+                clkfbm2_dlyi(2) := di_in(1);
+                clkfbm2_lti(4) := di_in(0);
+              end if;
+              if (daddr_in  =  "10011") then
+                clkind_hti(5) := di_in(15);
+                clkfbm2_hti(3) := di_in(14);
+                clkind_hti(4) := di_in(13);
+                clkind_hti(1) := di_in(11);
+                clkind_hti(2) := di_in(10);
+                clkind_lti(0) := di_in(9);
+                clkind_lti(5) := di_in(7);
+                clkind_lti(2) := di_in(6);
+                clkind_edgei := di_in(4);
+              end if;
+              if (daddr_in  =  "10100") then
+                pll_res(2) := di_in(13);
+                pll_res(1) := di_in(11);
+                pll_res(3) := di_in(10);
+                pll_res(0) := di_in(9);
+                pll_cpres(0) := di_in(8);
+                pll_cpres(1) := di_in(7);
+                clkfbm1_dlyi(1) := di_in(6);
+                clkfbm2_lti(3) := di_in(5);
+                clkfbm2_hti(0) := di_in(4);
+                clkfbm1_dlyi(4) := di_in(3);
+                clkfbm1_dlyi(0) := di_in(2);
+                clkfbm1_dlyi(5) := di_in(1);
+                clkfbm2_hti(5) := di_in(0);
+              end if;
+              if (daddr_in  =  "10101")  then
+                clkind_nocnti := di_in(14);
+                clkfbm2_edgei := di_in(6);
+                clkfbm2_lti(5) := di_in(5);
+                clkfbm2_lti(2) := di_in(4);
+              end if;
+              if (daddr_in  =  "10110") then
+                pll_lfhf(0) := di_in(11);
+                clkind_hti(3) := di_in(8);
+                clkind_lti(1) := di_in(7);
+                clkind_hti(0) := di_in(5);
+                clkind_lti(3) := di_in(3);
+                clkind_lti(4) := di_in(1);
+              end if;
+              if (daddr_in  =  "10111") then
+                pll_lfhf(1) := di_in(9);
+              end if;
+              if (daddr_in  =  "11000") then
+                pll_cp(0) := di_in(13);
+                pll_cp(2) := di_in(11);
+                pll_cp(1) := di_in(10);
+                pll_cp(0) := di_in(9);
+              end if;
+
+              clk0_ht <= clk0_hti;
+              clk1_ht <= clk1_hti;
+              clk2_ht <= clk2_hti;
+              clk3_ht <= clk3_hti;
+              clk4_ht <= clk4_hti;
+              clk5_ht <= clk5_hti;
+              clkfbm1_ht <= clkfbm1_hti;
+              clkfbm2_ht <= clkfbm2_hti;
+              clkind_ht <= ( '0' & clkind_hti(5 downto 0));
+              clk0_lt <= clk0_lti;
+              clk1_lt <= clk1_lti;
+              clk2_lt <= clk2_lti;
+              clk3_lt <= clk3_lti;
+              clk4_lt <= clk4_lti;
+              clk5_lt <= clk5_lti;
+              clkfbm1_lt <= clkfbm1_lti;
+              clkfbm2_lt <= clkfbm2_lti;
+              clkind_lt <= ( '0' & clkind_lti(5 downto 0));
+              clk0_nocnt <= clk0_nocnti;
+              clk1_nocnt <= clk1_nocnti;
+              clk2_nocnt <= clk2_nocnti;
+              clk3_nocnt <= clk3_nocnti;
+              clk4_nocnt <= clk4_nocnti;
+              clk5_nocnt <= clk5_nocnti;
+              clkfbm1_nocnt <= clkfbm1_nocnti;
+              clkfbm2_nocnt <= clkfbm2_nocnti;
+              clkind_nocnt <= clkind_nocnti;
+              clk0_edge <= clk0_edgei;
+              clk1_edge <= clk1_edgei;
+              clk2_edge <= clk2_edgei;
+              clk3_edge <= clk3_edgei;
+              clk4_edge <= clk4_edgei;
+              clk5_edge <= clk5_edgei;
+              clkfbm1_edge <= clkfbm1_edgei;
+              clkfbm2_edge <= clkfbm2_edgei;
+              clkind_edge <= clkind_edgei;
+              clkout0_dly <= SLV_TO_INT(clk0_dlyi);
+              clkout1_dly <= SLV_TO_INT(clk1_dlyi);
+              clkout2_dly <= SLV_TO_INT(clk2_dlyi);
+              clkout3_dly <= SLV_TO_INT(clk3_dlyi);
+              clkout4_dly <= SLV_TO_INT(clk4_dlyi);
+              clkout5_dly <= SLV_TO_INT(clk5_dlyi);
+              clkfbm1_dly <= SLV_TO_INT(clkfbm1_dlyi);
+              clkfbm2_dly <= SLV_TO_INT(clkfbm2_dlyi);
+              clk0pm_sel <=  SLV_TO_INT(clk0pm_seli);
+              clk1pm_sel <=  SLV_TO_INT(clk1pm_seli);
+              clk2pm_sel <=  SLV_TO_INT(clk2pm_seli);
+              clk3pm_sel <=  SLV_TO_INT(clk3pm_seli);
+              clk4pm_sel <=  SLV_TO_INT(clk4pm_seli);
+              clk5pm_sel <=  SLV_TO_INT(clk5pm_seli);
+              clkfbm1pm_sel <=  SLV_TO_INT(clkfbm1pm_seli);
+              clkfbm2pm_sel <=  0;
+
+            else
+             if (daddr_in = "11100") then
+                 daddr_str := "11100";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkout0_dly <= SLV_TO_INT(clkout_dly);
+                 clk0_nocnt <= clk_nocnt;
+                 clk0_nocnti := clk_nocnt;
+                 clk0_edgei := clk_edge;
+                 clk0_edge <= clk_edge;
+             end if;
+
+             if (daddr_in = "11011") then
+                daddr_str := "11011";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clk0_lt <= clk_lt;
+                 clk0_ht <= clk_ht;
+                 clk0_lti := clk_lt;
+                 clk0_hti := clk_ht;
+                 clk0pm_sel <=  SLV_TO_INT(clkpm_sel);
+             end if;
+
+             if (daddr_in = "11010") then
+                 daddr_str := "11010";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkout1_dly <= SLV_TO_INT(clkout_dly);
+                 clk1_nocnt <= clk_nocnt;
+                 clk1_nocnti := clk_nocnt;
+                 clk1_edgei := clk_edge;
+                 clk1_edge <= clk_edge;
+             end if;
+
+
+             if (daddr_in = "11001") then
+                 daddr_str := "11001";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clk1_lt <= clk_lt;
+                 clk1_ht <= clk_ht;
+                 clk1_lti := clk_lt;
+                 clk1_hti := clk_ht;
+                 clk1pm_sel <=  SLV_TO_INT(clkpm_sel);
+             end if;
+
+             if (daddr_in = "10111") then
+                 daddr_str := "10111";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkout2_dly <= SLV_TO_INT(clkout_dly);
+                 clk2_nocnt <= clk_nocnt;
+                 clk2_nocnti := clk_nocnt;
+                 clk2_edgei := clk_edge;
+                 clk2_edge <= clk_edge;
+             end if;
+
+             if (daddr_in = "10110") then
+                 daddr_str := "10110";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clk2_lt <= clk_lt;
+                 clk2_ht <= clk_ht;
+                 clk2_lti := clk_lt;
+                 clk2_hti := clk_ht;
+                 clk2pm_sel <=  SLV_TO_INT(clkpm_sel);
+             end if;
+
+             if (daddr_in = "10101") then
+                 daddr_str := "10101";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkout3_dly <= SLV_TO_INT(clkout_dly);
+                 clk3_nocnt <= clk_nocnt;
+                 clk3_nocnti := clk_nocnt;
+                 clk3_edgei := clk_edge;
+                 clk3_edge <= clk_edge;
+             end if;
+
+             if (daddr_in = "10100") then
+                 daddr_str := "10100";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clk3_lt <= clk_lt;
+                 clk3_ht <= clk_ht;
+                 clk3_lti := clk_lt;
+                 clk3_hti := clk_ht;
+                 clk3pm_sel <=  SLV_TO_INT(clkpm_sel);
+             end if;
+
+             if (daddr_in = "10011") then
+                 daddr_str := "10011";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkout4_dly <= SLV_TO_INT(clkout_dly);
+                 clk4_nocnt <= clk_nocnt;
+                 clk4_nocnti := clk_nocnt;
+                 clk4_edgei := clk_edge;
+                 clk4_edge <= clk_edge;
+             end if;
+
+             if (daddr_in = "10010") then
+                 daddr_str := "10010";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clk4_lt <= clk_lt;
+                 clk4_ht <= clk_ht;
+                 clk4_lti := clk_lt;
+                 clk4_hti := clk_ht;
+                 clk4pm_sel <=  SLV_TO_INT(clkpm_sel);
+             end if;
+
+             if (daddr_in = "01111") then
+                 daddr_str := "01111";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkout5_dly <= SLV_TO_INT(clkout_dly);
+                 clk5_nocnt <= clk_nocnt;
+                 clk5_nocnti := clk_nocnt;
+                 clk5_edgei := clk_edge;
+                 clk5_edge <= clk_edge;
+             end if;
+
+             if (daddr_in = "01110") then
+                 daddr_str := "01110";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clk5_lt <= clk_lt;
+                 clk5_lti := clk_lt;
+                 clk5_ht <= clk_ht;
+                 clk5_hti := clk_ht;
+                 clk5pm_sel <=  SLV_TO_INT(clkpm_sel);
+             end if;
+
+             if (daddr_in = "01101") then
+                 daddr_str := "01101";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkfbm1_dly <= SLV_TO_INT(clkout_dly);
+                 clkfbm1_nocnt <= clk_nocnt;
+                 clkfbm1_nocnti := clk_nocnt;
+                 clkfbm1_edge <= clk_edge;
+                 clkfbm1_edgei := clk_edge;
+             end if;
+
+             if (daddr_in = "01100") then
+                 daddr_str := "01100";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clkfbm1_lt <= clk_lt;
+                 clkfbm1_lti := clk_lt;
+                 clkfbm1_ht <= clk_ht;
+                 clkfbm1_hti := clk_ht;
+                 clkfbm1pm_sel <=  SLV_TO_INT(clkpm_sel);
+             end if;
+
+             if (daddr_in = "01010") then
+                 daddr_str := "01010";
+                 clkout_delay_para_drp (clkout_dly, clk_nocnt, clk_edge, di_in, daddr_in, di_str, daddr_str);
+                 clkfbm2_dly <= SLV_TO_INT(clkout_dly);
+                 clkfbm2_nocnt <= clk_nocnt;
+                 clkfbm2_nocnti := clk_nocnt;
+                 clkfbm2_edge <= clk_edge;
+                 clkfbm2_edgei := clk_edge;
+             end if;
+
+             if (daddr_in = "01001") then
+                 daddr_str := "01001";
+                 clkout_hl_para_drp (clk_lt, clk_ht, clkpm_sel, di_in, daddr_in, di_str, daddr_str);
+                 clkfbm2_lt <= clk_lt;
+                 clkfbm2_lti := clk_lt;
+                 clkfbm2_ht <= clk_ht;
+                 clkfbm2_hti := clk_ht;
+                 clkfbm2pm_sel <=  0;
+             end if;
+
+             if (daddr_in = "00110") then
+                 clkind_lti := ('0' & di_in(11 downto 6));
+                 clkind_hti := ('0' & di_in(5 downto 0));
+                  clkind_lt <= clkind_lti;
+                  clkind_ht <= clkind_hti;
+                 clkind_nocnti := di_in(12);
+                 clkind_edgei := di_in(13);
+              end if;
+           end if;
+
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk0_hti, clk0_lti, clk0_nocnti, clk0_edgei);
+   clk0_ht1 <= clk_ht1;
+   clk0_div <= clk_div;
+   clk0_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk1_hti, clk1_lti, clk1_nocnti, clk1_edgei);
+   clk1_ht1 <= clk_ht1;
+   clk1_div <= clk_div;
+   clk1_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk2_hti, clk2_lti, clk2_nocnti, clk2_edgei);
+   clk2_ht1 <= clk_ht1;
+   clk2_div <= clk_div;
+   clk2_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk3_hti, clk3_lti, clk3_nocnti, clk3_edgei);
+   clk3_ht1 <= clk_ht1;
+   clk3_div <= clk_div;
+   clk3_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk4_hti, clk4_lti, clk4_nocnti, clk4_edgei);
+   clk4_ht1 <= clk_ht1;
+   clk4_div <= clk_div;
+   clk4_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clk5_hti, clk5_lti, clk5_nocnti, clk5_edgei);
+   clk5_ht1 <= clk_ht1;
+   clk5_div <= clk_div;
+   clk5_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clkfbm2_hti, clkfbm2_lti, clkfbm2_nocnti, clkfbm2_edgei);
+   clkfbm2_ht1 <= clk_ht1;
+   clkfbm2_div <= clk_div;
+   clkfbm2_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clkfbm1_hti, clkfbm1_lti, clkfbm1_nocnti, clkfbm1_edgei);
+   clkfbm1_ht1 <= clk_ht1;
+   clkfbm1_div <= clk_div;
+   clkfbm1_div1 <= clk_div1;
+   clkout_pm_cal(clk_ht1, clk_div, clk_div1, clkind_hti, clkind_lti, clkind_nocnti, '0');
+   clkind_div <= clk_div;
+    if (clk_div > 52 or (clk_div < 1 and clkind_nocnti = '0')) then
+      assert false report " Input Error : The sum of DI[11:6] and DI[5:0] Address DADDR=00110 is input clock divider of PLL_ADV and over the 1 to 52 range." severity error;
+    end if;
+
+          else 
+                 assert false report " Error : RST is low at PLL_ADV. RST need to be high when change PLL_ADV paramters through DRP. " severity error;
+          end if; -- end rst
+
+        end if; --DWE
+    end if;  --DEN
+
+    if ( drp_lock = '1') then
+          drp_lock <= '0';
+          drp_lock1 <= '1';
+    end if;
+    if (drp_lock1 = '1') then
+         drp_lock1 <= '0';
+         drdy_out <= '1';
+    end if;
+    if (drdy_out = '1') then
+        drdy_out <= '0';
+    end if;
+ end if; -- end GSR
+
+  wait on dclk_in, GSR, init_done;
+
+  end process;
+
+  process (clkfbm1_div, clkfbm2_div, clk0_div) 
+  begin
+      if (clkfb_src = 1) then
+           clkfbm_div <= clkfbm2_div * clk0_div;
+      else
+          clkfbm_div <= clkfbm1_div;
+      end if;
+  end process;
+
+
+   clkfbm_dly <= clkout0_dly when (clkfb_src = 1) else clkfbm1_dly;
+   clkfbmpm_sel <= clk0pm_sel when (clkfb_src = 1) else clkfbm1pm_sel;
+
+
+   CLOCK_PERIOD_P : process (clkpll, rst_in)
+      variable  clkin_edge_previous : time := 0 ps;
+      variable  clkin_edge_current : time := 0 ps;
+   begin
+     if (rst_in = '1') then
+        clkin_period(0) <= period_vco_target;
+        clkin_period(1) <= period_vco_target;
+        clkin_period(2) <= period_vco_target;
+        clkin_period(3) <= period_vco_target;
+        clkin_period(4) <= period_vco_target;
+        clkin_jit <= 0 ps;
+        clkin_lock_cnt <= 0;
+        pll_locked_tm <= '0';
+        pll_locked_tmp1 <= '0';
+        lock_period <= '0';
+        clkout_en0_tmp <= '0';
+        unlock_recover <= '0';
+        clkin_edge_previous := 0 ps;
+     elsif (rising_edge(clkpll)) then
+       clkin_edge_current := NOW;
+       clkin_period(4) <= clkin_period(3);
+       clkin_period(3) <= clkin_period(2);
+       clkin_period(2) <= clkin_period(1);
+       clkin_period(1) <= clkin_period(0);
+       if (clkin_edge_previous /= 0 ps and  clkin_stopped = '0') then
+          clkin_period(0) <= clkin_edge_current - clkin_edge_previous;
+       end if;
+
+       if (pll_unlock = '0') then
+          clkin_jit <=  clkin_edge_current - clkin_edge_previous - clkin_period(0);
+       else
+          clkin_jit <= 0 ps;
+       end if;
+
+          clkin_edge_previous := clkin_edge_current;
+
+      if ( pll_unlock = '0' and  (clkin_lock_cnt < lock_cnt_max) and fb_delay_found = '1' ) then
+            clkin_lock_cnt <= clkin_lock_cnt + 1;
+      elsif (pll_unlock = '1' and rst_on_loss = '0' and pll_locked_tmp1 = '1' ) then
+            clkin_lock_cnt <= locked_en_time;
+            unlock_recover <= '1';
+      end if;
+
+      if ( clkin_lock_cnt >= PLL_LOCK_TIME and pll_unlock = '0') then
+        pll_locked_tm <= '1';
+      end if;
+
+      if ( clkin_lock_cnt = 6 ) then
+        lock_period <= '1';
+      end if;
+
+      if (clkin_lock_cnt >= clkout_en_time) then
+          clkout_en0_tmp <= '1';
+      end if;
+ 
+      if (clkin_lock_cnt >= locked_en_time) then
+          pll_locked_tmp1 <= '1';
+      end if;
+
+      if (unlock_recover = '1' and clkin_lock_cnt  >= lock_cnt_max) then
+          unlock_recover <= '0';
+      end if;
+
+    end if;
+   end process;
+
+   CLKOUT_EN_P : process 
+   begin
+      if (clkout_en0_tmp = '0') then
+         clkout_en0 <= '0';
+      else
+         clkout_en0 <= clkout_en0_tmp after clkin_period(0);
+      end if;
+     wait on clkout_en0_tmp;
+   end process;
+
+   PLL_LOCK_P1 : process (pll_locked_tmp1, rst_in)
+   begin
+     if (rst_in = '1') then
+         pll_locked_tmp2 <= '0';
+     elsif (pll_locked_tmp1 = '0') then
+         pll_locked_tmp2 <=  pll_locked_tmp1;
+     else 
+--          wait until (rising_edge(clkvco));
+          pll_locked_tmp2 <= pll_locked_tmp1 after pll_locked_delay;
+     end if;
+   end process;
+
+   locked_out <= '1' when pll_locked_tm = '1' and pll_locked_tmp2 ='1' and pll_unlock = '0'
+                         and unlock_recover = '0' else '0';
+
+   CLOCK_PERIOD_AVG_P : process (clkin_period(0), clkin_period(1), clkin_period(2),
+                                 clkin_period(3), clkin_period(4), period_avg)
+      variable period_avg_tmp : time := 0.000 ps;
+      variable clkin_period_tmp0 : time := 0.000 ps;
+   begin
+      clkin_period_tmp0 := clkin_period(0);
+     if (clkin_period_tmp0 /= period_avg) then
+         period_avg_tmp := (clkin_period(0) + clkin_period(1) + clkin_period(2)
+                       + clkin_period(3) + clkin_period(4))/5.0;
+         period_avg <= period_avg_tmp;
+     end if;
+   end process;
+
+   CLOCK_PERIOD_UPDATE_P : process (period_avg, clkind_div, clkfbm_div, init_done, drp_init_done)
+      variable period_fb_var : time;
+      variable period_vco_var : time;
+      variable tmpreal : real;
+      variable tmpreal1: real;
+      variable period_vco_rm_var : integer;
+      variable period_vco_rm_var1 : integer;
+      variable period_vco_half_rm_t : time;
+      variable first_time : boolean := true;
+      variable md_product_var : integer;
+      variable m_product_var : integer;
+      variable m_product2_var : integer;
+   begin
+   if (first_time = true and init_done = 1) then
+       md_product_var := clkfb_mult_tl * DIVCLK_DIVIDE;
+       m_product_var := clkfb_mult_tl;
+       m_product2_var := clkfb_mult_tl / 2;
+       md_product <= md_product_var;
+       m_product <= m_product_var;
+       m_product2 <= m_product2_var;
+       first_time := false;
+   end if;
+   if ( drp_init_done = 1) then
+       md_product_var := clkfbm_div * clkind_div;
+       m_product_var := clkfbm_div;
+       m_product2_var := clkfbm_div / 2;
+       md_product <= md_product_var;
+       m_product <= m_product_var;
+       m_product2 <= m_product2_var;
+       period_fb_var :=  clkind_div * period_avg;
+       period_vco_var := period_fb_var / clkfbm_div;
+       period_vco_rm_var1 := period_fb_var / 1 ps;
+       period_vco_rm_var := period_vco_rm_var1 mod clkfbm_div;
+       period_vco_rm <= period_vco_rm_var;
+       clkin_lost_val <= (period_avg * 2) / 500 ps;
+       clkfb_lost_val <= (period_fb_var * 2) / 500 ps;
+       if (period_vco_rm_var > 1) then
+          if (period_vco_rm_var > m_product2_var)  then
+             period_vco_cmp_cnt <= (m_product_var / (m_product_var - period_vco_rm_var)) - 1;
+             period_vco_cmp_flag <= 2;
+          else 
+             period_vco_cmp_cnt <= (m_product_var / period_vco_rm_var) - 1;
+             period_vco_cmp_flag <= 1;
+          end if;
+       else 
+          period_vco_cmp_cnt <= 0;
+          period_vco_cmp_flag <= 0;
+       end if;
+
+       period_vco_half <= period_vco_var /2;
+       period_vco_half1 <= ((period_vco_var /2) / 1 ps + 1) * 1 ps;
+       period_vco_half_rm_t := period_vco_var - (period_vco_var /2);
+       period_vco_half_rm <= period_vco_half_rm_t;
+       period_vco_half_rm1 <= period_vco_half_rm_t + 1 ps;
+       period_vco_half_rm2 <= period_vco_half_rm_t - 1 ps;
+       pll_locked_delay <= period_fb_var * clkfbm_div;
+       clkin_dly_t <=  period_avg * clkind_div + period_avg * 1.25;
+       clkfb_dly_t <= period_fb_var * 2.25; 
+       period_fb <= period_fb_var;
+       period_vco <= period_vco_var;
+       period_vco1 <= period_vco_var / 8.0;
+       period_vco2 <= period_vco_var / 4.0;
+       period_vco3 <= period_vco_var * 3.0 / 8.0;
+       period_vco4 <= period_vco_var / 2.0;
+       period_vco5 <= period_vco_var * 5.0 / 8.0;
+       period_vco6 <= period_vco_var * 3.0 / 4.0;
+       period_vco7 <= period_vco_var * 7.0 / 8.0;
+   end if;
+   end process;
+
+   clkvco_lk_rst <=  '1' when ( rst_in = '1' or  pll_unlock = '1' or  pll_locked_tm = '0') else '0';
+
+   CLKVCO_LK_P : process
+       variable clkvco_rm_cnt : integer;
+       variable vcoflag : integer := 0;
+   begin
+   if ( clkvco_lk_rst = '1') then
+        clkvco_lk <= '0';
+   else
+     if (rising_edge(clkpll)) then
+       if (pll_locked_tm = '1') then
+          clkvco_lk <= '1';
+          clkvco_rm_cnt := 0;
+       if ( period_vco_cmp_flag = 1) then
+          for I in 2 to m_product loop
+               wait for (period_vco_half);
+               clkvco_lk <=  '0';  
+               if ( clkvco_rm_cnt = 1) then
+                   wait for (period_vco_half_rm1);
+                   clkvco_lk <=  '1';  
+               else
+                   wait for (period_vco_half_rm);
+                   clkvco_lk <=  '1';  
+               end if;
+
+               if ( clkvco_rm_cnt = period_vco_cmp_cnt) then
+                  clkvco_rm_cnt := 0;
+               else
+                   clkvco_rm_cnt := clkvco_rm_cnt + 1;
+               end if;
+          end loop;
+       elsif ( period_vco_cmp_flag = 2) then
+          vcoflag := 1;
+          for I in 2 to m_product loop
+               wait for (period_vco_half);
+               clkvco_lk <=  '0';
+               if ( clkvco_rm_cnt = 1) then
+                   wait for (period_vco_half_rm);
+                   clkvco_lk <=  '1';
+               else
+                   wait for (period_vco_half_rm1);
+                   clkvco_lk <=  '1';
+               end if;
+
+               if ( clkvco_rm_cnt = period_vco_cmp_cnt) then
+                  clkvco_rm_cnt := 0;
+               else
+                   clkvco_rm_cnt := clkvco_rm_cnt + 1;
+               end if;
+          end loop;
+       else
+          vcoflag := 1;
+          for I in 2 to md_product loop
+           wait for (period_vco_half);
+           clkvco_lk <=  '0';
+
+           wait for (period_vco_half_rm);
+           clkvco_lk <=  '1';
+          end loop;
+       end if;
+
+       wait for (period_vco_half);
+       clkvco_lk <= '0';
+  
+       if (clkpll = '1' and vcoflag = 0) then
+          for I in 2 to md_product loop
+           wait for (period_vco_half);
+           clkvco_lk <=  '0';
+
+           wait for (period_vco_half_rm);
+           clkvco_lk <=  '1';
+          end loop;
+          wait for (period_vco_half);
+          clkvco_lk <= '0';
+        end if;
+      end if;
+     end if;
+   end if;
+   wait on clkpll, rst_in ,  pll_unlock;
+  end process;
+
+  CLKVCO_DLY_CAL_P : process ( period_vco, fb_delay, clkfbm_dly, clkfbm1pm_rl)
+    variable val_tmp : integer;
+    variable val_tmp2 : integer;
+    variable val_tmp3 : integer;
+    variable fbm1_comp_delay : integer;
+    variable fbm1_comp_delay_rl : real;
+    variable period_vco_i : integer;
+    variable period_vco_rl : real;
+    variable dly_tmp : integer;
+    variable tmp_rl : real;
+  begin
+   if (period_vco /= 0 ps) then
+    period_vco_i := period_vco * 1 / 1 ps;
+    period_vco_rl := real(period_vco_i);
+    tmp_rl := real(clkfbm_dly);
+--    val_tmp := period_vco_i * md_product;
+    val_tmp := (period_avg * 1 / 1 ps ) * DIVCLK_DIVIDE;
+    if (clkfb_src = 1) then
+       fbm1_comp_delay_rl := period_vco_rl *(tmp_rl  + clkfbm1pm_rl );
+    else
+       fbm1_comp_delay_rl := period_vco_rl *(tmp_rl  + clkfbm1pm_rl );
+    end if;
+    fbm1_comp_delay := real2int(fbm1_comp_delay_rl);
+    val_tmp2 := fb_delay * 1 / 1 ps;
+    dly_tmp := val_tmp2 + fbm1_comp_delay;
+    if ( dly_tmp < val_tmp) then
+       clkvco_delay <= (val_tmp - dly_tmp) * 1 ps;
+    else
+       clkvco_delay <=  (val_tmp - dly_tmp mod val_tmp) * 1 ps;
+    end if;
+   end if;
+  end process;
+
+  CLKFB_PS_P : process (clkfbmpm_sel)
+  begin
+    case (clkfbmpm_sel) is
+       when 0 => clkfbm1pm_rl <= 0.0;
+       when 1 => clkfbm1pm_rl <= 0.125;
+       when 2 => clkfbm1pm_rl <= 0.25;
+       when 3 => clkfbm1pm_rl <= 0.375;
+       when 4 => clkfbm1pm_rl <= 0.50;
+       when 5 => clkfbm1pm_rl <= 0.625;
+       when 6 => clkfbm1pm_rl <= 0.75;
+       when 7 => clkfbm1pm_rl <= 0.875;
+       when others => clkfbm1pm_rl <= 0.0;
+    end case;
+   end process;
+
+   CLKVCO_FREE_P : process 
+   begin
+      if (pmcd_mode /= '1' and pll_locked_tm = '0') then
+          wait for period_vco_target_half;
+          clkvco_free <= not clkvco_free;
+      end if;
+      wait on clkvco_free;
+   end process;
+  
+   CLKVCO_GEN_P : process ( pll_locked_tm, clkvco_lk, clkvco_free)
+   begin
+     if (pll_locked_tm = '1') then
+          clkvco <= transport clkvco_lk after clkvco_delay;
+     else
+          clkvco <= transport clkvco_free after clkvco_delay;
+     end if;
+   end process;
+
+   clkout_en <=  clkout_en0 after clkvco_delay;
+
+
+  CLKOUT_MUX_P : process (clkvco, clkout_en, rst_in) 
+  begin
+   if (rst_in = '1') then
+       clkout_mux <= "00000000";
+   elsif (clkout_en = '1' and clkvco'event) then
+       clkout_mux(0) <= clkvco;
+       clkout_mux(1) <= transport clkvco after (period_vco1);
+       clkout_mux(2) <= transport clkvco after (period_vco2);
+       clkout_mux(3) <= transport clkvco after (period_vco3);
+       clkout_mux(4) <= transport clkvco after (period_vco4);
+       clkout_mux(5) <= transport clkvco after (period_vco5);
+       clkout_mux(6) <= transport clkvco after (period_vco6);
+       clkout_mux(7) <= transport clkvco after (period_vco7);
+  end if;
+  end process;
+
+   clk0in <= clkout_mux(clk0pm_sel);
+   clk1in <= clkout_mux(clk1pm_sel);
+   clk2in <= clkout_mux(clk2pm_sel);
+   clk3in <= clkout_mux(clk3pm_sel);
+   clk4in <= clkout_mux(clk4pm_sel);
+   clk5in <= clkout_mux(clk5pm_sel);
+   clkfbm1in <= clkout_mux(clkfbm1pm_sel);
+
+   clk0ps_en <= clkout_en when clk0_dly_cnt = clkout0_dly else '0';
+   clk1ps_en <= clkout_en when clk1_dly_cnt = clkout1_dly else '0';
+   clk2ps_en <= clkout_en when clk2_dly_cnt = clkout2_dly else '0';
+   clk3ps_en <= clkout_en when clk3_dly_cnt = clkout3_dly else '0';
+   clk4ps_en <= clkout_en when clk4_dly_cnt = clkout4_dly else '0';
+   clk5ps_en <= clkout_en when clk5_dly_cnt = clkout5_dly else '0';
+   clkfbm1ps_en <= clkout_en when clkfbm1_dly_cnt = clkfbm1_dly else '0';
+
+   CLK_DLY_CNT_P : process(clk0in, clk1in, clk2in, clk3in, clk4in, clk5in, clkfbm1in,
+                    rst_in)
+   begin
+     if (rst_in = '1') then
+         clk0_dly_cnt <= 0;
+         clk1_dly_cnt <= 0;
+         clk2_dly_cnt <= 0;
+         clk3_dly_cnt <= 0;
+         clk4_dly_cnt <= 0;
+         clk5_dly_cnt <= 0;
+         clkfbm1_dly_cnt <= 0;
+     else
+       if (falling_edge(clk0in)) then
+          if ((clk0_dly_cnt < clkout0_dly) and clkout_en = '1') then
+            clk0_dly_cnt <= clk0_dly_cnt + 1;
+          end if;
+        end if;
+
+       if (falling_edge(clk1in)) then
+          if ((clk1_dly_cnt < clkout1_dly) and clkout_en = '1') then
+            clk1_dly_cnt <= clk1_dly_cnt + 1;
+          end if;
+        end if;
+
+       if (falling_edge(clk2in)) then
+          if ((clk2_dly_cnt < clkout2_dly) and clkout_en = '1') then
+            clk2_dly_cnt <= clk2_dly_cnt + 1;
+          end if;
+        end if;
+
+       if (falling_edge(clk3in)) then
+          if ((clk3_dly_cnt < clkout3_dly) and clkout_en = '1') then
+            clk3_dly_cnt <= clk3_dly_cnt + 1;
+          end if;
+        end if;
+
+       if (falling_edge(clk4in)) then
+         if ((clk4_dly_cnt < clkout4_dly) and clkout_en = '1') then
+            clk4_dly_cnt <= clk4_dly_cnt + 1;
+         end if;
+        end if;
+
+       if (falling_edge(clk5in)) then
+          if ((clk5_dly_cnt < clkout5_dly) and clkout_en = '1') then
+            clk5_dly_cnt <= clk5_dly_cnt + 1;
+          end if;
+        end if;
+
+       if (falling_edge(clkfbm1in)) then
+          if ((clkfbm1_dly_cnt < clkfbm1_dly) and clkout_en = '1') then
+            clkfbm1_dly_cnt <= clkfbm1_dly_cnt + 1;
+          end if;
+        end if;
+
+    end if;
+   end process;
+
+
+   CLK0_GEN_P : process (clk0in, rst_in)
+   begin
+     if (rst_in = '1') then
+         clk0_cnt <= 0;
+         clk0_out <= '0';
+     else
+        if (rising_edge(clk0in) or falling_edge(clk0in)) then
+            if (clk0ps_en = '1') then
+
+              if (clk0_cnt < clk0_div1) then
+                      clk0_cnt <= clk0_cnt + 1;
+               else
+                      clk0_cnt <= 0;
+               end if;
+
+               if  (clk0_cnt < clk0_ht1) then
+                     clk0_out <= '1';
+               else
+                     clk0_out <= '0';
+               end if;
+          else
+             clk0_out <= '0';
+             clk0_cnt <= 0;
+          end if;
+        end if;
+    end if;
+   end process;
+              
+   CLK1_GEN_P : process (clk1in, rst_in)
+   begin
+     if (rst_in = '1') then
+         clk1_cnt <= 0;
+         clk1_out <= '0';
+     else
+        if (rising_edge(clk1in)  or falling_edge(clk1in)) then
+            if (clk1ps_en = '1') then
+              if (clk1_cnt < clk1_div1) then
+                      clk1_cnt <= clk1_cnt + 1;
+               else
+                      clk1_cnt <= 0;
+               end if;
+
+               if  (clk1_cnt < clk1_ht1) then
+                     clk1_out <= '1';
+               else
+                     clk1_out <= '0';
+               end if;
+          else
+             clk1_out <= '0';
+             clk1_cnt <= 0;
+          end if;
+        end if;
+    end if;
+   end process;
+
+
+   CLK2_GEN_P : process (clk2in, rst_in)
+   begin
+     if (rst_in = '1') then
+         clk2_cnt <= 0;
+         clk2_out <= '0';
+     else
+        if (rising_edge(clk2in)  or falling_edge(clk2in)) then
+            if (clk2ps_en = '1') then
+              if (clk2_cnt < clk2_div1) then
+                      clk2_cnt <= clk2_cnt + 1;
+               else
+                      clk2_cnt <= 0;
+               end if;
+
+               if  (clk2_cnt < clk2_ht1) then
+                     clk2_out <= '1';
+               else
+                     clk2_out <= '0';
+               end if;
+          else
+             clk2_out <= '0';
+             clk2_cnt <= 0;
+          end if;
+        end if;
+    end if;
+   end process;
+
+
+   CLK3_GEN_P : process (clk3in, rst_in)
+   begin
+     if (rst_in = '1') then
+         clk3_cnt <= 0;
+         clk3_out <= '0';
+     else
+        if (rising_edge(clk3in)  or falling_edge(clk3in)) then
+            if (clk3ps_en = '1') then
+               if  (clk3_cnt < clk3_ht1) then
+                     clk3_out <= '1';
+               else
+                     clk3_out <= '0';
+               end if;
+
+              if (clk3_cnt < clk3_div1) then
+                      clk3_cnt <= clk3_cnt + 1;
+               else
+                      clk3_cnt <= 0;
+               end if;
+          else
+             clk3_out <= '0';
+             clk3_cnt <= 0;
+          end if;
+        end if;
+    end if;
+   end process;
+
+
+   CLK4_GEN_P : process (clk4in, rst_in)
+   begin
+     if (rst_in = '1') then
+         clk4_cnt <= 0;
+         clk4_out <= '0';
+     else
+        if (rising_edge(clk4in)  or falling_edge(clk4in)) then
+            if (clk4ps_en = '1') then
+              if (clk4_cnt < clk4_div1) then
+                      clk4_cnt <= clk4_cnt + 1;
+               else
+                      clk4_cnt <= 0;
+               end if;
+
+               if  (clk4_cnt < clk4_ht1) then
+                     clk4_out <= '1';
+               else
+                     clk4_out <= '0';
+               end if;
+          else
+             clk4_out <= '0';
+             clk4_cnt <= 0;
+          end if;
+        end if;
+    end if;
+   end process;
+
+
+   CLK5_GEN_P : process (clk5in, rst_in)
+   begin
+     if (rst_in = '1') then
+         clk5_cnt <= 0;
+         clk5_out <= '0';
+     else
+        if (rising_edge(clk5in)  or falling_edge(clk5in)) then
+            if (clk5ps_en = '1') then
+              if (clk5_cnt < clk5_div1) then
+                      clk5_cnt <= clk5_cnt + 1;
+               else
+                      clk5_cnt <= 0;
+               end if;
+
+               if  (clk5_cnt < clk5_ht1) then
+                     clk5_out <= '1';
+               else
+                     clk5_out <= '0';
+               end if;
+          else
+             clk5_out <= '0';
+             clk5_cnt <= 0;
+          end if;
+        end if;
+    end if;
+   end process;
+
+
+   CLKFB_GEN_P : process (clkfbm1in, rst_in)
+   begin
+     if (rst_in = '1') then
+         clkfbm1_cnt <= 0;
+         clkfbm1_out <= '0';
+     else
+        if (rising_edge(clkfbm1in)  or falling_edge(clkfbm1in)) then
+            if (clkfbm1ps_en = '1') then
+              if (clkfbm1_cnt < clkfbm1_div1) then
+                      clkfbm1_cnt <= clkfbm1_cnt + 1;
+               else
+                      clkfbm1_cnt <= 0;
+               end if;
+
+               if  (clkfbm1_cnt < clkfbm1_ht1) then
+                     clkfbm1_out <= '1';
+               else
+                     clkfbm1_out <= '0';
+               end if;
+          else
+             clkfbm1_out <= '0';
+             clkfbm1_cnt <= 0;
+          end if;
+        end if;
+    end if;
+   end process;
+
+              
+    clkout0_out <= transport clk0_out  when fb_delay_found = '1' else clkfb_tst;
+    clkout1_out <= transport clk1_out  when fb_delay_found = '1' else clkfb_tst;
+    clkout2_out <= transport clk2_out  when fb_delay_found = '1' else clkfb_tst;
+    clkout3_out <= transport clk3_out  when fb_delay_found = '1' else clkfb_tst;
+    clkout4_out <= transport clk4_out  when fb_delay_found = '1' else clkfb_tst;
+    clkout5_out <= transport clk5_out  when fb_delay_found = '1' else clkfb_tst;
+    clkfb_out <= transport clkfbm1_out  when fb_delay_found = '1' else clkfb_tst;
+
+--
+-- determine feedback delay
+--
+
+  CLKFB_TST_P : process (clkpll, rst_in1)
+  begin
+  if (rst_in1 = '1') then
+       clkfb_tst <= '0';
+  elsif (rising_edge(clkpll)) then
+    if (fb_delay_found_tmp = '0' and GSR = '0') then
+       clkfb_tst <=   '1';
+     else
+       clkfb_tst <=   '0';
+    end if;
+  end if;
+  end process;
+
+  FB_DELAY_CAL_P0 : process (clkfb_tst, rst_in1)
+  begin
+     if (rst_in1 = '1')  then
+         delay_edge <= 0 ps;
+     elsif (rising_edge(clkfb_tst)) then
+        delay_edge <= NOW;
+     end if;
+  end process;
+
+  FB_DELAY_CAL_P : process (clkfb_in, rst_in1)
+      variable delay_edge1 : time := 0 ps;
+      variable fb_delay_tmp : time := 0 ps;
+      variable Message : line;
+  begin
+  if (rst_in1 = '1')  then
+    fb_delay  <= 0 ps;
+    fb_delay_found_tmp <= '0';
+    delay_edge1 := 0 ps;
+    fb_delay_tmp := 0 ps;
+  elsif (clkfb_in'event and clkfb_in = '1') then
+     if (fb_delay_found_tmp = '0') then
+         if (delay_edge /= 0 ps) then
+           delay_edge1 := NOW;
+           fb_delay_tmp := delay_edge1 - delay_edge;
+         else
+           fb_delay_tmp := 0 ps;
+        end if;
+        fb_delay <= fb_delay_tmp;
+        fb_delay_found_tmp <= '1';
+        if (rst_in1 = '0' and fb_delay_tmp > fb_delay_max) then
+            Write ( Message, string'(" Warning : The feedback delay is "));
+            Write ( Message, fb_delay_tmp);
+            Write ( Message, string'(". It is over the maximun value "));
+            Write ( Message, fb_delay_max);
+            Write ( Message, '.' & LF );
+            assert false report Message.all severity warning;
+            DEALLOCATE (Message);
+         end if;
+    end if;
+  end if;
+  end process;
+
+    fb_delay_found_P : process(fb_delay_found_tmp, clkvco_delay, rst_in1)
+    begin
+      if (rst_in1 = '1') then
+        fb_delay_found <= '0';
+      elsif (clkvco_delay = 0 ps) then
+        fb_delay_found <= fb_delay_found_tmp after 1 ns;
+      else
+        fb_delay_found <= fb_delay_found_tmp after clkvco_delay;
+      end if;
+    end process;
+
+--
+-- generate unlock signal
+--
+
+  clk_osc_p : process(clk_osc, rst_in)
+  begin
+    if (rst_in = '1') then
+      clk_osc <= '0';
+    else
+      clk_osc <= not clk_osc after OSC_P2;
+    end if;
+  end process;
+
+  clkin_p_p : process 
+  begin
+    if (rising_edge(clkpll) or falling_edge(clkpll)) then
+      clkin_p <= '1';
+      wait for 100 ps;
+      clkin_p <= '0';
+    end if;
+    wait on clkpll;
+  end process;
+
+  clkfb_p_p : process 
+  begin
+    if (rising_edge(clkfb_in) or falling_edge(clkfb_in)) then
+      clkfb_p <= '1';
+      wait for 100 ps;
+      clkfb_p <= '0';
+    end if;
+    wait on clkfb_in;
+  end process;
+
+  clkin_stopped_p : process(clk_osc, rst_in, clkin_p)
+  begin
+     if (rst_in = '1' or clkin_p = '1') then
+       clkin_stopped <= '0';
+       clkin_lost_cnt <= 0;
+     elsif (rising_edge(clk_osc)) then 
+       if (locked_out = '1' and  pmcd_mode = '0') then
+         if (clkin_lost_cnt < clkin_lost_val)  then
+           clkin_lost_cnt <= clkin_lost_cnt + 1;
+           clkin_stopped <= '0';
+         else
+            clkin_stopped <= '1';
+         end if;
+       end if;
+     end if;
+  end process;
+
+  clkfb_stopped_p : process(clk_osc, rst_in, clkfb_p)
+  begin
+     if (rst_in = '1' or clkfb_p = '1') then
+       clkfb_stopped <= '0';
+       clkfb_lost_cnt <= 0;
+     elsif (rising_edge(clk_osc)) then 
+       --if (locked_out = '1' and  pmcd_mode = '0') then
+       if (clkout_en = '1') then
+         if (clkfb_lost_cnt < clkfb_lost_val)  then
+           clkfb_lost_cnt <= clkfb_lost_cnt + 1;
+           clkfb_stopped <= '0';
+         else
+            clkfb_stopped <= '1';
+         end if;
+       end if;
+     end if;
+  end process;
+
+
+  CLK_JITTER_P : process (clkin_jit, rst_in)
+  begin
+  if (rst_in = '1') then
+      clkpll_jitter_unlock <= '0';
+  else
+   if ( locked_out = '1' and clkfb_stopped = '0' and clkin_stopped = '0') then
+      if  (ABS(clkin_jit) > ref_jitter_max_tmp) then
+        clkpll_jitter_unlock <= '1';
+      else
+         clkpll_jitter_unlock <= '0';
+      end if;
+   else
+         clkpll_jitter_unlock <= '0';
+   end if;
+  end if;
+  end process;
+     
+
+   pll_unlock <= clkin_stopped or clkfb_stopped or clkpll_jitter_unlock;
+
+  
+
+end PLL_ADV_V;
+
+-------------------------------------------------------------------------------
+-- Copyright (c) 1995/2004 Xilinx, Inc.
+-- All Right Reserved.
+-------------------------------------------------------------------------------
+--   ____  ____
+--  /   /\/   /
+-- /___/  \  /    Vendor : Xilinx
+-- \   \   \/     Version : 11.1
+--  \   \         Description : Xilinx Functional Simulation Library Component
+--  /   /                 Phase Lock Loop Clock 
+-- /___/   /\     Filename : PLL_BASE.vhd
+-- \   \  /  \    Timestamp : 
+--  \___\/\___\
+-- Revision:
+--    12/02/05 - Initial version.
+--    02/26/09 - Add CLK_FEEDBACK attribute for Spartan6.
+-- End Revision
+
+
+----- CELL PLL_BASE -----
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.STD_LOGIC_SIGNED.all;
+use IEEE.STD_LOGIC_ARITH.all;
+
+library unisim;
+use unisim.vpkg.all;
+use unisim.VCOMPONENTS.all;
+
+entity PLL_BASE is
+generic (
+		BANDWIDTH : string := "OPTIMIZED";
+		CLKFBOUT_MULT : integer := 1;
+		CLKFBOUT_PHASE : real := 0.0;
+		CLKIN_PERIOD : real := 0.000;
+		CLKOUT0_DIVIDE : integer := 1;
+		CLKOUT0_DUTY_CYCLE : real := 0.5;
+		CLKOUT0_PHASE : real := 0.0;
+		CLKOUT1_DIVIDE : integer := 1;
+		CLKOUT1_DUTY_CYCLE : real := 0.5;
+		CLKOUT1_PHASE : real := 0.0;
+		CLKOUT2_DIVIDE : integer := 1;
+		CLKOUT2_DUTY_CYCLE : real := 0.5;
+		CLKOUT2_PHASE : real := 0.0;
+		CLKOUT3_DIVIDE : integer := 1;
+		CLKOUT3_DUTY_CYCLE : real := 0.5;
+		CLKOUT3_PHASE : real := 0.0;
+		CLKOUT4_DIVIDE : integer := 1;
+		CLKOUT4_DUTY_CYCLE : real := 0.5;
+		CLKOUT4_PHASE : real := 0.0;
+		CLKOUT5_DIVIDE : integer := 1;
+		CLKOUT5_DUTY_CYCLE : real := 0.5;
+		CLKOUT5_PHASE : real := 0.0;
+      CLK_FEEDBACK : string := "CLKFBOUT";
+		COMPENSATION : string := "SYSTEM_SYNCHRONOUS";
+      DIVCLK_DIVIDE : integer := 1;
+		REF_JITTER : real := 0.100;
+		RESET_ON_LOSS_OF_LOCK : boolean := FALSE
+
+
+  );
+
+port (
+		CLKFBOUT : out std_ulogic;
+		CLKOUT0 : out std_ulogic;
+		CLKOUT1 : out std_ulogic;
+		CLKOUT2 : out std_ulogic;
+		CLKOUT3 : out std_ulogic;
+		CLKOUT4 : out std_ulogic;
+		CLKOUT5 : out std_ulogic;
+		LOCKED : out std_ulogic;
+
+		CLKFBIN : in std_ulogic;
+		CLKIN : in std_ulogic;
+		RST : in std_ulogic
+     );
+end PLL_BASE;
+
+-- Architecture body --
+
+architecture PLL_BASE_V of PLL_BASE is
+
+signal  h1 : std_ulogic := '1';
+signal  z1 : std_ulogic := '0';
+signal  z5 : std_logic_vector(4 downto 0) := "00000";
+signal  z16 : std_logic_vector(15 downto 0) := "0000000000000000";
+signal  OPEN0 : std_ulogic;
+signal  OPEN1 : std_ulogic;
+signal  OPEN2 : std_ulogic;
+signal  OPEN3 : std_ulogic;
+signal  OPEN4 : std_ulogic;
+signal  OPEN5 : std_ulogic;
+signal  OPEN6 : std_ulogic;
+signal  OPEN7 : std_ulogic;
+signal  OPEN16 : std_logic_vector(15 downto 0);
+
+begin
+-- PLL_ADV Instantiation (port map, generic map)
+
+PLL_ADV_inst : PLL_ADV
+	generic map (
+		BANDWIDTH => BANDWIDTH,
+		CLKFBOUT_MULT => CLKFBOUT_MULT,
+		CLKFBOUT_PHASE => CLKFBOUT_PHASE,
+		CLKIN1_PERIOD => CLKIN_PERIOD,
+		CLKIN2_PERIOD => 10.0,
+		CLKOUT0_DIVIDE => CLKOUT0_DIVIDE,
+		CLKOUT0_DUTY_CYCLE => CLKOUT0_DUTY_CYCLE,
+		CLKOUT0_PHASE => CLKOUT0_PHASE,
+		CLKOUT1_DIVIDE => CLKOUT1_DIVIDE,
+		CLKOUT1_DUTY_CYCLE => CLKOUT1_DUTY_CYCLE,
+		CLKOUT1_PHASE => CLKOUT1_PHASE,
+		CLKOUT2_DIVIDE => CLKOUT2_DIVIDE,
+		CLKOUT2_DUTY_CYCLE => CLKOUT2_DUTY_CYCLE,
+		CLKOUT2_PHASE => CLKOUT2_PHASE,
+		CLKOUT3_DIVIDE => CLKOUT3_DIVIDE,
+		CLKOUT3_DUTY_CYCLE => CLKOUT3_DUTY_CYCLE,
+		CLKOUT3_PHASE => CLKOUT3_PHASE,
+		CLKOUT4_DIVIDE => CLKOUT4_DIVIDE,
+		CLKOUT4_DUTY_CYCLE => CLKOUT4_DUTY_CYCLE,
+		CLKOUT4_PHASE => CLKOUT4_PHASE,
+		CLKOUT5_DIVIDE => CLKOUT5_DIVIDE,
+		CLKOUT5_DUTY_CYCLE => CLKOUT5_DUTY_CYCLE,
+		CLKOUT5_PHASE => CLKOUT5_PHASE,
+      CLK_FEEDBACK => CLK_FEEDBACK,
+		COMPENSATION => COMPENSATION,
+      DIVCLK_DIVIDE => DIVCLK_DIVIDE,
+      EN_REL => FALSE,
+      PLL_PMCD_MODE => FALSE,
+		REF_JITTER => REF_JITTER,
+		RESET_ON_LOSS_OF_LOCK => RESET_ON_LOSS_OF_LOCK, 
+      RST_DEASSERT_CLK => "CLKIN1"
+)
+port map (
+		CLKFBDCM => OPEN6,
+		CLKFBOUT => CLKFBOUT,
+		CLKOUT0 => CLKOUT0,
+		CLKOUT1 => CLKOUT1,
+		CLKOUT2 => CLKOUT2,
+		CLKOUT3 => CLKOUT3,
+		CLKOUT4 => CLKOUT4,
+		CLKOUT5 => CLKOUT5,
+		CLKOUTDCM0 => OPEN0,
+		CLKOUTDCM1 => OPEN1,
+		CLKOUTDCM2 => OPEN2,
+		CLKOUTDCM3 => OPEN3,
+		CLKOUTDCM4 => OPEN4,
+		CLKOUTDCM5 => OPEN5,
+		DO => OPEN16,
+		DRDY => OPEN7,
+		LOCKED => LOCKED,
+		CLKFBIN => CLKFBIN,
+		CLKIN1 => CLKIN,
+		CLKIN2 => z1,
+      CLKINSEL => h1,
+      DADDR => z5,
+      DCLK => z1,
+      DEN => z1,
+      DI => z16,
+      DWE => z1,
+      REL => z1,
+		RST => RST
+);
+
+end PLL_BASE_V;
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;

@@ -9,4 +9,10 @@
 	  32		CONFIG_GRETH_FIFO32 \
 	  64		CONFIG_GRETH_FIFO64" 8
       fi
+      if [ "$CONFIG_LEON3FT_PRESENT" = "y" ]; then
+        bool 'Enable fault-tolerance' CONFIG_GRETH_FT
+        if [ "$CONFIG_GRETH_FT" = "y" ]; then
+          bool 'Enable fault tolerance for EDCL buffer ' CONFIG_GRETH_EDCLFT
+        fi
+      fi
     fi

@@ -64,6 +64,25 @@ Design specifics:
 * To load and run the design from Platform Flash the DIP-Switch SW3[1:8]
   should be set to 00011001.
 
+* It is possible to use the PCI EXPRESS interface(only for ml505 boards),
+  by enabling it in the xconfig menu. The interface must be generated using
+  coregen, and the Xilinx unisim_ver libraries must be installed if you wish
+  to simulate the design.
+
+  This simulation requires that the GRLIB_SIMULATOR variable is
+  correctly set. Please refer to the documentation in doc/grlib.pdf for
+  additional information.
+
+  Enable PCI EXPRESS in xconfig menu
+  make pcie
+  make install-unisim
+  make compile_xilinx_verilog_lib
+  make vsim
+  make map_xilinx_verilog_lib
+
+  To simulate use the make target:
+  make vsim-launch
+
 * Sample output from GRMON is:
 
 $ grmon -eth -ip 192.168.0.51 -u -nb 

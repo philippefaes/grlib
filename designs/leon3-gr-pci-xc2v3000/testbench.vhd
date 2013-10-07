@@ -76,8 +76,8 @@ end;
 architecture behav of testbench is
 
 constant promfile  : string := "prom.srec";  -- rom contents
-constant sramfile  : string := "sram.srec";  -- ram contents
-constant sdramfile : string := "sdram.srec"; -- sdram contents
+constant sramfile  : string := "ram.srec";  -- ram contents
+constant sdramfile : string := "ram.srec"; -- sdram contents
 
 signal clk : std_logic := '0';
 signal Rst    : std_logic := '0';			-- Reset
@@ -142,6 +142,8 @@ begin
 
   spw_rxd(0) <= spw_txd(0);
   spw_rxs(0) <= spw_txs(0);
+  spw_rxd(1) <= spw_txd(1);
+  spw_rxs(1) <= spw_txs(1);
   clk <= not clk after ct * 1 ns;
   rst <= dsurst;
   dsuen <= '1'; dsubre <= '0'; rxd1 <= '1';

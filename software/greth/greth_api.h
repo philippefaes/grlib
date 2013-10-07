@@ -92,6 +92,7 @@ struct greth_info {
     unsigned int gbit;
     unsigned int phyaddr;
     unsigned int edcl;
+    unsigned int edclen;
     
     struct descriptor *txd;
     struct descriptor *rxd;  

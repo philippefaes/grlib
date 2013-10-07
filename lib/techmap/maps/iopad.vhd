@@ -137,7 +137,7 @@ begin
   end generate;
   ut90nhbd : if (tech = ut90) generate
     x0 : ut90nhbd_iopad generic map (level, slew, voltage, strength)
-         port map (pad, i, oen, o);
+         port map (pad, i, oen, o, cfgi(0));
   end generate;
 end;
 
@@ -149,7 +149,7 @@ use techmap.gencomp.all;
 entity iopadv is
   generic (tech : integer := 0; level : integer := 0; slew : integer := 0;
 	voltage : integer := x33v; strength : integer := 12; width : integer := 1;
-	oepol : integer := 0);
+	oepol : integer := 0; filter : integer := 0);
   port (
     pad : inout std_logic_vector(width-1 downto 0);
     i   : in  std_logic_vector(width-1 downto 0);
@@ -160,7 +160,7 @@ end;
 architecture rtl of iopadv is
 begin
   v : for j in width-1 downto 0 generate
-    x0 : iopad generic map (tech, level, slew, voltage, strength, oepol)
+    x0 : iopad generic map (tech, level, slew, voltage, strength, oepol, filter)
 	 port map (pad(j), i(j), en, o(j), cfgi);
   end generate;
 end;
@@ -173,7 +173,7 @@ use techmap.gencomp.all;
 entity iopadvv is
   generic (tech : integer := 0; level : integer := 0; slew : integer := 0;
 	voltage : integer := x33v; strength : integer := 12; width : integer := 1;
-	oepol : integer := 0);
+	oepol : integer := 0; filter : integer := 0);
   port (
     pad : inout std_logic_vector(width-1 downto 0);
     i   : in  std_logic_vector(width-1 downto 0);
@@ -184,7 +184,7 @@ end;
 architecture rtl of iopadvv is
 begin
   v : for j in width-1 downto 0 generate
-    x0 : iopad generic map (tech, level, slew, voltage, strength, oepol)
+    x0 : iopad generic map (tech, level, slew, voltage, strength, oepol, filter)
 	 port map (pad(j), i(j), en(j), o(j), cfgi);
   end generate;
 end;

@@ -1,3 +1,122 @@
+----------------------- Release 1.3.1-b4135 ----------------------------
+
+2013-08-29	Fix bashisms in scripts target
+
+2013-08-28	Add SRECs to XSim (Vivado) simulation fileset
+
+2013-08-16	Corrected default value in clkgen for Xilinx Series 7
+
+2013-08-16	leon3-gr-xc6s: Fix for Ethernet
+		- Script for correcting RGMII board timing
+		- Added instructions to README file for correcting board timing 
+
+2013-08-16	Updated Vivado Flow to only support version 2013.2 and newer
+		- Supported XILINX IP now generated via VIVADO
+		- Improved support for XSIM
+		Note: This will affect all XILINX Series 7 boards
+
+2013-08-16	AHB2MIG for 7-series: support for VIVADO 2013.2
+
+2013-08-16	SGMII: Updated SGMII to support VIVADO 2013.2
+
+2013-08-16	RGMII: Re-design of to get better timing in 10/100Mbit mode
+
+2013-08-16	AHBJTAG: Reimplement jtagcom with shift registers in TCK
+		domain to allow TCK clock rates faster than AHB clock.
+
+2013-08-06	LEON3: Bring back support for cache freeze
+
+2013-07-29	Replace sdram.srec and sram.srec with ram.srec. "make soft"
+		now creates ram.srec. External designs may need to be changed
+		to take this into consideration.
+
+----------------------- Release 1.3.0-b4133 ----------------------------
+
+2013-07-24	Fix ML605 template design reset issue.
+
+2013-07-23	Re-arrange MIG files in Xilinx designs and make sure make
+		distclean removes all created files.
+
+2013-07-12	Remove deprecated ahbmst2 core (use ahbmst or ahbdma instead)
+
+2013-07-09	Update support for Aldec Riviera-PRO
+
+2013-07-02	Rename generated quartus project to $(TOP)_quartus
+
+2013-06-29	Remove deprecated DDR controllers (lib/gaisler/ddrv1)
+
+2013-06-27	Several designs require that the GRLIB_SIMULATOR variable is
+		set correctly. See doc/grlib.pdf and the template design's
+		README.txt file.
+
+2013-06-20	Update bitfiles for most template designs.
+
+2013-06-19	LEON3: Upgrade to version 3, highlights:
+		- Updated data cache, fetch full cache line on read miss
+		- Writes to %ASR16, 17, 19 - 31 are now privileged
+		- Updates to documentation
+		Note: Requires upgrade to GRMON2 2.0.38 / GRMON 1.1.59
+
+2013-06-10	Add script support for Aldec ALINT
+
+2013-05-28	Add PRECISIONOPT env variable for Mentor Precision flow
+
+2013-05-23	Updated interrupt assignments in template designs to
+		match with guidelines given in doc/guide.pdf.
+
+2013-05-20	AHBJTAG: Improve TDO generation while shifting address/data
+		to allow JTAG speeds up to 1/3 of the AHB speed.
+
+2013-05-17	AHBJTAG/TAP: Allow passing in inverted tck directly from top 
+		level instead of generating internally (for ASIC only)
+
+2013-05-15	AHBJTAG: Change sampling and synchronization of TCK/TDI into 
+		AHB clock domain to simplify ASIC constraining.
+
+2013-05-06	leon3-gr-xc6s: Change txclock delay to fix Ethernet stability
+		problems.
+
+2013-05-05	Add install/remove-unimacro targets
+
+2013-04-21	"make vsim" with ModelSim 10.2 caused endless compiles due
+		to use of vmake, which does not support new "flat" library
+		type. Fix by forcing use of "directory" library type.
+
+2013-04-19	GRGPIO systest: Allow irq test of IO[0] if pirq /= 0.
+
+2013-03-28	Updated support for Xilinx Vivado and planAhead flows
+
+2013-03-28	UNISIM techmap: Re-arrange, drop use of BUFGDLL for Virtex-5
+
+2013-03-28	AHB2MIG for 7-series: Support memories larger than 128 MiB
+
+2013-03-27	ML510 designs: Fix swapped chip-selects for DDR2 DIMM1
+
+2013-03-25	Move AG PCI files into, and under, lib/gaisler/pci
+
+2013-03-24	Fix swapped UART pins in SP605, KC705 and VC707 template
+		designs.
+
+2013-03-19	GRETH systest: Do not test EDCL if EDCL disabled on reset.
+
+2013-03-18	Add design contributed by Joris van Rantwijk for Digilent Atlys
+		board (leon3-digilent-atlys).
+
+2013-03-13	Add grlib_sync_reset_enable_all option to GRLIB configuration
+		package that enables reset of all registers in IP cores that
+		support this functionality. See GRLIB Configuration package
+		section in grlib.pdf for additional information.
+
+2013-03-08	AHBRAM: Allow values for kbytes larger than 512
+		Add larger size choices and expose pipe generic in xconfig
+
+2013-02-19	Netlist search path was not correctly set for Spartan-3A-DSP
+
+2013-02-11	SPICTRL: added support for external control - ignoring samples
+
+2013-02-01	Netlists were not automatically copied to template designs
+		for CYCLONEIV-E technology.
+
 ----------------------- Release 1.2.2-b4123 ----------------------------
 
 2013-01-31	Fixed Makefile error that prevented script generation for

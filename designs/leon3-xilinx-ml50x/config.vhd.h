@@ -151,7 +151,7 @@
   constant CFG_AHBRAMEN	: integer := CONFIG_AHBRAM_ENABLE;
   constant CFG_AHBRSZ	: integer := CFG_AHBRAMSZ;
   constant CFG_AHBRADDR	: integer := 16#CONFIG_AHBRAM_START#;
-
+  constant CFG_AHBRPIPE : integer := CONFIG_AHBRAM_PIPE;
 -- Gaisler Ethernet core
   constant CFG_GRETH   	: integer := CONFIG_GRETH_ENABLE;
   constant CFG_GRETH1G	: integer := CONFIG_GRETH_GIGA;
@@ -194,6 +194,13 @@
 -- AMBA System ACE Interface Controller
   constant CFG_GRACECTRL : integer := CONFIG_GRACECTRL;
 
+-- PCIEXP	interface
+	constant CFG_PCIEXP         : integer	:= CFG_PCIE;
+	constant CFG_PCIE_TYPE			:	integer	:= CFG_PCIETYPE;
+	constant CFG_PCIE_SIM_MAS		:	integer	:= CFG_PCIEMASTER;
+	constant CFG_PCIEXPVID			:	integer	:= 16#CONFIG_PCIEXP_VENDORID#;
+	constant CFG_PCIEXPDID			:	integer	:= 16#CONFIG_PCIEXP_DEVICEID#;
+  constant CFG_NO_OF_LANES    : integer := CFG_LANE_WIDTH;
 -- GRLIB debugging
   constant CFG_DUART    : integer := CONFIG_DEBUG_UART;
 

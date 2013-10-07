@@ -33,7 +33,12 @@ use techmap.gencomp.all;
 entity gr1553b_pads is
   generic (
     padtech: integer;
-    outen_pol: integer range 0 to 1
+    outen_pol: integer range 0 to 1;
+    level: integer := ttl;
+    slew: integer := 0;
+    voltage: integer := x33v;
+    strength: integer := 12;
+    filter: integer := 0
     );
   port (
     txout: in gr1553b_txout_type;
@@ -57,39 +62,67 @@ architecture rtl of gr1553b_pads is
 begin
 
   outin_gen: if outen_pol /= 0 generate
-    busa_outin_pad : outpad generic map (tech => padtech)
+    busa_outin_pad : outpad
+      generic map (tech => padtech, level => level, slew => slew,
+                   voltage => voltage, strength => strength)
       port map (busaoutenin, txout.busA_txin);
-    busb_outin_pad : outpad generic map (tech => padtech)
+    busb_outin_pad : outpad
+      generic map (tech => padtech, level => level, slew => slew,
+                   voltage => voltage, strength => strength)
       port map (busboutenin, txout.busB_txin);
   end generate;
 
   outen_gen: if outen_pol = 0 generate
-    busa_outen_pad : outpad generic map (tech => padtech)
+    busa_outen_pad : outpad
+      generic map (tech => padtech, level => level, slew => slew,
+                   voltage => voltage, strength => strength)
       port map (busaoutenin, txout.busA_txen);
-    busb_outen_pad : outpad generic map (tech => padtech)
+    busb_outen_pad : outpad
+      generic map (tech => padtech, level => level, slew => slew,
+                   voltage => voltage, strength => strength)
       port map (busboutenin, txout.busB_txen);
   end generate;
 
 
-  busa_inen_pad : outpad generic map (tech => padtech)
+  busa_inen_pad : outpad
+    generic map (tech => padtech, level => level, slew => slew,
+                 voltage => voltage, strength => strength)
     port map (busainen, txout.busA_rxen);
-  busa_inp_pad  : inpad generic map (tech => padtech)
+  busa_inp_pad  : inpad
+    generic map (tech => padtech, level => level, filter => filter,
+                 voltage => voltage, strength => strength)
     port map (busainp,  rxin.busA_rxP);
-  busa_inn_pad  : inpad generic map (tech => padtech)
+  busa_inn_pad  : inpad
+    generic map (tech => padtech, level => level, filter => filter,
+                 voltage => voltage, strength => strength)
     port map (busainn,  rxin.busA_rxN);
-  busa_outp_pad : outpad generic map (tech => padtech)
+  busa_outp_pad : outpad
+    generic map (tech => padtech, level => level, slew => slew,
+                 voltage => voltage, strength => strength)
     port map (busaoutp, txout.busA_txP);
-  busa_outn_pad : outpad generic map (tech => padtech)
+  busa_outn_pad : outpad
+    generic map (tech => padtech, level => level, slew => slew,
+                 voltage => voltage, strength => strength)
     port map (busaoutn, txout.busA_txN);
-  busb_inen_pad : outpad generic map (tech => padtech)
+  busb_inen_pad : outpad
+    generic map (tech => padtech, level => level, slew => slew,
+                 voltage => voltage, strength => strength)
     port map (busbinen, txout.busB_rxen);
-  busb_inp_pad  : inpad generic map (tech => padtech)
+  busb_inp_pad  : inpad
+    generic map (tech => padtech, level => level, filter => filter,
+                 voltage => voltage, strength => strength)
     port map (busbinp,  rxin.busB_rxP);
-  busb_inn_pad  : inpad generic map (tech => padtech)
+  busb_inn_pad  : inpad
+    generic map (tech => padtech, level => level, filter => filter,
+                 voltage => voltage, strength => strength)
     port map (busbinn,  rxin.busB_rxN);
-  busb_outp_pad : outpad generic map (tech => padtech)
+  busb_outp_pad : outpad
+    generic map (tech => padtech, level => level, slew => slew,
+                 voltage => voltage, strength => strength)
     port map (busboutp, txout.busB_txP);
-  busb_outn_pad : outpad generic map (tech => padtech)
+  busb_outn_pad : outpad
+    generic map (tech => padtech, level => level, slew => slew,
+                 voltage => voltage, strength => strength)
     port map (busboutn, txout.busB_txN);
 
 end;

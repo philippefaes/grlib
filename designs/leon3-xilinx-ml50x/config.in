@@ -3,13 +3,13 @@
 #
 # Written by Jiri Gaisler, Gaisler Research
 #
-# Comments and bug reports to jiri@gaisler.com
+# Comments and bug reports to support@gaisler.com
 #
 #
 
 #define_bool CONFIG_MCTRL_RMW y
 
-mainmenu_name "LEON3MP ML505 - ML509 Design Configuration"
+mainmenu_name "LEON3MP Design Configuration"
 
 mainmenu_option next_comment
   comment 'Synthesis      '
@@ -65,7 +65,7 @@ comment 'Peripherals             '
   mainmenu_option next_comment
   comment 'UART, timer, I2C, SysMon, I/O port and interrupt controller'
     source lib/gaisler/uart/uart1.in
-    source lib/gaisler/leon3/irqmp.in
+    source lib/gaisler/irqmp/irqmp.in
     source lib/gaisler/misc/gptimer.in
     source lib/gaisler/misc/grgpio.in
     source lib/gaisler/i2c/i2c.in
@@ -80,6 +80,11 @@ comment 'Peripherals             '
   mainmenu_option next_comment
   comment 'System ACE Interface Controller'
     source lib/gaisler/misc/gracectrl.in
+  endmenu
+
+  mainmenu_option next_comment
+  comment 'PCI EXPRESS'
+    source lib/gaisler/pciexp/pciexp.in
   endmenu
 endmenu
 

@@ -58,6 +58,7 @@ entity leon3mp is
   port (
     resetn	: in  std_logic;
     clock_50	: in  std_logic;
+    sma_clkout  : out std_ulogic;
     errorn	: out std_logic;
 
     fl_addr 	: out std_logic_vector(22 downto 0);
@@ -121,7 +122,6 @@ signal memo  : memory_out_type;
 signal wpo   : wprot_out_type;
 signal sdi   : sdctrl_in_type;
 signal sdo   : sdram_out_type;
-signal sdo2, sdo3 : sdctrl_out_type;
 
 signal apbi  : apb_slv_in_type;
 signal apbo  : apb_slv_out_vector := (others => apb_none);
@@ -179,7 +179,6 @@ constant IOAEN : integer := CFG_CAN;
 constant CFG_SDEN : integer := CFG_MCTRL_SDEN;
 constant CFG_INVCLK : integer := CFG_MCTRL_INVCLK;
 constant OEPOL : integer := padoen_polarity(padtech);
-constant notag : integer := 1;
 
 attribute syn_keep : boolean;
 attribute syn_preserve : boolean;
@@ -197,9 +196,9 @@ begin
   clkgen0 : clkgen                      -- clock generator using toplevel generic 'freq'
     generic map (tech    => CFG_CLKTECH, clk_mul => CFG_CLKMUL,
                  clk_div => CFG_CLKDIV, sdramen => CFG_MCTRL_SDEN,
-                 noclkfb => CFG_CLK_NOFB, freq => BOARD_FREQ)
+                 noclkfb => CFG_CLK_NOFB, freq => BOARD_FREQ, clk2xen => 1)
     port map (clkin => clock_50, pciclkin => gnd(0), clk => clkm, clkn => open,
-              clk2x => open, sdclk => sdclkl, pciclk => open,
+              clk2x => sma_clkout, sdclk => sdclkl, pciclk => open,
               cgi   => cgi, cgo => cgo);
   sdclk_pad : outpad generic map (tech => padtech, slew => 1) 
 	port map (dram_clk, sdclkl);
@@ -226,8 +225,8 @@ begin
   cpu : for i in 0 to CFG_NCPU-1 generate
     nosh : if CFG_GRFPUSH = 0 generate    
       u0 : leon3s 		-- LEON3 processor      
-      generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU, CFG_V8, 
-	0, CFG_MAC, pclow, notag, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
+      generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU*(1-CFG_GRFPUSH), CFG_V8, 
+	0, CFG_MAC, pclow, CFG_NOTAG, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
 	CFG_ISETSZ, CFG_ILOCK, CFG_DCEN, CFG_DREPL, CFG_DSETS, CFG_DLINE, CFG_DSETSZ,
 	CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
         CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP, 
@@ -242,7 +241,7 @@ begin
     cpu : for i in 0 to CFG_NCPU-1 generate
       u0 : leon3sh 		-- LEON3 processor      
       generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU, CFG_V8, 
-	0, CFG_MAC, pclow, notag, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
+	0, CFG_MAC, pclow, CFG_NOTAG, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
 	CFG_ISETSZ, CFG_ILOCK, CFG_DCEN, CFG_DREPL, CFG_DSETS, CFG_DLINE, CFG_DSETSZ,
 	CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
         CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP, 
@@ -347,9 +346,9 @@ begin
 
   nosd0 : if (CFG_SDEN = 0) generate 		-- no SDRAM controller
       sdcke_pad : outpad generic map (tech => padtech) 
-	   port map (dram_cke, sdo3.sdcke(0)); 
+	   port map (dram_cke, vcc(0)); 
       sdcsn_pad : outpad generic map (tech => padtech) 
-	   port map (dram_cs_n, sdo3.sdcsn(0)); 
+	   port map (dram_cs_n, vcc(0)); 
   end generate;
 
 
@@ -608,12 +607,10 @@ begin
 -----------------------------------------------------------------------
 
 -- pragma translate_off
-  x : report_version 
+  x : report_design
   generic map (
    msg1 => "LEON3 TerAsic DE2_115 Demonstration design",
-   msg2 => "GRLIB Version " & tost(LIBVHDL_VERSION/1000) & "." & tost((LIBVHDL_VERSION mod 1000)/100)
-      & "." & tost(LIBVHDL_VERSION mod 100) & ", build " & tost(LIBVHDL_BUILD),
-   msg3 => "Target technology: " & tech_table(fabtech) & ",  memory library: " & tech_table(memtech),
+   fabtech => tech_table(fabtech), memtech => tech_table(memtech),
    mdel => 1
   );
 -- pragma translate_on

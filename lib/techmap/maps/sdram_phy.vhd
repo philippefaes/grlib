@@ -21,7 +21,7 @@
 -- File:        sdram_phy.vhd
 -- Author:      Jan Andersson - Aeroflex Gaisler
 -- Description: SDRAM PHY with tech mapping, includes pads and can be
---              implemented with registers on all signals. 
+--              implemented with registers on all signals.
 ------------------------------------------------------------------------------
 
 library ieee;
@@ -35,7 +35,7 @@ use techmap.allpads.all;
 
 entity sdram_phy is
   generic (
-    tech     : integer := spartan3; 
+    tech     : integer := spartan3;
     oepol    : integer := 0;
     level    : integer := 0;
     voltage  : integer := x33v;
@@ -70,7 +70,7 @@ entity sdram_phy is
     -- Only used when reg generic is non-zero
     rstn      : in  std_ulogic;         -- Registered pads reset
     clk       : in  std_ulogic;         -- SDRAM clock for registered pads
-    
+
     -- Optional pad configuration inputs
     cfgi_cmd  : in std_logic_vector(19 downto 0) := "00000000000000000000"; -- CMD pads
     cfgi_dq   : in std_logic_vector(19 downto 0) := "00000000000000000000"  -- DQ pads
@@ -92,23 +92,23 @@ architecture rtl of sdram_phy is
 
   signal oen       : std_ulogic;
   signal voen      : std_logic_vector(dw-1 downto 0);
-  
+
   -- Determines if there is a customized phy available for target tech,
   -- otherwise a generic PHY will be built
   constant has_sdram_phy : tech_ability_type :=
     (easic45 => 1, others => 0);
-  
+
   -- Determines if target tech has pads with built in registers (or rather if
   -- target technology requires special pad instantiations in order to get
   -- registers into pad ring).
   constant tech_has_padregs : tech_ability_type :=
     (easic45 => 1, others => 0);
-    
+
 begin
 
   oen <= not ldq_oen(0) when padoen_polarity(tech) /= oepol else ldq_oen(0);
   voen <= not ldq_oen when padoen_polarity(tech) /= oepol else ldq_oen;
-  
+
   nopadregs : if (reg = 0) or (tech_has_padregs(tech) /= 0) generate
     laddrx    <= laddr;
     ldq_din   <= ldq_dinx;
@@ -122,7 +122,7 @@ begin
     ldqmx     <= ldqm;
   end generate;
   padregs : if (reg /= 0) and (tech_has_padregs(tech) = 0) generate
-    regproc : process(clk)
+    regproc : process(clk, rstn)
     begin
       if rising_edge(clk) then
         laddrx    <= laddr;
@@ -145,7 +145,7 @@ begin
     end process;
   end generate;
 
-  
+
   gen : if has_sdram_phy(tech) = 0 generate
     -- SDRAM address
     sa_pad : outpadv
@@ -173,14 +173,14 @@ begin
         tech     => tech,
         level    => level,
         voltage  => voltage,
-        strength => strength) 
+        strength => strength)
       port map (cke, lckex, cfgi_cmd);
     -- SDRAM write enable
     sdwen_pad : outpad generic map (
       tech     => tech,
       level    => level,
       voltage  => voltage,
-      strength => strength) 
+      strength => strength)
       port map (wen, lwenx, cfgi_cmd);
     -- SDRAM chip select
     sdcsn_pad : outpadv
@@ -189,7 +189,7 @@ begin
         tech     => tech,
         level    => level,
         voltage  => voltage,
-        strength => strength) 
+        strength => strength)
       port map (sn, lsnx, cfgi_cmd);
     -- SDRAM ras
     sdras_pad : outpad
@@ -197,7 +197,7 @@ begin
         tech     => tech,
         level    => level,
         voltage  => voltage,
-        strength => strength) 
+        strength => strength)
       port map (rasn, lrasnx, cfgi_cmd);
     -- SDRAM cas
     sdcas_pad : outpad
@@ -205,7 +205,7 @@ begin
         tech     => tech,
         level    => level,
         voltage  => voltage,
-        strength => strength) 
+        strength => strength)
       port map (casn, lcasnx, cfgi_cmd);
     -- SDRAM dqm
     sddqm_pad : outpadv
@@ -214,21 +214,21 @@ begin
         level    => level,
         voltage  => voltage,
         tech     => tech,
-        strength => strength) 
+        strength => strength)
       port map (dqm, ldqmx, cfgi_cmd);
   end generate;
-  
+
   n2x : if (tech = easic45) generate
     phy0 : n2x_sdram_phy
       generic map (
         level => level, voltage => voltage, strength => strength,
         aw => aw, dw => dw, ncs => ncs, reg => reg)
       port map (
-        addr, dq, cke, sn, wen, rasn, casn, dqm, 
+        addr, dq, cke, sn, wen, rasn, casn, dqm,
         laddrx, ldq_dinx, ldq_doutx, ldq_oenx, lckex,
         lsnx, lwenx, lrasnx, lcasnx, ldqmx,
         rstn, clk,
         cfgi_cmd, cfgi_dq);
   end generate;
-  
+
 end;

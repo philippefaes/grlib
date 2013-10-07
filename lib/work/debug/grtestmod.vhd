@@ -38,6 +38,7 @@
 --  0x08 : calls subtest data[7:0]
 --  0x10 : prints *** GRLIB system test starting ***
 --  0x14 : prints Test passed / errors detected
+--  0x18 : prints Checkpoint data[15:0] with time stamp
 --
 -- In 16-bit mode the module has the following memory map:
 --
@@ -47,6 +48,7 @@
 --  0x0C : sets LSbs of device id from data[15:12], prints vendor and device id
 --  0x10 : prints *** GRLIB system test starting ***
 --  0x14 : prints Test passed / errors detected 
+--  0x18 : prints Checkpoint data[15:0] with time stamp
 --
 -- The width is defined for the systest software via GRLIB_REPORTDEV_WIDTH
 ------------------------------------------------------------------------------
@@ -78,7 +80,10 @@ entity grtestmod is
     oen         : in std_ulogic;
     writen  	: in std_ulogic; 		
     brdyn  	: out  std_ulogic := '1';
-    bexcn  	: out  std_ulogic := '1'
+    bexcn  	: out  std_ulogic := '1';
+    state       : out std_logic_vector(1 downto 0);
+    testdev     : out std_logic_vector(19 downto 0);
+    subtest     : out std_logic_vector(7 downto 0)
  );
 
 end;
@@ -108,7 +113,8 @@ begin
   ldata <= to_X01(data) after 1 ns;
   
   log : process(ior, iow) --, clk)
-  variable errno, errcnt, subtest, vendorid, deviceid : integer;
+  variable errno, errcnt, lsubtest, vendorid, deviceid : integer;
+  variable lstate: std_logic_vector(1 downto 0) := "00";
   --variable addr : std_logic_vector(21 downto 2);
   --variable ldata : std_logic_vector(width-1 downto 0);
   begin
@@ -133,6 +139,7 @@ begin
           vendorid := conv_integer(ldata(31*(width/32) downto 24*(width/32)));
           deviceid := conv_integer(ldata(23*(width/32) downto 12*(width/32)));
           print(iptable(vendorid).device_table(deviceid));
+          testdev <= conv_std_logic_vector(vendorid*256+deviceid,20);
         else
           vendorid := conv_integer(ldata(15 downto 8));
           deviceid := 2**4*conv_integer(ldata(7 downto 0));
@@ -148,30 +155,38 @@ begin
 	  report "test failed, error (" & tost(errno) & ")"
 	  severity warning;
 	end if;
+        lstate := "11";
       when "000010" =>
-        subtest := conv_integer(ldata(7 downto 0));
-	call_subtest(vendorid, deviceid, subtest);
+        lsubtest := conv_integer(ldata(7 downto 0));
+	call_subtest(vendorid, deviceid, lsubtest);
+        subtest <= conv_std_logic_vector(lsubtest,8);
       when "000011" =>
         if width = 16 then
           deviceid := deviceid + conv_integer(ldata(15 downto 12));
           print(iptable(vendorid).device_table(deviceid));
+          testdev <= conv_std_logic_vector(vendorid*256+deviceid,20);
         end if;
       when "000100" =>
         print ("");
         print ("**** GRLIB system test starting ****");
 	errcnt := 0;
+        if lstate="00" then lstate := "01"; end if;
       when "000101" =>
 	if errcnt = 0 then
           print ("Test passed, halting with IU error mode");
+          if lstate="01" then lstate := "10"; end if;
 	elsif errcnt = 1 then
           print ("1 error detected, halting with IU error mode");
 	else
           print (tost(errcnt) & " errors detected, halting with IU error mode");
         end if;
         print ("");
+      when "000110" =>
+        grlib.testlib.print("Checkpoint " & tost(conv_integer(ldata(15 downto 0))));
       when others =>
       end case;
     end if;
+    state <= lstate;
   end process;
 end;
 

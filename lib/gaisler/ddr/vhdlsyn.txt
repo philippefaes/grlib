@@ -11,3 +11,9 @@ ddr1spax.vhd
 ddr1spax_ddr.vhd
 ahb2mig_series7_pkg.vhd
 ahb2mig_series7.vhd
+ddrmuxpkg.vhd
+ddrmuxctrl.vhd
+muxbesdr.vhd
+muxbesdrc64.vhd
+muxbessr.vhd
+

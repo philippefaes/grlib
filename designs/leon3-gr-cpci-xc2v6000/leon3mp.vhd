@@ -194,7 +194,11 @@ signal tck, tms, tdi, tdo : std_logic;
 
 signal spwi : grspw_in_type_vector(0 to 2);
 signal spwo : grspw_out_type_vector(0 to 2);
-signal spw_rx_clk : std_ulogic;
+signal spw_rxclk : std_logic_vector(0 to CFG_SPW_NUM-1);
+signal dtmp : std_logic_vector(0 to CFG_SPW_NUM-1);
+signal stmp : std_logic_vector(0 to CFG_SPW_NUM-1);
+signal spw_rxtxclk : std_ulogic;
+signal spw_rxclkn  : std_ulogic;
 
 signal fpi : grfpu_in_vector_type;
 signal fpo : grfpu_out_vector_type;
@@ -244,8 +248,8 @@ begin
     nosh : if CFG_GRFPUSH = 0 generate      
     cpu : for i in 0 to CFG_NCPU-1 generate
       u0 : leon3s			-- LEON3 processor      
-      generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU, CFG_V8, 
-  	0, CFG_MAC, pclow, 0, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
+      generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU*(1-CFG_GRFPUSH), CFG_V8, 
+  	0, CFG_MAC, pclow, CFG_NOTAG, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
   	CFG_ISETSZ, CFG_ILOCK, CFG_DCEN, CFG_DREPL, CFG_DSETS, CFG_DLINE, CFG_DSETSZ,
   	CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
           CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP, 
@@ -259,7 +263,7 @@ begin
     cpu : for i in 0 to CFG_NCPU-1 generate
       u0 : leon3sh			-- LEON3 processor      
       generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU, CFG_V8, 
-  	0, CFG_MAC, pclow, 0, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
+  	0, CFG_MAC, pclow, CFG_NOTAG, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
   	CFG_ISETSZ, CFG_ILOCK, CFG_DCEN, CFG_DREPL, CFG_DSETS, CFG_DLINE, CFG_DSETSZ,
   	CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
           CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP, 
@@ -379,9 +383,9 @@ begin
 
   nosd0 : if (CFG_SDEN = 0) generate 		-- no SDRAM controller
       sdcke_pad : outpadv generic map (width =>2, tech => padtech) 
-	   port map (sdcke, sdo3.sdcke); 
+	   port map (sdcke, vcc(1 downto 0)); 
       sdcsn_pad : outpadv generic map (width =>2, tech => padtech) 
-	   port map (sdcsn, sdo3.sdcsn); 
+	   port map (sdcsn, vcc(1 downto 0)); 
   end generate;
 
   memi.brdyn <= '1'; memi.bexcn <= '1';
@@ -612,27 +616,78 @@ begin
 -----------------------------------------------------------------------
 ---  SPACEWIRE  -------------------------------------------------------
 -----------------------------------------------------------------------
-  --This template does NOT currently support grspw2 so only use grspw1
   spw : if CFG_SPW_EN > 0 generate
-   spw_rx_clk <= '0';
+    spw_rxtxclk <= spw_lclk;
+    spw_rxclkn <= not spw_rxtxclk;
+        
    swloop : for i in 0 to CFG_SPW_NUM-1 generate
+     -- GRSPW2 PHY
+     spw2_input : if CFG_SPW_GRSPW = 2 generate
+       spw_phy0 : grspw2_phy
+         generic map(
+           scantest   => 0,
+           tech       => fabtech,
+           input_type => CFG_SPW_INPUT)
+         port map(
+           rstn       => rstn,
+           rxclki     => spw_rxtxclk,
+           rxclkin    => spw_rxclkn,
+           nrxclki    => spw_rxtxclk,
+           di         => dtmp(i),
+           si         => stmp(i),
+           do         => spwi(i).d(1 downto 0),
+           dov        => spwi(i).dv(1 downto 0),
+           dconnect   => spwi(i).dconnect(1 downto 0),
+           rxclko     => spw_rxclk(i));
+       spwi(i).nd <= (others => '0');  -- Only used in GRSPW
+       spwi(i).dv(3 downto 2) <= "00";  -- For second port
+     end generate spw2_input;
+     
+     -- GRSPW PHY
+     spw1_input: if CFG_SPW_GRSPW = 1 generate
+       spw_phy0 : grspw_phy
+         generic map(
+           tech         => fabtech,
+           rxclkbuftype => 1,
+           scantest     => 0)
+         port map(
+           rxrst      => spwo(i).rxrst,
+           di         => dtmp(i),
+           si         => stmp(i),
+           rxclko     => spw_rxclk(i),
+           do         => spwi(i).d(0),
+           ndo        => spwi(i).nd(4 downto 0),
+           dconnect   => spwi(i).dconnect(1 downto 0));
+       spwi(i).d(1) <= '0';
+       spwi(i).dv <= (others => '0');  -- Only used in GRSPW2
+       spwi(i).nd(9 downto 5) <= "00000";  -- For second port
+     end generate spw1_input;
+
+     spwi(i).d(3 downto 2) <= "00";   -- For second port
+     spwi(i).dconnect(3 downto 2) <= "00";  -- For second port     
+     spwi(i).s(1 downto 0) <= "00";  -- Only used in PHY
+     
    sw0 : grspwm generic map(tech => fabtech,
      hindex => maxahbmsp+i, pindex => 10+i, paddr => 10+i, pirq => 10+i, 
      sysfreq => cpu_freq, nsync => 1,  rmap => CFG_SPW_RMAP, 
      rmapcrc => CFG_SPW_RMAPCRC, fifosize1 => CFG_SPW_AHBFIFO, 
      fifosize2 => CFG_SPW_RXFIFO, rxclkbuftype => 1, 
      rmapbufs => CFG_SPW_RMAPBUF, ft => CFG_SPW_FT,
-     netlist => CFG_SPW_NETLIST, ports => 1, dmachan => 1, 
-     memtech => memtech, spwcore => CFG_SPW_GRSPW)
-     port map(resetn, clkm, spw_rx_clk, spw_rx_clk, spw_lclk, spw_lclk,
+     netlist => CFG_SPW_NETLIST, ports => 1, dmachan => CFG_SPW_DMACHAN, 
+     memtech => memtech, spwcore => CFG_SPW_GRSPW,
+     input_type => CFG_SPW_INPUT, output_type => CFG_SPW_OUTPUT,
+     rxtx_sameclk => CFG_SPW_RTSAME, rxunaligned => CFG_SPW_RXUNAL)
+     port map(resetn, clkm, spw_rxclk(i), spw_rxclk(i), spw_rxtxclk, spw_rxtxclk,
         ahbmi, ahbmo(maxahbmsp+i), 
 	apbi, apbo(10+i), spwi(i), spwo(i));
      spwi(i).tickin <= '0'; spwi(i).rmapen <= '0';
      spwi(i).clkdiv10 <= conv_std_logic_vector(CPU_FREQ*2/10000-1, 8);
+     spwi(i).dcrstval <= (others => '0');
+     spwi(i).timerrstval <= (others => '0');
      spw_rxd_pad : inpad_ds generic map (padtech, lvds, x33v)
-	port map (spw_rxd(i), spw_rxdn(i), spwi(i).d(0));
+	port map (spw_rxd(i), spw_rxdn(i), dtmp(i));
      spw_rxs_pad : inpad_ds generic map (padtech, lvds, x33v)
-	port map (spw_rxs(i), spw_rxsn(i), spwi(i).s(0));
+	port map (spw_rxs(i), spw_rxsn(i), stmp(i));
      spw_txd_pad : outpad_ds generic map (padtech, lvds, x33v)
 	port map (spw_txd(i), spw_txdn(i), spwo(i).d(0), gnd(0));
      spw_txs_pad : outpad_ds generic map (padtech, lvds, x33v)
@@ -647,7 +702,7 @@ begin
 
   ocram : if CFG_AHBRAMEN = 1 generate 
     ahbram0 : ahbram generic map (hindex => 7, haddr => CFG_AHBRADDR, 
-	tech => CFG_MEMTECH, kbytes => CFG_AHBRSZ)
+	tech => CFG_MEMTECH, kbytes => CFG_AHBRSZ, pipe => CFG_AHBRPIPE)
     port map ( rstn, clkm, ahbsi, ahbso(7));
   end generate;
 --  nram : if CFG_AHBRAMEN = 0 generate ahbso(7) <= ahbs_none; end generate;
@@ -670,13 +725,11 @@ begin
 -----------------------------------------------------------------------
 
 -- pragma translate_off
-  x : report_version 
+  x : report_design
   generic map (
     msg1 => "LEON3 GR-CPCI-XC2V6000 Demonstration design",
-    msg2 => "GRLIB Version " & tost(LIBVHDL_VERSION/1000) & "." & tost((LIBVHDL_VERSION mod 1000)/100)
-        & "." & tost(LIBVHDL_VERSION mod 100) & ", build " & tost(LIBVHDL_BUILD),
-     msg3 => "Target technology: " & tech_table(fabtech) & ",  memory library: " & tech_table(memtech),
-     mdel => 1
+    fabtech => tech_table(fabtech), memtech => tech_table(memtech),
+    mdel => 1
   );
 -- pragma translate_on
 end;

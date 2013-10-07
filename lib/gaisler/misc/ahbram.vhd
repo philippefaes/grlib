@@ -27,6 +27,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 use grlib.devices.all;
@@ -52,7 +54,7 @@ end;
 
 architecture rtl of ahbram is
 
-constant abits : integer := log2(kbytes) + 8 - maccsz/64;
+constant abits : integer := log2ext(kbytes) + 8 - maccsz/64;
 
 constant dw : integer := maccsz;
 
@@ -72,6 +74,13 @@ type reg_type is record
   pwrite : std_ulogic;
   pready : std_ulogic;
 end record;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RES : reg_type :=
+  (hwrite => '0', hready => '1', hsel => '0', addr => (others => '0'),
+   size => (others => '0'), prdata => (others => '0'), pwrite => '0',
+   pready => '1');
+
 
 signal r, c     : reg_type;
 signal ramsel   : std_logic_vector(dw/8-1 downto 0);
@@ -219,7 +228,9 @@ begin
     end if;
 
 
-    if rst = '0' then v.hwrite := '0'; v.hready := '1'; end if;
+    if (not RESET_ALL) and (rst = '0') then
+      v.hwrite := RES.hwrite; v.hready := RES.hready;
+    end if;
     write <= bs; for i in 0 to dw/8-1 loop ramsel(i) <= v.hsel or r.hwrite; end loop;
     ramaddr <= haddr; c <= v; 
 
@@ -243,7 +254,12 @@ begin
   
   reg : process (clk)
   begin
-    if rising_edge(clk ) then r <= c; end if;
+    if rising_edge(clk) then
+      r <= c;
+      if RESET_ALL and rst = '0' then
+        r <= RES;
+      end if;
+    end if;
   end process;
 
 -- pragma translate_off

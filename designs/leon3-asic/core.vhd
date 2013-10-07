@@ -129,7 +129,7 @@ architecture rtl of core is
   signal scanen, testrst, testoen : std_ulogic;
   signal lgpioen : std_logic_vector(CFG_GRGPIO_WIDTH-1 downto 0);
 
-  signal chain_tck, chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz: std_ulogic;
+  signal chain_tck, chain_tckn, chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz: std_ulogic;
 
   signal resetn_core, clk_core, errorn_core, sdclk_core, sdwen_core, sdrasn_core: std_ulogic;
   signal sdcasn_core, dsutx_core, dsurx_core, dsuen_core, dsubre_core, dsuact_core: std_ulogic;
@@ -199,7 +199,7 @@ begin
   bschain0: entity work.bschain
     generic map ( fabtech, bscanen, hzsup )
     port map (
-      chain_tck, chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz,
+      chain_tck, chain_tckn, chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz,
 
       resetn, clksel, clk, errorn, address, datain,
       dataout, dataen, cbin, cbout, cben,
@@ -237,6 +237,6 @@ begin
     llspw_clk, spw_rxd_core, spw_rxs_core, spw_txd_core, spw_txs_core, spw_ten_core,
     trst, tck, tms, tdi, tdo, tdoen,
     scanen, testen, testrst, testoen,
-    chain_tck, chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
+    chain_tck, chain_tckn, chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz);
 
 end;

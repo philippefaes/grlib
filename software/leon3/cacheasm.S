@@ -318,12 +318,12 @@ setpsr:
 	.global flushi
 flushi:
 	retl
-	sta	%g0, [%g0] 0x5
+	sta	%g0, [%g0] 0x10
 
 	.global flushd
 flushd:
 	retl
-	sta	%g0, [%g0] 0x6
+	sta	%g0, [%g0] 0x11
 
     .global getdw
 getdw:

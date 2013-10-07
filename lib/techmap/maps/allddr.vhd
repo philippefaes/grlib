@@ -31,7 +31,7 @@ use techmap.gencomp.all;
 package allddr is
 
 component unisim_iddr_reg is
-  generic ( tech : integer := virtex4);
+  generic ( tech : integer := virtex4; arch : integer := 0);
   port(
          Q1 : out std_ulogic;
          Q2 : out std_ulogic;
@@ -69,7 +69,7 @@ component ec_oddr_reg
 end component;
 
 component unisim_oddr_reg
-  generic ( tech : integer := virtex4);
+  generic (tech : integer := virtex4; arch : integer := 0);
   port (
       Q : out std_ulogic;
       C1 : in std_ulogic;
@@ -779,36 +779,35 @@ component easic90_ddr2_phy
     dqs_gate       : in    std_ulogic);
 end component;
 
-component spartan6_ddr2_phy
+component spartan6_ddr2_phy_wo_pads
   generic (MHz         : integer := 125; rstdelay   : integer := 200;
            dbits       : integer := 16;  clk_mul    : integer := 2;
-           clk_div     : integer := 2;   tech       : integer := spartan3;
-           rskew       : integer := 0;   eightbanks : integer range 0 to 1 := 0);
-
+           clk_div     : integer := 2;   tech       : integer := spartan6;
+           rskew       : integer := 0;   eightbanks : integer range 0 to 1 := 0;
+           abits       : integer := 14;
+           nclk        : integer := 3;   ncs        : integer := 2 );
   port (
     rst            : in    std_ulogic;
     clk            : in    std_logic;   -- input clock
     clkout         : out   std_ulogic;  -- system clock
     lock           : out   std_ulogic;  -- DCM locked
-
-    ddr_clk        : out   std_logic_vector(2 downto 0);
-    ddr_clkb       : out   std_logic_vector(2 downto 0);
-    ddr_clk_fb_out : out   std_logic;
-    ddr_clk_fb     : in    std_logic;
-    ddr_cke        : out   std_logic_vector(1 downto 0);
-    ddr_csb        : out   std_logic_vector(1 downto 0);
+    ddr_clk        : out   std_logic_vector(nclk-1 downto 0);
+    ddr_cke        : out   std_logic_vector(ncs-1 downto 0);
+    ddr_csb        : out   std_logic_vector(ncs-1 downto 0);
     ddr_web        : out   std_ulogic;  -- ddr write enable
     ddr_rasb       : out   std_ulogic;  -- ddr ras
     ddr_casb       : out   std_ulogic;  -- ddr cas
     ddr_dm         : out   std_logic_vector (dbits/8-1 downto 0);    -- ddr dm
-    ddr_dqs        : inout std_logic_vector (dbits/8-1 downto 0);    -- ddr dqs
-    ddr_dqsn       : inout std_logic_vector (dbits/8-1 downto 0);    -- ddr dqsn
-    ddr_ad         : out   std_logic_vector (13 downto 0);           -- ddr address
+    ddr_dqs_in     : in    std_logic_vector (dbits/8-1 downto 0);
+    ddr_dqs_out    : out   std_logic_vector (dbits/8-1 downto 0);
+    ddr_dqs_oen    : out   std_logic_vector (dbits/8-1 downto 0);
+    ddr_ad         : out   std_logic_vector (abits-1 downto 0);      -- ddr address
     ddr_ba         : out   std_logic_vector (1+eightbanks downto 0); -- ddr bank address
-    ddr_dq         : inout std_logic_vector (dbits-1 downto 0);      -- ddr data
-    ddr_odt        : out   std_logic_vector(1 downto 0);
-
-    addr           : in    std_logic_vector (13 downto 0);
+    ddr_dq_in      : in    std_logic_vector (dbits-1 downto 0);
+    ddr_dq_out     : out   std_logic_vector (dbits-1 downto 0);
+    ddr_dq_oen     : out   std_logic_vector (dbits-1 downto 0);
+    ddr_odt        : out   std_logic_vector(ncs-1 downto 0);
+    addr           : in    std_logic_vector (abits-1 downto 0);
     ba             : in    std_logic_vector ( 2 downto 0);
     dqin           : out   std_logic_vector (dbits*2-1 downto 0);  -- ddr data
     dqout          : in    std_logic_vector (dbits*2-1 downto 0);  -- ddr data
@@ -819,9 +818,11 @@ component spartan6_ddr2_phy
     rasn           : in    std_ulogic;
     casn           : in    std_ulogic;
     wen            : in    std_ulogic;
-    csn            : in    std_logic_vector(1 downto 0);
-    cke            : in    std_logic_vector(1 downto 0);
-    cal_pll        : in    std_logic_vector(1 downto 0);
+    csn            : in    std_logic_vector(ncs-1 downto 0);
+    cke            : in    std_logic_vector(ncs-1 downto 0);
+    cal_en         : in    std_logic_vector(dbits/8-1 downto 0);
+    cal_inc        : in    std_logic_vector(dbits/8-1 downto 0);
+    cal_rst        : in    std_logic;
     odt            : in    std_logic_vector(1 downto 0)
     );
 end component;

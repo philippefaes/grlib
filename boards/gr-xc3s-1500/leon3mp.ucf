@@ -25,12 +25,27 @@ INST "clkgen0/v/dll1" LOC = DCM_X0Y0;
 INST "clkgen0/xc3s.v/dll0" LOC = DCM_X1Y0;
 INST "clkgen0/xc3s.v/sd0.dll1" LOC = DCM_X0Y0;
 
-INST "spw.swloop.0.sw0/grspwc0/rxclko" LOC = "SLICE_X0Y62";
-INST "spw.swloop.1.sw0/grspwc0/rxclko" LOC = "SLICE_X0Y48";
-INST "spw.swloop.2.sw0/grspwc0/rxclko" LOC = "SLICE_X0Y24";
-INST "sw00/grspwc0/rxclko" LOC = SLICE_X0Y62;
-INST "sw01/grspwc0/rxclko" LOC = SLICE_X0Y48;
-INST "sw02/grspwc0/rxclko" LOC = SLICE_X0Y24;
+#GRSPW in source code - ISE 13.02
+#INST "spw.swloop[0].spw1_input.spw_inputloop.spw_phy0/Mxor_rxclki_Result1" LOC = "SLICE_X0Y62";
+#INST "spw.swloop[1].spw1_input.spw_inputloop.spw_phy0/Mxor_rxclki_Result1" LOC = "SLICE_X0Y48";
+#INST "spw.swloop[2].spw1_input.spw_inputloop.spw_phy0/Mxor_rxclki_Result1" LOC = "SLICE_X0Y24";
+#INST "spw.swloop[2].spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop[2].spw1_input.spw_phy0/nr.shftreg_0" IOB="FALSE";
+#INST "spw.swloop[1].spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop[1].spw1_input.spw_phy0/nr.shftreg_0" IOB="FALSE";
+#INST "spw.swloop[0].spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop[0].spw1_input.spw_phy0/nr.shftreg_0" IOB="FALSE";
+
+#GRSPW - Synplify G-2012.09-SP1
+#INST "spw.swloop.0.spw1_input.spw_phy0/rxclki_1" LOC = "SLICE_X0Y62";
+#INST "spw.swloop.1.spw1_input.spw_phy0/rxclki_1" LOC = "SLICE_X0Y48";
+#INST "spw.swloop.2.spw1_input.spw_phy0/rxclki_1" LOC = "SLICE_X0Y24";
+#INST "spw.swloop.2.spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop.2.spw1_input.spw_phy0/nr.shftreg[0]" IOB="FALSE";
+#INST "spw.swloop.1.spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop.1.spw1_input.spw_phy0/nr.shftreg[0]" IOB="FALSE";
+#INST "spw.swloop.0.spw1_input.spw_phy0/r.shftreg"     IOB="FALSE";
+#INST "spw.swloop.0.spw1_input.spw_phy0/nr.shftreg[0]" IOB="FALSE";
 
 NET "address(0)" LOC = "u16" | IOSTANDARD = LVTTL;
 NET "address(1)" LOC = "u17" | IOSTANDARD = LVTTL;

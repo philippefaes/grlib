@@ -2,6 +2,16 @@ This leon3 design is tailored to the Xilinx kintex-7 KC705 board
 
 http://www.xilinx.com/kc705
 
+Note: This design requires that the GRLIB_SIMULATOR variable is
+correctly set. Please refer to the documentation in doc/grlib.pdf for
+additional information.
+
+Note: The Vivado flow and parts of this design are still
+experimental. Currently the design configuration should be left as-is.
+
+Note: You must have both Vivado 2013.2 and Xilinx ISE 14.6 in your 
+path for the make targets to work.
+
 Simulation and synthesis
 ------------------------
 
@@ -10,34 +20,30 @@ interface. The MIG source code cannot be distributed due to the
 prohibitive Xilinx license, so the MIG must be re-generated with 
 coregen before simulation and synthesis can be done.
 
-To generate the MIG and install the Xilinx unisim simulation
-library, do as follows:
+Xilinx MIG interface will automatically be generated when 
+Vivado is launched  
 
-  make vsim
-  make mig_series7
-
-To simulate and run systest.c on the Leon design using the memory 
+To simulate using XSIM and run systest.c on the Leon design using the memory 
 controller from Xilinx use the make targets:
 
   make soft
-  make vsim-launch
+  make vivado-launch
 
-With the generic USE_MIG_INTERFACE_MODEL can the user select to use the real
-XILINX memory contoller + MICRON memory model or a simplified model. For speed
-select the simplified model by setting the generic USE_MIG_INTERFACE_MODEL to TRUE.
+To simulate using Modelsim/Aldec and run systest.c on the Leon design using 
+the memory controller from Xilinx use the make targets:
 
-Synthesis will ONLY work with Vivado 2012.02 installed or newer, and 
+  make map_xilinx_vhdl_lib
+  make vsim (only required if Modelsim is used as simulator)
+  make mig_series7
+
+Synthesis will ONLY work with Vivado 2013.02 installed or newer, and 
 the XILINX variable properly set in the shell. To synthesize the design, do
 
   make vivado
 
-and then
-
-  make vivado-prog-fpga
+and then use iMPACT programming tool:
   
-  or use xilinx programming tool
-  
-  impact -b vivado/leon3-xilinx-kc705/leon3-xilinx-kc705.runs/impl_1/leon3mp.bit
+  make ise-prog-fpga
 
 to program the FPGA.
 
@@ -69,9 +75,9 @@ DEBUG - Enable extra debug information when using Micron DDR3 models
 Design specifics
 ----------------
 
-* Synthesis should be done using Vivado 2012.02 or newer
+* Synthesis should be done using Vivado 2013.02 or newer
 
-* The DDR3 controller is implemented with Xilinx MIG Series7 1.6 and 
+* The DDR3 controller is implemented with Xilinx MIG Series7 2.0 and 
   runs of the 200 MHz clock. The DDR3 memory runs at 400 MHz
   (DDR3-800). grmon-2.0.30-74 or later is needed to detect the
    DDR3 memory.
@@ -102,12 +108,14 @@ Design specifics
   needs to be installed and compiled with the following command: Please, note the MIG Series7 
   only have to be generated if it is going to be used in the system.
 
+  make map_xilinx_vhdl_lib
   make vsim
   make mig_series7
 
-  Then rebuild the scripts and simulation model:
+  Then rebuild the sofwtare and launch the simulator simulation:
 
-  make distclean vsim
+  make soft
+  make vsim-launch
 
   Modelsim v10.1 or newer is required and simulate Xilinx memory
   controller for Series 7.
@@ -120,7 +128,6 @@ Design specifics
 
 * The JTAG DSU interface is enabled and accesible via the JTAG port.
   Start grmon with -xilusb to connect.
-
 
 * Output from GRMON is:
 

@@ -56,6 +56,7 @@ entity grspw_gen is
     rst          : in  std_ulogic;
     clk          : in  std_ulogic;
     txclk        : in  std_ulogic;
+    rxclk        : in  std_logic_vector(1 downto 0);
     --ahb mst in
     hgrant       : in  std_ulogic;
     hready       : in  std_ulogic;
@@ -80,11 +81,13 @@ entity grspw_gen is
     --apb slv out
     prdata       : out  std_logic_vector(31 downto 0);
     --spw in
-    di           : in   std_logic_vector(1 downto 0);
-    si           : in   std_logic_vector(1 downto 0);
+    d            : in   std_logic_vector(1 downto 0);
+    nd           : in   std_logic_vector(9 downto 0);
+    dconnect     : in   std_logic_vector(3 downto 0);
     --spw out
     do           : out  std_logic_vector(1 downto 0);
     so           : out  std_logic_vector(1 downto 0);
+    rxrsto       : out  std_ulogic;
     --time iface
     tickin       : in   std_ulogic;
     tickout      : out  std_ulogic;
@@ -108,8 +111,6 @@ architecture rtl of grspw_gen is
   constant fabits1      : integer := log2(fifosize1);
   constant fabits2      : integer := log2(fifosize2);
   constant rfifo        : integer := 5 + log2(rmapbufs);
-
-  signal rxclki, nrxclki, rxclko : std_logic_vector(1 downto 0);
 
   --rx ahb fifo
   signal rxrenable    : std_ulogic;
@@ -140,8 +141,6 @@ architecture rtl of grspw_gen is
   signal rmwdata      : std_logic_vector(7 downto 0);
   signal rmwaddress   : std_logic_vector(7 downto 0);
   signal rmrdata      : std_logic_vector(7 downto 0);
-  --misc
-  signal rxclk, nrxclk : std_logic_vector(ports-1 downto 0);
 
   attribute syn_netlist_hierarchy : boolean;
   attribute syn_netlist_hierarchy of rtl : architecture is false;
@@ -192,18 +191,18 @@ begin
       --apb slv out
       prdata       => prdata,
       --spw in
-      di           => di,
-      si           => si,
+      d            => d,
+      nd           => nd,
+      dconnect     => dconnect,
       --spw out
       do           => do,
       so           => so,
+      rxrsto       => rxrsto,
       --time iface
       tickin       => tickin,
       tickout      => tickout,
       --clk bufs
-      rxclki       => rxclki,
-      nrxclki      => nrxclki,
-      rxclko       => rxclko,
+      rxclki       => rxclk,
       --irq
       irq          => irq,
       --misc
@@ -249,21 +248,9 @@ begin
 
 
   ntst: if scantest = 0 generate
-    cloop : for i in 0 to ports-1 generate
-      rx_clkbuf : techbuf generic map(tech => tech, buftype => rxclkbuftype)
-        port map(i => rxclko(i), o => rxclki(i));
-    end generate;
     rmrenablex <= rmrenable;
   end generate;
   tst: if scantest = 1 generate
-    cloop : for i in 0 to ports-1 generate
-      rxclk(i) <= clk when testen = '1' else rxclko(i);
-      nrxclk(i) <= clk when testen = '1' else not rxclko(i);
-      rx_clkbuf : techbuf generic map(tech => tech, buftype => rxclkbuftype)
-        port map(i => rxclk(i), o => rxclki(i));
-      nrx_clkbuf : techbuf generic map(tech => tech, buftype => rxclkbuftype)
-        port map(i => nrxclk(i), o => nrxclki(i));
-    end generate;
     rmrenablex <= rmrenable and not testen;
   end generate;
 

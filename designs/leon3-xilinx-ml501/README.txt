@@ -9,7 +9,7 @@ Design specifics:
   connecting grmon to reset the DCM clock generators.
 
 * The serial port is connected to the console UART (UART 1) when
-  dip switch 1 on the GPIO DIP switch is off. Otherwise it is 
+  dip switch 8 on the GPIO DIP switch is off. Otherwise it is 
   connected to the DSU UART. The DSU BREAK input is mapped
   on the 'south' push-button.
 

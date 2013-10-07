@@ -33,6 +33,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.stdlib.all;
 library gaisler;
 use gaisler.arith.all;
@@ -62,6 +64,21 @@ type div_regtype is record
   neg    : std_logic;
   cnt    : std_logic_vector(4 downto 0);
 end record;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RRES : div_regtype := (
+  x      => (others => '0'),
+  state  => (others => '0'),
+  zero   => '0',
+  zero2  => '0',
+  qcorr  => '0',
+  zcorr  => '0',
+  qzero  => '0',
+  qmsb   => '0',
+  ovf    => '0',
+  neg    => '0',
+  cnt    => (others => '0'));
+
 
 signal r, rin : div_regtype;
 signal addin1, addin2, addout: std_logic_vector(32 downto 0);
@@ -145,8 +162,8 @@ begin
 
     divo.icc <= r.x(63) & r.qzero & r.ovf & '0';
     if (divi.flush = '1') then v.state := "000"; end if;
-    if (rst = '0') then 
-      v.state := "000"; v.cnt := (others => '0');
+    if (not RESET_ALL) and (rst = '0') then 
+      v.state := RRES.state; v.cnt := RRES.cnt;
     end if;
     rin <= v;
     divo.ready <= vready; divo.nready <= vnready;
@@ -166,7 +183,13 @@ begin
   begin 
     if rising_edge(clk) then 
       if (holdn = '1') then r <= rin; end if;
-      if (rst = '0') then r.state <= "000"; r.cnt <= (others => '0'); end if;
+      if (rst = '0') then
+        if RESET_ALL then
+          r <= RRES;
+        else
+          r.state <= RRES.state; r.cnt <= RRES.cnt;
+        end if;
+      end if;
     end if;
   end process;
 

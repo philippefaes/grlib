@@ -98,7 +98,7 @@ entity unisim_iopad  is
 end ;
 architecture rtl of unisim_iopad is
   component IOBUF generic (
-      CAPACITANCE : string := "DONT_CARE"; DRIVE : integer := 12;
+      DRIVE : integer := 12;
       IOSTANDARD  : string := "LVCMOS25"; SLEW : string := "SLOW");
     port (O : out std_ulogic; IO : inout std_logic; I, T : in std_ulogic); end component;
   
@@ -530,6 +530,7 @@ architecture rtl of unisim_clkpad is
     port (O : out std_ulogic; I : in std_ulogic); end component;
   component BUFGMUX port (O : out std_logic; I0, I1, S : in std_logic); end component;
   component BUFG port (O : out std_logic; I : in std_logic); end component;
+  component BUFR port (O : out std_logic; I, CE, CLR : in std_logic); end component;
   component CLKDLL port ( CLK0    : out std_ulogic; CLK180  : out std_ulogic; CLK270  : out std_ulogic;
       CLK2X   : out std_ulogic; CLK90   : out std_ulogic;  CLKDV   : out std_ulogic;
       LOCKED  : out std_ulogic; CLKFB   : in  std_ulogic;   CLKIN   : in  std_ulogic;
@@ -726,6 +727,25 @@ begin
     bf : BUFG port map (O => ol3, I => ol2);
     o <= ol3;    
   end generate g3;
+  
+  g4 : if arch = 4 generate
+    cmos0 : if level = cmos generate
+      cmos_33 : if voltage = x33v generate
+        ip : IBUF generic map (IOSTANDARD => "LVCMOS33") port map (O => ol, I => pad);
+        bf : BUFR port map (O => o, I => ol, CE => '0', CLR => '0');
+      end generate;
+      cmos_25 : if voltage /= x33v generate
+        ip : IBUF generic map (IOSTANDARD => "LVCMOS25") port map (O => ol, I => pad);
+        bf : BUFR port map (O => o, I => ol, CE => '0', CLR => '0');
+      end generate;
+    end generate;
+    gen0 : if (level /= cmos) generate
+      ip : IBUF port map (O => ol, I => pad);
+      bf : BUFR port map (O => o, I => ol, CE => '0', CLR => '0');
+    end generate;
+    lock <= '1';
+  end generate;
+
 end; 
 
 library ieee;

@@ -1,10 +1,6 @@
 leon3.vhd
-libiu.vhd
-libcache.vhd
 tbufmem.vhd
 dsu3x.vhd
 dsu3.vhd
 dsu3_2x.vhd
-clk2xsync.vhd
-clk2xqual.vhd
 grfpushwx.vhd

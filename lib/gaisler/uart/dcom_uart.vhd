@@ -17,15 +17,17 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Entity: 	dcom_uart
--- File:	dcom_uart.vhd
--- Author:	Jiri Gaisler - Gaisler Research
--- Description:	Asynchronous UART with baud-rate detection.
+-- Entity:      dcom_uart
+-- File:        dcom_uart.vhd
+-- Author:      Jiri Gaisler - Gaisler Research
+-- Description: Asynchronous UART with baud-rate detection.
 ------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 use grlib.devices.all;
@@ -66,32 +68,42 @@ type rxfsmtype is (idle, startbit, data, stopbit);
 type txfsmtype is (idle, data, stopbit);
 
 type uartregs is record
-  rxen   	:  std_ulogic;	-- receiver enabled
-  dready    	:  std_ulogic;	-- data ready
-  rsempty   	:  std_ulogic;	-- receiver shift register empty (internal)
-  tsempty   	:  std_ulogic;	-- transmitter shift register empty
-  thempty   	:  std_ulogic;	-- transmitter hold register empty
-  break  	:  std_ulogic;	-- break detected
-  ovf    	:  std_ulogic;	-- receiver overflow
-  frame     	:  std_ulogic;	-- framing error
-  rhold 	:  std_logic_vector(7 downto 0);
-  rshift	:  std_logic_vector(7 downto 0);
-  tshift	:  std_logic_vector(10 downto 0);
-  thold 	:  std_logic_vector(7 downto 0);
-  txstate	:  txfsmtype;
-  txclk 	:  std_logic_vector(2 downto 0);  -- tx clock divider
-  txtick     	:  std_ulogic;	-- tx clock (internal)
-  rxstate	:  rxfsmtype;
-  rxclk 	:  std_logic_vector(2 downto 0); -- rx clock divider
-  rxdb  	:  std_logic_vector(1 downto 0);   -- rx data filtering buffer
-  rxtick     	:  std_ulogic;	-- rx clock (internal)
-  tick     	:  std_ulogic;	-- rx clock (internal)
-  scaler	:  std_logic_vector(17 downto 0);
-  brate 	:  std_logic_vector(17 downto 0);
-  tcnt  	:  std_logic_vector(1 downto 0); -- autobaud counter
-  rxf    	:  std_logic_vector(4 downto 0); --  rx data filtering buffer
-  fedge  	:  std_ulogic;   -- rx falling edge
+  rxen          :  std_ulogic;  -- receiver enabled
+  dready        :  std_ulogic;  -- data ready
+  rsempty       :  std_ulogic;  -- receiver shift register empty (internal)
+  tsempty       :  std_ulogic;  -- transmitter shift register empty
+  thempty       :  std_ulogic;  -- transmitter hold register empty
+  break         :  std_ulogic;  -- break detected
+  ovf           :  std_ulogic;  -- receiver overflow
+  frame         :  std_ulogic;  -- framing error
+  rhold         :  std_logic_vector(7 downto 0);
+  rshift        :  std_logic_vector(7 downto 0);
+  tshift        :  std_logic_vector(10 downto 0);
+  thold         :  std_logic_vector(7 downto 0);
+  txstate       :  txfsmtype;
+  txclk         :  std_logic_vector(2 downto 0);  -- tx clock divider
+  txtick        :  std_ulogic;  -- tx clock (internal)
+  rxstate       :  rxfsmtype;
+  rxclk         :  std_logic_vector(2 downto 0); -- rx clock divider
+  rxdb          :  std_logic_vector(1 downto 0);   -- rx data filtering buffer
+  rxtick        :  std_ulogic;  -- rx clock (internal)
+  tick          :  std_ulogic;  -- rx clock (internal)
+  scaler        :  std_logic_vector(17 downto 0);
+  brate         :  std_logic_vector(17 downto 0);
+  tcnt          :  std_logic_vector(1 downto 0); -- autobaud counter
+  rxf           :  std_logic_vector(4 downto 0); --  rx data filtering buffer
+  fedge         :  std_ulogic;   -- rx falling edge
 end record;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RES : uartregs := (
+  rxen => '0', dready => '0', rsempty => '1', tsempty => '1',  thempty => '1',
+  break => '0', ovf => '0', frame => '0', rhold => (others => '0'),
+  rshift => (others => '0'), tshift => (others => '1'), thold => (others => '0'),
+  txstate => idle, txclk => (others => '0'), txtick => '0', rxstate => idle,
+  rxclk => (others => '0'), rxdb => (others => '0'),  rxtick => '0', tick => '0',
+  scaler => "111111111111111011", brate => (others => '1'), tcnt => (others => '0'),
+  rxf => (others => '0'), fedge => '0');
 
 signal r, rin : uartregs;
 
@@ -118,30 +130,30 @@ begin
     if r.tcnt /= "11" then
       if (r.rxdb(1) and not r.rxdb(0)) = '1' then v.fedge := '1'; end if;
       if (r.fedge) = '1' then 
-	v.scaler := scaler;
-	if (v.scaler(17) and not r.scaler(16)) = '1' then
-	  v.scaler := "111111111111111011";
-	  v.fedge := '0'; v.tcnt := "00";
-	end if;
+        v.scaler := scaler;
+        if (v.scaler(17) and not r.scaler(16)) = '1' then
+          v.scaler := "111111111111111011";
+          v.fedge := '0'; v.tcnt := "00";
+        end if;
       end if;
       if (r.rxdb(1) and r.fedge and not r.rxdb(0)) = '1' then
-	if (r.brate(17 downto 4)> r.scaler(17 downto 4)) then 
-	  v.brate := r.scaler; v.tcnt := "00";
-	end if;
-	v.scaler := "111111111111111011";
-	if (r.brate(17 downto 4) = r.scaler(17 downto 4)) then 
-	  v.tcnt := r.tcnt + 1;
-	  if r.tcnt = "10" then 
-	    v.brate := "0000" & r.scaler(17 downto 4);
-	    v.scaler := v.brate; v.rxen := '1';
+        if (r.brate(17 downto 4)> r.scaler(17 downto 4)) then 
+          v.brate := r.scaler; v.tcnt := "00";
+        end if;
+        v.scaler := "111111111111111011";
+        if (r.brate(17 downto 4) = r.scaler(17 downto 4)) then 
+          v.tcnt := r.tcnt + 1;
+          if r.tcnt = "10" then 
+            v.brate := "0000" & r.scaler(17 downto 4);
+            v.scaler := v.brate; v.rxen := '1';
           end if;
         end if;
       end if;
     else
       if (r.break and r.rxdb(1)) = '1' then
-	v.scaler := "111111111111111011";
-	v.brate := (others => '1'); v.tcnt := "00";
- 	v.break := '0'; v.rxen := '0';
+        v.scaler := "111111111111111011";
+        v.brate := (others => '1'); v.tcnt := "00";
+        v.break := '0'; v.rxen := '0';
       end if;
     end if;
 
@@ -158,7 +170,7 @@ begin
     case apbi.paddr(3 downto 2) is
     when "01" => 
       rdata(9 downto 0) := r.tcnt & r.rxdb(0) & r.frame & '0' & r.ovf & 
-		r.break & r.thempty & r.tsempty & r.dready;
+                r.break & r.thempty & r.tsempty & r.dready;
     when "10" => 
       rdata(1 downto 0) := (r.tcnt(1) or r.tcnt(0)) & r.rxen;
     when others => 
@@ -168,15 +180,15 @@ begin
     if (apbi.psel(pindex) and apbi.penable and apbi.pwrite) = '1' then
       case apbi.paddr(3 downto 2) is
       when "01" =>
-	v.frame  := apbi.pwdata(6);
-	v.ovf 	 := apbi.pwdata(4);
-	v.break  := apbi.pwdata(3);
+        v.frame  := apbi.pwdata(6);
+        v.ovf    := apbi.pwdata(4);
+        v.break  := apbi.pwdata(3);
       when "10" => 
-	v.tcnt 	 := apbi.pwdata(1) & apbi.pwdata(1);
-	v.rxen 	 := apbi.pwdata(0);
+        v.tcnt   := apbi.pwdata(1) & apbi.pwdata(1);
+        v.rxen   := apbi.pwdata(0);
       when "11" =>
-	v.brate := apbi.pwdata(17 downto 0);
-	v.scaler := apbi.pwdata(17 downto 0);
+        v.brate := apbi.pwdata(17 downto 0);
+        v.scaler := apbi.pwdata(17 downto 0);
       when others =>
       end case;
     end if;
@@ -197,34 +209,34 @@ begin
 
 -- filter rx data
 
-    v.rxf(1 downto 0) := r.rxf(0) & ui.rxd;	-- meta-stability filter
+    v.rxf(1 downto 0) := r.rxf(0) & ui.rxd;     -- meta-stability filter
     if ((r.tcnt /= "11") and (r.scaler(0 downto 0) = "1")) or
        ((r.tcnt = "11") and (r.tick = '1'))
     then v.rxf(4 downto 2) := r.rxf(3 downto 1); end if;
     v.rxdb(0) := (r.rxf(4) and r.rxf(3)) or (r.rxf(4) and r.rxf(2)) or 
-		  (r.rxf(3) and r.rxf(2));
+                  (r.rxf(3) and r.rxf(2));
     irxd := r.rxdb(0);
 
 -- transmitter operation
 
     case r.txstate is
-    when idle =>	-- idle state
+    when idle =>        -- idle state
       if (r.txtick = '1') then v.tsempty := '1'; end if;
       if (r.rxen and (not r.thempty) and r.txtick) = '1' then 
-	v.tshift := "10" & r.thold & '0'; v.txstate := data; 
-	v.thempty := '1';
-	v.tsempty := '0'; v.txclk := "00" & r.tick; v.txtick := '0';
+        v.tshift := "10" & r.thold & '0'; v.txstate := data; 
+        v.thempty := '1';
+        v.tsempty := '0'; v.txclk := "00" & r.tick; v.txtick := '0';
       end if;
-    when data =>	-- transmitt data frame
+    when data =>        -- transmitt data frame
       if r.txtick = '1' then
-	v.tshift := '1' & r.tshift(10 downto 1);
+        v.tshift := '1' & r.tshift(10 downto 1);
         if r.tshift(10 downto 1) = "1111111110" then
-	v.tshift(0) := '1'; v.txstate := stopbit;
-	end if;
+        v.tshift(0) := '1'; v.txstate := stopbit;
+        end if;
       end if;
-    when stopbit =>	-- transmitt stop bit
+    when stopbit =>     -- transmitt stop bit
       if r.txtick = '1' then
-	v.tshift := '1' & r.tshift(10 downto 1); v.txstate := idle;
+        v.tshift := '1' & r.tshift(10 downto 1); v.txstate := idle;
       end if;
 
     end case;
@@ -239,45 +251,45 @@ begin
 -- receiver operation
 
     case r.rxstate is
-    when idle =>	-- wait for start bit
+    when idle =>        -- wait for start bit
       if ((not r.rsempty) and not r.dready) = '1' then
-	v.rhold := r.rshift; v.rsempty := '1'; v.dready := '1';
+        v.rhold := r.rshift; v.rsempty := '1'; v.dready := '1';
       end if;
       if (r.rxen and r.rxdb(1) and (not irxd)) = '1' then
-	v.rxstate := startbit; v.rshift := (others => '1'); v.rxclk := "100";
-	if v.rsempty = '0' then v.ovf := '1'; end if;
-	v.rsempty := '0'; v.rxtick := '0';
+        v.rxstate := startbit; v.rshift := (others => '1'); v.rxclk := "100";
+        if v.rsempty = '0' then v.ovf := '1'; end if;
+        v.rsempty := '0'; v.rxtick := '0';
       end if;
-    when startbit =>	-- check validity of start bit
+    when startbit =>    -- check validity of start bit
       if r.rxtick = '1' then
-	if irxd = '0' then 
-	  v.rshift := irxd & r.rshift(7 downto 1); v.rxstate := data;
-	else
-	  v.rxstate := idle;
+        if irxd = '0' then 
+          v.rshift := irxd & r.rshift(7 downto 1); v.rxstate := data;
+        else
+          v.rxstate := idle;
         end if;
       end if;
-    when data =>	-- receive data frame
+    when data =>        -- receive data frame
       if r.rxtick = '1' then
-	v.rshift := irxd & r.rshift(7 downto 1); 
-	if r.rshift(0) = '0' then
-	v.rxstate := stopbit;
-	end if;
+        v.rshift := irxd & r.rshift(7 downto 1); 
+        if r.rshift(0) = '0' then
+        v.rxstate := stopbit;
+        end if;
       end if;
-    when stopbit =>	-- receive stop bit
+    when stopbit =>     -- receive stop bit
       if r.rxtick = '1' then
-	if irxd = '1' then
-	  v.rsempty := '0';
-	  if v.dready = '0' then
-	    v.rhold := r.rshift; v.rsempty := '1'; v.dready := '1';
-	  end if;
-	else
-	  if r.rshift = "00000000" then
-	    v.break := '1'; 		 -- break
-	  else
-	    v.frame := '1'; 		 -- framing error
-	  end if;
-	  v.rsempty := '1';
-	end if;
+        if irxd = '1' then
+          v.rsempty := '0';
+          if v.dready = '0' then
+            v.rhold := r.rshift; v.rsempty := '1'; v.dready := '1';
+          end if;
+        else
+          if r.rshift = "00000000" then
+            v.break := '1';              -- break
+          else
+            v.frame := '1';              -- framing error
+          end if;
+          v.rsempty := '1';
+        end if;
         v.rxstate := idle;
       end if;
 
@@ -285,14 +297,14 @@ begin
 
 -- reset operation
 
-    if rst = '0' then 
-      v.frame := '0'; v.rsempty := '1';
-      v.ovf := '0'; v.break := '0'; v.thempty := '1';
-      v.tsempty := '1'; v.dready := '0'; v.fedge := '0';
-      v.txstate := idle; v.rxstate := idle; v.tshift(0) := '1';
-      v.scaler := "111111111111111011"; v.brate := (others => '1'); 
-      v.rxen := '0'; v.tcnt := "00";
-      v.txclk := (others => '0'); v.rxclk := (others => '0');
+    if not RESET_ALL and rst = '0' then 
+      v.frame := RES.frame; v.rsempty := RES.rsempty;
+      v.ovf := RES.ovf; v.break := RES.break; v.thempty := RES.thempty;
+      v.tsempty := RES.tsempty; v.dready := RES.dready; v.fedge := RES.fedge;
+      v.txstate := RES.txstate; v.rxstate := RES.rxstate; v.tshift(0) := RES.tshift(0);
+      v.scaler := RES.scaler; v.brate := RES.brate; 
+      v.rxen := RES.rxen; v.tcnt := RES.tcnt;
+      v.txclk := RES.txclk; v.rxclk := RES.rxclk;
     end if;
 
 -- update registers
@@ -322,6 +334,15 @@ begin
   apbo.pindex <= pindex;
 
   regs : process(clk)
-  begin if rising_edge(clk) then r <= rin; end if; end process;
+  begin
+    if rising_edge(clk) then
+      r <= rin;
+      if RESET_ALL and rst = '0' then
+        r <= RES;
+        -- Sync. registers not reset
+        r.rxf <= rin.rxf;
+      end if;
+    end if;
+  end process;
 
 end;

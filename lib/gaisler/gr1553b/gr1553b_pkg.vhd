@@ -30,6 +30,8 @@ use grlib.amba.ahb_mst_in_type;
 use grlib.amba.ahb_mst_out_type;
 use grlib.amba.apb_slv_in_type;
 use grlib.amba.apb_slv_out_type;
+library techmap;
+use techmap.gencomp.all;
 
 package gr1553b_pkg is
 
@@ -137,7 +139,12 @@ package gr1553b_pkg is
   component gr1553b_pads is
     generic (
       padtech: integer;
-      outen_pol: integer range 0 to 1
+      outen_pol: integer range 0 to 1;
+      level: integer := ttl;
+      slew: integer := 0;
+      voltage: integer := x33v;
+      strength: integer := 12;
+      filter: integer := 0
       );
     port (
       txout: in gr1553b_txout_type;
@@ -291,6 +298,58 @@ package gr1553b_pkg is
   constant REG_BMTIMETAG:    std_logic_vector := x"E0";
 
   -----------------------------------------------------------------------------
+  -- Embedded RT core
+  component grrt is
+    generic (
+      codecfreq: integer := 20;
+      sameclk  : integer := 1;
+      syncrst  : integer range 0 to 1 := 1
+      );
+    port (
+      -- Clock and reset
+      clk      : in  std_ulogic;
+      rst      : in  std_ulogic;
+      clk1553  : in  std_ulogic;
+      rst1553  : in  std_ulogic;
+      -- Control signals
+      rtaddr   : in  std_logic_vector(4 downto 0);
+      rtaddrp  : in  std_ulogic;
+      rtstat   : in  std_logic_vector(3 downto 0);    -- 3=SR, 2=busy 1=SSF 0=TF
+      ad31en   : in  std_ulogic;  -- 1=RT31 is normal addr, 0=RT31 is broadcast
+      rtsync   : out std_ulogic;
+      rtreset  : out std_ulogic;
+      stamp    : out std_ulogic;
+      -- Front-end interface
+      phase    : out std_logic_vector(1 downto 0);
+      transfer : out std_logic_vector(11 downto 0);
+      resp     : in  std_logic_vector(1 downto 0);
+      tfrerror : out std_ulogic;
+      txdata   : in  std_logic_vector(15 downto 0);
+      rxdata   : out std_logic_vector(15 downto 0);
+      datardy  : in  std_ulogic;
+      datarw   : out std_ulogic;
+      -- 1553 transceiver interface
+      aoutin   : out std_ulogic;
+      aoutp    : out std_ulogic;
+      aoutn    : out std_ulogic;
+      ainen    : out std_ulogic;
+      ainp     : in std_ulogic;
+      ainn     : in std_ulogic;
+      boutin   : out std_ulogic;
+      boutp    : out std_ulogic;
+      boutn    : out std_ulogic;
+      binen    : out std_ulogic;
+      binp     : in std_ulogic;
+      binn     : in std_ulogic;
+      -- Fail-safe timer feedback
+      aoutp_fb : in std_logic;
+      aoutn_fb : in std_logic;
+      boutp_fb : in std_logic;
+      boutn_fb : in std_logic
+      );
+  end component;
+
+  -----------------------------------------------------------------------------
   -- Test signal generators
 
   component gr1553b_tgapb is
@@ -328,6 +387,10 @@ package gr1553b_pkg is
   subtype wire1553 is resolved uwire1553;
 
   component simtrans1553_single is
+    generic (
+      txdelay: time := 200 ns;
+      rxdelay: time := 450 ns
+      );
     port (
       buswire: inout wire1553;
       rxen: in std_logic;
@@ -340,6 +403,10 @@ package gr1553b_pkg is
   end component;
       
   component simtrans1553 is
+    generic (
+      txdelay: time := 200 ns;
+      rxdelay: time := 450 ns
+      );
     port (
       busA: inout wire1553;
       busB: inout wire1553;

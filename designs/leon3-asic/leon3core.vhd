@@ -118,6 +118,7 @@ entity leon3core is
     testoen  	: in  std_ulogic;
 
     chain_tck   : out std_ulogic;
+    chain_tckn  : out std_ulogic;
     chain_tdi   : out std_ulogic;
     chain_tdo   : in std_ulogic;    
     bsshft      : out std_ulogic;
@@ -144,7 +145,6 @@ signal memo  : memory_out_type;
 signal wpo   : wprot_out_type;
 signal sdi   : sdctrl_in_type;
 signal sdo   : sdram_out_type;
-signal sdo2, sdo3 : sdctrl_out_type;
 
 signal apbi  : apb_slv_in_type;
 signal apbo  : apb_slv_out_vector := (others => apb_none);
@@ -173,11 +173,15 @@ signal gpioi, gpioi2 : gpio_in_type;
 signal gpioo, gpioo2 : gpio_out_type;
 
 -- signal tck, tms, tdi, tdo : std_ulogic;
-signal jtck, jtdi, jrst, jtdo, jcapt, jshft, jupd: std_ulogic;
-signal jinst: std_logic_vector(7 downto 0);
+signal jtck, jtckn, jtdi, jrst, jtdo, jcapt, jshft, jupd, jiupd: std_ulogic;
+signal jninst: std_logic_vector(7 downto 0);
 
 signal spwi : grspw_in_type_vector(0 to CFG_SPW_NUM-1);
 signal spwo : grspw_out_type_vector(0 to CFG_SPW_NUM-1);
+signal spw_rxclk : std_logic_vector(CFG_SPW_NUM*2-1 downto 0);
+signal dtmp : std_logic_vector(0 to CFG_SPW_NUM-1);
+signal stmp : std_logic_vector(0 to CFG_SPW_NUM-1);
+
 signal stati : ahbstat_in_type;
 
 constant IOAEN : integer := 0;
@@ -188,7 +192,6 @@ constant BOARD_FREQ : integer := 50000;	-- Board frequency in KHz
 
 constant sysfreq : integer := (CFG_CLKMUL/CFG_CLKDIV)*40000;
 constant OEPOL : integer := padoen_polarity(padtech);
-constant notag : integer := 0;
 constant CPU_FREQ : integer := 100000;
 
 begin
@@ -222,11 +225,12 @@ begin
   cpu : for i in 0 to CFG_NCPU-1 generate
       leon3s0 : leon3cg 		-- LEON3 processor      
       generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU, CFG_V8, 
-	0, CFG_MAC, pclow, 0, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
+	0, CFG_MAC, pclow, CFG_NOTAG, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
 	CFG_ISETSZ, CFG_ILOCK, CFG_DCEN, CFG_DREPL, CFG_DSETS, CFG_DLINE, CFG_DSETSZ,
 	CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
         CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP, 
-        CFG_LDDEL, disas, CFG_ITBSZ, CFG_PWD, CFG_SVT, CFG_RSTADDR, CFG_NCPU-1)
+        CFG_LDDEL, disas, CFG_ITBSZ, CFG_PWD, CFG_SVT, CFG_RSTADDR, CFG_NCPU-1,
+        CFG_DFIXED, CFG_SCAN, CFG_MMU_PAGE, CFG_BP)
       port map (clk, rstn, ahbmi, ahbmo(i), ahbsi, ahbso, 
     		irqi(i), irqo(i), dbgi(i), dbgo(i), clk);
   end generate;
@@ -255,7 +259,7 @@ begin
     ahbjtag0 : ahbjtag generic map(tech => fabtech, part => JTAG_EXAMPLE_PART,
 	hindex => CFG_NCPU+CFG_AHB_UART, scantest => scantest, oepol => OEPOL)
       port map(rstn, clk, tck, tms, tdi, tdo, ahbmi, ahbmo(CFG_NCPU+CFG_AHB_UART),
-               jtck, jtdi, jinst, jrst, jcapt, jshft, jupd, jtdo, trst, tdoen);
+               jtck, jtdi, open, jrst, jcapt, jshft, jupd, jtdo, trst, tdoen, '0', jtckn, jninst, jiupd);
   end generate;
   
 ----------------------------------------------------------------------
@@ -374,16 +378,17 @@ begin
       t0: tap
         generic map (tech => fabtech, irlen => 6, scantest => scantest, oepol => OEPOL)
         port map (trst,tck,tms,tdi,tdo,
-                  jtck,jtdi,jinst,jrst,jcapt,jshft,jupd,open,open,'1',jtdo,'0',testen,testrst,testoen,tdoen);
+                  jtck,jtdi,open,jrst,jcapt,jshft,jupd,open,open,'1',jtdo,'0',jninst,jiupd,jtckn,testen,testrst,testoen,tdoen,'0');
     end generate;
     
     bc0: bscanctrl
       port map (
-        trst,jtck,jtdi,jinst,jrst,jcapt,jshft,jupd,jtdo,
+        trst,jtck,jtckn,jtdi,jninst,jiupd,jrst,jcapt,jshft,jupd,jtdo,
         chain_tdi, chain_tdo, bsshft, bscapt, bsupdi, bsupdo, bsdrive, bshighz,
         gnd(0), testen, testrst);
       
     chain_tck <= jtck;
+    chain_tckn <= jtckn;
 
   end generate;
   
@@ -409,6 +414,30 @@ begin
         "000"  & gpioo.val(15 downto 11) & "10"  when clksel(1 downto 0) = "10" else
         "0000" & gpioo.val(15 downto 11) & '0';
 
+     -- GRSPW PHY
+     spw1_input: if CFG_SPW_GRSPW = 1 generate
+       spw_phy0 : grspw_phy
+         generic map(
+           tech         => fabtech,
+           rxclkbuftype => 1,
+           scantest     => 0)
+         port map(
+           rxrst      => spwo(i).rxrst,
+           di         => dtmp(i),
+           si         => stmp(i),
+           rxclko     => spw_rxclk(2*i),
+           do         => spwi(i).d(0),
+           ndo        => spwi(i).nd(4 downto 0),
+           dconnect   => spwi(i).dconnect(1 downto 0));
+       -- Set unused inputs to zero
+       spwi(i).d(1) <= '0';           -- For second port
+       spwi(i).d(3 downto 2) <= "00";   -- For GRSPW2 second port
+       spwi(i).nd(9 downto 5) <= "00000";  -- For second port
+       spwi(i).dconnect(3 downto 2) <= "00";  -- For second port
+       spwi(i).s(1 downto 0) <= "00";  -- Only used in PHY
+       spwi(i).dv <= (others => '0');  -- Only used in GRSPW2
+       spw_rxclk(2*i+1) <= '0';            -- For second port
+     end generate spw1_input;
      grspw0 : grspw generic map(tech => fabtech,
        	hindex => maxahbmsp+i, pindex => 10+i, paddr => 10+i, pirq => 10+i, 
        	sysfreq => sysfreq, nsync => 1, rmap => CFG_SPW_RMAP,
@@ -416,10 +445,10 @@ begin
 	rmapcrc => CFG_SPW_RMAPCRC, fifosize1 => CFG_SPW_AHBFIFO, 
         fifosize2 => CFG_SPW_RXFIFO, rxclkbuftype => 1, ft => CFG_SPW_FT,
 	scantest => scantest, techfifo => 0, ports => 1, memtech => 0*memtech)
-     port map(rstn, clk, spw_clk, ahbmi, ahbmo(maxahbmsp+i), 
+     port map(rstn, clk, spw_rxclk(2*i+1 downto 2*i), spw_clk, ahbmi, ahbmo(maxahbmsp+i), 
 		apbi, apbo(10+i), spwi(i), spwo(i));
      spwi(i).tickin <= '0'; spwi(i).rmapen <= '1'; 
-     spwi(i).d(0) <= spw_rxd(i); spwi(i).s(0) <= spw_rxs(i);
+     dtmp(i) <= spw_rxd(i); stmp(i) <= spw_rxs(i);
      spw_txd(i) <= spwo(i).d(0); spw_txs(i) <= spwo(i).s(0);
      spw_ten(i) <= spwo(i).linkdis when OEPOL = 0 else not spwo(i).linkdis;
     end generate;
@@ -441,14 +470,11 @@ begin
 -----------------------------------------------------------------------
 
 -- pragma translate_off
-  x : report_version 
+  x : report_design
   generic map (
    msg1 => "LEON3 ASIC Demonstration design",
-   msg2 => "GRLIB Version " & tost(LIBVHDL_VERSION/1000) & "." & tost((LIBVHDL_VERSION mod 1000)/100)
-        & "." & tost(LIBVHDL_VERSION mod 100) & ", build " & tost(LIBVHDL_BUILD),
-   msg3 => "Target technology: " & tech_table(fabtech) & ",  memory library: " & tech_table(memtech),
+   fabtech => tech_table(fabtech), memtech => tech_table(memtech),
    mdel => 1
-
   );
 -- pragma translate_on
 end;

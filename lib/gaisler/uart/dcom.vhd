@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 library gaisler;
@@ -58,6 +60,10 @@ type reg_type is record
   hresp   : std_logic_vector(1 downto 0);
 end record;
 
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RES : reg_type := ((others => '0'), (others => '0'), (others => '0'), '0',
+                            (others => '0'), idle, (others => '0'));
+
 signal r, rin : reg_type;
 
 begin
@@ -86,57 +92,57 @@ begin
     newaddr := r.addr(31 downto 2) + 1;
 
     case r.state is
-    when idle =>		-- idle state
+    when idle =>                -- idle state
       v.clen := "00";
       if uarto.dready = '1' then
         if uarto.data(7) = '1' then v.state := addr1; end if;
-	v.write := uarto.data(6); v.len := uarto.data(5 downto 0);  
-	vuarti.read := '1';
+        v.write := uarto.data(6); v.len := uarto.data(5 downto 0);  
+        vuarti.read := '1';
       end if;
-    when addr1 =>		-- receive address
+    when addr1 =>               -- receive address
       if uarto.dready = '1' then
-	v.addr := r.addr(23 downto 0) & uarto.data;  
-	vuarti.read := '1'; v.clen := r.clen + 1;
+        v.addr := r.addr(23 downto 0) & uarto.data;  
+        vuarti.read := '1'; v.clen := r.clen + 1;
       end if;
       if (r.clen(1) and not v.clen(1)) = '1' then
-	if r.write = '1' then v.state := write1; else v.state := read1; end if;
+        if r.write = '1' then v.state := write1; else v.state := read1; end if;
       end if;
-    when read1 =>		-- read AHB
+    when read1 =>               -- read AHB
       if dmao.active = '1' then
-	if dmao.ready = '1' then
-	  v.data := ahbreadword(dmao.rdata); v.state := read2;
+        if dmao.ready = '1' then
+          v.data := ahbreadword(dmao.rdata); v.state := read2;
         end if;
       else vdmai.start := '1'; end if;
       v.clen := "00";
-    when read2 =>		-- send read-data on uart
+    when read2 =>               -- send read-data on uart
       if uarto.thempty = '1' then
-	v.data := r.data(23 downto 0) & uarto.data;  
-	vuarti.write := '1'; v.clen := r.clen + 1; 
+        v.data := r.data(23 downto 0) & uarto.data;  
+        vuarti.write := '1'; v.clen := r.clen + 1; 
         if (r.clen(1) and not v.clen(1)) = '1' then
-	  v.addr(31 downto 2) := newaddr; v.len := newlen;
+          v.addr(31 downto 2) := newaddr; v.len := newlen;
           if (v.len(5) and not r.len(5)) = '1' then v.state := idle; 
-	  else v.state := read1; end if;
+          else v.state := read1; end if;
         end if;
       end if;
-    when write1 =>		-- receive write-data
+    when write1 =>              -- receive write-data
       if uarto.dready = '1' then
-	v.data := r.data(23 downto 0) & uarto.data;  
-	vuarti.read := '1'; v.clen := r.clen + 1;
+        v.data := r.data(23 downto 0) & uarto.data;  
+        vuarti.read := '1'; v.clen := r.clen + 1;
       end if;
       if (r.clen(1) and not v.clen(1)) = '1' then v.state := write2; end if;
-    when write2 =>		-- write AHB
+    when write2 =>              -- write AHB
       if dmao.active = '1' then
-	if dmao.ready = '1' then 
-	  v.addr(31 downto 2) := newaddr; v.len := newlen;
+        if dmao.ready = '1' then 
+          v.addr(31 downto 2) := newaddr; v.len := newlen;
           if (v.len(5) and not r.len(5)) = '1' then v.state := idle; 
-	  else v.state := write1; end if;
+          else v.state := write1; end if;
         end if;
       else vdmai.start := '1'; end if;
       v.clen := "00";
     end case;
 
-    if (uarto.lock and rst) = '0' then
-      v.state := idle; v.write := '0';
+    if (not RESET_ALL) and (uarto.lock and rst) = '0' then
+      v.state := RES.state; v.write := RES.write;
     end if;
 
     rin <= v; dmai <= vdmai; uarti <= vuarti;
@@ -144,6 +150,13 @@ begin
   end process;
 
   regs : process(clk)
-  begin if rising_edge(clk) then r <= rin; end if; end process;
+  begin
+    if rising_edge(clk) then
+      r <= rin;
+      if RESET_ALL and (uarto.lock and rst) = '0' then
+        r <= RES;
+      end if;
+    end if;
+  end process;
 
 end;

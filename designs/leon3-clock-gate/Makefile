@@ -20,7 +20,7 @@ LIBSKIP = tmtc gsi fmf dare hynix openchip cypress \
 	ihp core1553bbc core1553brt core1553brm corePCIF gr1553 \
 	spansion 
 DIRSKIP = b1553 usb ddr crypto satcan slink ascs pwm gr1553b iommu \
-	eon3ft leon4 leon4v0 l2cache pcif spi hcan
+	eon3ft leon4 leon4v0 l2cache pci/pcif spi hcan
 
 include $(GRLIB)/bin/Makefile
 include $(GRLIB)/software/leon3/Makefile

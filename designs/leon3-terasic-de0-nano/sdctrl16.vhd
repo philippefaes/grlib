@@ -970,6 +970,7 @@ begin
     sdo.odt <= (others => '0');
     sdo.conf <= (others => '0');
     sdo.vcbdrive <= (others => '0');
+    sdo.dqs_gate <= '0';
     sdo.cbdqm <= (others => '0');
     sdo.cbcal_en <= (others => '0');
     sdo.cbcal_inc <= (others => '0');

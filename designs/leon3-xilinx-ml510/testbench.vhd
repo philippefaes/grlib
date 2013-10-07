@@ -56,7 +56,7 @@ end;
 architecture behav of testbench is
 
 constant promfile  : string := "prom.srec";  -- rom contents
-constant sdramfile : string := "sdram.srec"; -- sdram contents
+constant sdramfile : string := "ram.srec"; -- sdram contents
 
 signal sys_clk : std_logic := '0';
 signal sys_rst_in : std_logic := '0';			-- Reset

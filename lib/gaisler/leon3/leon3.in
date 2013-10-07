@@ -15,7 +15,7 @@ if [ "$CONFIG_LEON3" = "y" ]; then
     define_bool CONFIG_IU_BP n
     define_bool CONFIG_IU_SVT y
     define_bool CONFIG_NOTAG n
-    define_int  CONFIG_IU_LDELAY 2
+    define_int  CONFIG_IU_LDELAY 1
     define_int  CONFIG_IU_WATCHPOINTS 0
     define_bool CONFIG_PWD n
     define_hex  CONFIG_IU_RSTADDR 00000
@@ -45,7 +45,7 @@ if [ "$CONFIG_LEON3" = "y" ]; then
     define_bool CONFIG_IU_BP y
     define_bool CONFIG_IU_SVT y
     define_bool CONFIG_NOTAG n
-    define_int  CONFIG_IU_LDELAY 2
+    define_int  CONFIG_IU_LDELAY 1
     define_int  CONFIG_IU_WATCHPOINTS 2
     define_bool CONFIG_PWD y
     define_hex  CONFIG_IU_RSTADDR 00000
@@ -176,7 +176,7 @@ if [ "$CONFIG_LEON3" = "y" ]; then
 	    Data-forwarding       CONFIG_FPU_GRFPC1 \
 	    Non-blocking          CONFIG_FPU_GRFPC2" Simple
         fi
-        bool 'Use VHDL netlist          ' CONFIG_FPU_NETLIST
+#        bool 'Use VHDL netlist          ' CONFIG_FPU_NETLIST
       fi
     endmenu
     mainmenu_option next_comment
@@ -346,7 +346,7 @@ if [ "$CONFIG_LEON3" = "y" ]; then
   fi
   mainmenu_option next_comment
   comment 'Fault-tolerance  '
-#   if [ "$CONFIG_LEON3FT_PRESENT" = "y" ]; then
+  if [ "$CONFIG_LEON3FT_PRESENT" = "y" ]; then
     bool 'Use LEON3-FT processor core      ' CONFIG_LEON3FT_EN
     if [ "$CONFIG_LEON3FT_EN" = "y" ]; then
       choice 'IU Register file protection     ' \
@@ -365,9 +365,9 @@ if [ "$CONFIG_LEON3" = "y" ]; then
       bool 'Register file error injection' CONFIG_RF_ERRINJ
       bool 'Cache memory protection        ' CONFIG_CACHE_FT_EN
       int 'Cache memory error injection' CONFIG_CACHE_ERRINJ 0
-      bool 'Use LEON3FT netlist         ' CONFIG_LEON3_NETLIST
+#      bool 'Use LEON3FT netlist         ' CONFIG_LEON3_NETLIST
     fi
-#   fi
+  fi
   endmenu
   mainmenu_option next_comment
     comment 'VHDL debug settings       '

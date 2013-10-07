@@ -56,8 +56,8 @@ end;
 architecture behav of testbench is
 
 constant promfile  : string := "prom.srec";  -- rom contents
-constant sramfile  : string := "sram.srec";  -- ram contents
-constant sdramfile : string := "sdram.srec"; -- sdram contents
+constant sramfile  : string := "ram.srec";  -- ram contents
+constant sdramfile : string := "ram.srec"; -- sdram contents
 
 component leon3mp
   generic (

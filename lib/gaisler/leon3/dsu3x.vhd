@@ -17,10 +17,10 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Entity: 	dsu
--- File:	dsu.vhd
--- Author:	Jiri Gaisler, Edvin Catovic - Gaisler Research
--- Description:	Combined LEON3 debug support and AHB trace unit
+-- Entity:      dsu
+-- File:        dsu.vhd
+-- Author:      Jiri Gaisler, Edvin Catovic - Gaisler Research
+-- Description: Combined LEON3 debug support and AHB trace unit
 ------------------------------------------------------------------------------
 
 library ieee;
@@ -124,7 +124,7 @@ architecture rtl of dsu3x is
   type tregtype is record
     haddr         : std_logic_vector(31 downto 0);
     hwrite        : std_logic;
-    htrans	  : std_logic_vector(1 downto 0);
+    htrans        : std_logic_vector(1 downto 0);
     hsize         : std_logic_vector(2 downto 0);
     hburst        : std_logic_vector(2 downto 0);
     hwdata        : std_logic_vector(31 downto 0);
@@ -132,16 +132,16 @@ architecture rtl of dsu3x is
     hmastlock     : std_logic;
     hsel          : std_logic;
     ahbactive     : std_logic;
-    aindex  	  : std_logic_vector(TBUFABITS - 1 downto 0); -- buffer index
-    enable        : std_logic;	-- trace enable
-    bphit         : std_logic;	-- AHB breakpoint hit
+    aindex        : std_logic_vector(TBUFABITS - 1 downto 0); -- buffer index
+    enable        : std_logic;  -- trace enable
+    bphit         : std_logic;  -- AHB breakpoint hit
     bphit2        : std_logic;  -- delayed bphit
-    dcnten        : std_logic;	-- delay counter enable
+    dcnten        : std_logic;  -- delay counter enable
     delaycnt      : std_logic_vector(TBUFABITS - 1 downto 0); -- delay counter
-    tbreg1	  : trace_break_reg;
-    tbreg2	  : trace_break_reg;
-    tbwr          : std_logic;	-- trace buffer write enable
-    break         : std_logic;	-- break CPU when AHB tracing stops    
+    tbreg1        : trace_break_reg;
+    tbreg2        : trace_break_reg;
+    tbwr          : std_logic;  -- trace buffer write enable
+    break         : std_logic;  -- break CPU when AHB tracing stops    
   end record;
 
   type hclk_reg_type is record
@@ -213,10 +213,10 @@ begin
          (((tr.tbreg2.read and not tr.hwrite) or (tr.tbreg2.write and tr.hwrite)) = '1')) 
       then bphit2 := '1'; end if;
       if (bphit1 or bphit2) = '1' then
-	if ((tr.enable and not r.act) = '1') and (tr.dcnten = '0') and 
-	   (tr.delaycnt /= zero32(TBUFABITS-1 downto 0))
+        if ((tr.enable and not r.act) = '1') and (tr.dcnten = '0') and 
+           (tr.delaycnt /= zero32(TBUFABITS-1 downto 0))
         then tv.dcnten := '1'; 
-	else tv.enable := '0'; tv.bphit := tr.break; end if;
+        else tv.enable := '0'; tv.bphit := tr.break; end if;
       end if;
     end if;    
 
@@ -251,7 +251,7 @@ begin
 
       if (tr.enable and not r.act) = '1' then 
         if (tr.ahbactive and ahbsi2.hready) = '1' then
-	    tv.aindex := aindex; tv.tbwr := '1';
+            tv.aindex := aindex; tv.tbwr := '1';
             vabufi.enable := '1'; vabufi.write := "1111"; 
         end if;
       end if;
@@ -260,7 +260,7 @@ begin
 
       if (tr.dcnten = '1') then
         if (tr.delaycnt = zero32(TBUFABITS-1 downto 0)) then
-	  tv.enable := '0'; tv.dcnten := '0'; tv.bphit := tr.break;
+          tv.enable := '0'; tv.dcnten := '0'; tv.bphit := tr.break;
           end if;
         if tr.tbwr = '1' then tv.delaycnt := tr.delaycnt - 1; end if;          
       end if;
@@ -359,7 +359,7 @@ begin
                   v.bz(index) := ahbsi2.hwdata(5);                
                   v.reset(index) := ahbsi2.hwdata(9);                
                   v.halt(index) := ahbsi2.hwdata(10);                
-		else v.reset := r.reset; end if;
+                else v.reset := r.reset; end if;
               end if;
               hrdata(0) := r.te(index);
               hrdata(1) := r.be(index);
@@ -385,7 +385,7 @@ begin
                 if hclken = '1' then
                   v.bn := ahbsi2.hwdata(NCPU-1 downto 0);
                   v.ss := ahbsi2.hwdata(16+NCPU-1 downto 16);
-		else v.bn := r.bn; v.ss := r.ss; end if;
+                else v.bn := r.bn; v.ss := r.ss; end if;
               end if;
               hrdata(NCPU-1 downto 0) := r.bn;
               hrdata(16+NCPU-1 downto 16) := r.ss; 
@@ -397,96 +397,96 @@ begin
               hrdata(NCPU-1 downto 0) := r.bmsk;
               hrdata(NCPU-1+16 downto 16) := r.dmsk;
             when "10000" =>
-	      if TRACEN then
-	        hrdata((TBUFABITS + 15) downto 16) := tr.delaycnt;
-	        hrdata(2 downto 0) := tr.break & tr.dcnten & tr.enable;
+              if TRACEN then
+                hrdata((TBUFABITS + 15) downto 16) := tr.delaycnt;
+                hrdata(2 downto 0) := tr.break & tr.dcnten & tr.enable;
                 if r.slv.hwrite = '1' then
                   if hclken = '1' then
-	            tv.delaycnt := ahbsi2.hwdata((TBUFABITS+ 15) downto 16);
-	            tv.break  := ahbsi2.hwdata(2);                  
-	            tv.dcnten := ahbsi2.hwdata(1);
-	            tv.enable := ahbsi2.hwdata(0);
-		  else 
-		    tv.delaycnt := tr.delaycnt; tv.break := tr.break;
-		    tv.dcnten := tr.dcnten; tv.enable := tr.enable;
-		  end if;
-	        end if;
-	      end if;
+                    tv.delaycnt := ahbsi2.hwdata((TBUFABITS+ 15) downto 16);
+                    tv.break  := ahbsi2.hwdata(2);                  
+                    tv.dcnten := ahbsi2.hwdata(1);
+                    tv.enable := ahbsi2.hwdata(0);
+                  else 
+                    tv.delaycnt := tr.delaycnt; tv.break := tr.break;
+                    tv.dcnten := tr.dcnten; tv.enable := tr.enable;
+                  end if;
+                end if;
+              end if;
             when "10001" =>
-	      if TRACEN then
-	        hrdata((TBUFABITS - 1 + 4) downto 4) := tr.aindex;
+              if TRACEN then
+                hrdata((TBUFABITS - 1 + 4) downto 4) := tr.aindex;
                 if r.slv.hwrite = '1' then
                   if hclken = '1' then
-		    tv.aindex := ahbsi2.hwdata((TBUFABITS - 1 + 4) downto 4);
-		  else tv.aindex := tr.aindex; end if;
-	        end if;
-	      end if;
+                    tv.aindex := ahbsi2.hwdata((TBUFABITS - 1 + 4) downto 4);
+                  else tv.aindex := tr.aindex; end if;
+                end if;
+              end if;
             when "10100" =>
-	      if TRACEN then
-	        hrdata(31 downto 2) := tr.tbreg1.addr; 
-	        if (r.slv.hwrite and hclken) = '1' then
-	          tv.tbreg1.addr := ahbsi2.hwdata(31 downto 2); 
-	        end if;
-	      end if;
+              if TRACEN then
+                hrdata(31 downto 2) := tr.tbreg1.addr; 
+                if (r.slv.hwrite and hclken) = '1' then
+                  tv.tbreg1.addr := ahbsi2.hwdata(31 downto 2); 
+                end if;
+              end if;
             when "10101" =>
-	      if TRACEN then
-	        hrdata := tr.tbreg1.mask & tr.tbreg1.read & tr.tbreg1.write; 
-	        if (r.slv.hwrite and hclken) = '1' then
-	          tv.tbreg1.mask := ahbsi2.hwdata(31 downto 2); 
-	          tv.tbreg1.read := ahbsi2.hwdata(1); 
-	          tv.tbreg1.write := ahbsi2.hwdata(0); 
-	        end if;
-	      end if;
+              if TRACEN then
+                hrdata := tr.tbreg1.mask & tr.tbreg1.read & tr.tbreg1.write; 
+                if (r.slv.hwrite and hclken) = '1' then
+                  tv.tbreg1.mask := ahbsi2.hwdata(31 downto 2); 
+                  tv.tbreg1.read := ahbsi2.hwdata(1); 
+                  tv.tbreg1.write := ahbsi2.hwdata(0); 
+                end if;
+              end if;
             when "10110" =>
-	      if TRACEN then
-	        hrdata(31 downto 2) := tr.tbreg2.addr; 
-	        if (r.slv.hwrite and hclken) = '1' then
-	          tv.tbreg2.addr := ahbsi2.hwdata(31 downto 2); 
-	        end if;
-	      end if;
+              if TRACEN then
+                hrdata(31 downto 2) := tr.tbreg2.addr; 
+                if (r.slv.hwrite and hclken) = '1' then
+                  tv.tbreg2.addr := ahbsi2.hwdata(31 downto 2); 
+                end if;
+              end if;
             when "10111" =>
-	      if TRACEN then
-	        hrdata := tr.tbreg2.mask & tr.tbreg2.read & tr.tbreg2.write; 
-	        if (r.slv.hwrite and hclken) = '1' then
-	          tv.tbreg2.mask := ahbsi2.hwdata(31 downto 2); 
-	          tv.tbreg2.read := ahbsi2.hwdata(1); 
-	          tv.tbreg2.write := ahbsi2.hwdata(0); 
-	        end if;
-	      end if;
+              if TRACEN then
+                hrdata := tr.tbreg2.mask & tr.tbreg2.read & tr.tbreg2.write; 
+                if (r.slv.hwrite and hclken) = '1' then
+                  tv.tbreg2.mask := ahbsi2.hwdata(31 downto 2); 
+                  tv.tbreg2.read := ahbsi2.hwdata(1); 
+                  tv.tbreg2.write := ahbsi2.hwdata(0); 
+                end if;
+              end if;
             when others =>
           end case;
 
         when "010"  =>  -- AHB tbuf
-	  if TRACEN then
+          if TRACEN then
             if r.cnt(2 downto 0) = "101" then
               if hclken = '1' then v.slv.hready := '1'; else v.slv.hready2 := '1'; end if;
             end if;
             vabufi.enable := not (tr.enable and not r.act);
             case tr.haddr(3 downto 2) is
             when "00" =>
-	      hrdata := tbo.data(127 downto 96);
-	      if (r.slv.hwrite and hclken) = '1' then 
-	        vabufi.write(3) := vabufi.enable and v.slv.hready;
-	      end if;
+              hrdata := tbo.data(127 downto 96);
+              if (r.slv.hwrite and hclken) = '1' then 
+                vabufi.write(3) := vabufi.enable and v.slv.hready;
+              end if;
             when "01" =>
-	      hrdata := tbo.data(95 downto 64);
-	      if (r.slv.hwrite and hclken) = '1' then 
-	        vabufi.write(2) := vabufi.enable and v.slv.hready;
-	      end if;
+              hrdata := tbo.data(95 downto 64);
+              if (r.slv.hwrite and hclken) = '1' then 
+                vabufi.write(2) := vabufi.enable and v.slv.hready;
+              end if;
             when "10" =>
-	      hrdata := tbo.data(63 downto 32);
-	      if (r.slv.hwrite and hclken) = '1' then 
-	        vabufi.write(1) := vabufi.enable and v.slv.hready;
-	      end if;
+              hrdata := tbo.data(63 downto 32);
+              if (r.slv.hwrite and hclken) = '1' then 
+                vabufi.write(1) := vabufi.enable and v.slv.hready;
+              end if;
             when others =>
-	      hrdata := tbo.data(31 downto 0);
-	      if (r.slv.hwrite and hclken) = '1' then 
-	        vabufi.write(0) := vabufi.enable and v.slv.hready;
-	      end if;
-	    end case;
-	  else
+              hrdata := tbo.data(31 downto 0);
+              if (r.slv.hwrite and hclken) = '1' then 
+                vabufi.write(0) := vabufi.enable and v.slv.hready;
+              end if;
+            end case;
+          else
             if hclken = '1' then v.slv.hready := '1'; else v.slv.hready2 := '1'; end if;
-	  end if;
+          end if;
         when "011" | "001"  =>  -- IU reg file, IU tbuf
           iuacc := '1';
           hrdata := dbgi(index).data;

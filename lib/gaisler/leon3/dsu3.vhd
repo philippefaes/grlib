@@ -17,10 +17,10 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Entity: 	dsu
--- File:	dsu.vhd
--- Author:	Jiri Gaisler, Edvin Catovic - Gaisler Research
--- Description:	Combined LEON3 debug support and AHB trace unit
+-- Entity:      dsu
+-- File:        dsu.vhd
+-- Author:      Jiri Gaisler, Edvin Catovic - Gaisler Research
+-- Description: Combined LEON3 debug support and AHB trace unit
 ------------------------------------------------------------------------------
 
 library ieee;

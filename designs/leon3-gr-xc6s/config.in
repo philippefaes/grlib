@@ -3,7 +3,7 @@
 #
 # Written by Jiri Gaisler, Gaisler Research
 #
-# Comments and bug reports to jiri@gaisler.com
+# Comments and bug reports to support@gaisler.com
 #
 #
 
@@ -65,17 +65,12 @@ comment 'Peripherals             '
   endmenu
 
   mainmenu_option next_comment
-  comment 'USB 2.0 Host Controller      '
-    source lib/gaisler/usb/grusbhc.in
-  endmenu
-
-  mainmenu_option next_comment
   comment 'UART, timer, I/O port and interrupt controller'
     source lib/gaisler/uart/uart1.in
     if [ "$CONFIG_DSU_UART" != "y" ]; then
       source lib/gaisler/uart/uart2.in
     fi
-    source lib/gaisler/leon3/irqmp.in
+    source lib/gaisler/irqmp/irqmp.in
     source lib/gaisler/misc/gptimer.in
     source lib/gaisler/misc/grgpio.in
   endmenu

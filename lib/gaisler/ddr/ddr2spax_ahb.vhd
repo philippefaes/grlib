@@ -47,7 +47,8 @@ entity ddr2spax_ahb is
       ahbbits    : integer := ahbdw;
       revision   : integer := 0;
       devid      : integer := GAISLER_DDR2SP;
-      ddrbits    : integer := 32
+      ddrbits    : integer := 32;
+      regarea    : integer := 0
    );
    port (
       rst      : in  std_ulogic;
@@ -62,7 +63,9 @@ entity ddr2spax_ahb is
       wbwrite   : out std_logic;
       wbwritebig: out std_logic;
       rbraddr   : out std_logic_vector(log2(burstlen*32/ahbbits)-1 downto 0);
-      rbrdata   : in std_logic_vector(ahbbits-1 downto 0)
+      rbrdata   : in std_logic_vector(ahbbits-1 downto 0);
+      hwidth    : in std_logic;
+      beid      : in std_logic_vector(3 downto 0)
    );  
 end ddr2spax_ahb;
 
@@ -148,6 +151,7 @@ begin
     variable datavalid, writedone: std_logic;
     variable rctr_gray: std_logic_vector(3 downto 0);
     variable tog_start: std_logic;
+    variable regdata: std_logic_vector(31 downto 0);
   begin
     ha0 := ahbsi.haddr;
     ha0(31 downto 20) := ha0(31 downto 20) and not std_logic_vector(to_unsigned(hmask,12));
@@ -410,7 +414,7 @@ begin
         
     end case;
 
-    if tog_start='1' then
+    if tog_start='1' and (regarea=0 or av.req.hio='0' or av.req.startaddr(5)='0') then
       av.start_tog := not ar.start_tog;
       av.rctr_lin := "0000";
       if ar.start_tog /= vdone then
@@ -429,9 +433,19 @@ begin
       end if;
     end if;
 
+    -- Used only if regarea /= 0
+    regdata := (others => '0');
+    regdata(18 downto 16) := std_logic_vector(to_unsigned(log2(ddrbits/8),3));
+    if hwidth/='0' then
+      regdata(18 downto 16) := std_logic_vector(to_unsigned(log2(ddrbits/16),3));
+    end if;
+    regdata(15 downto 12) := beid;
+
     -- If we are using AMBA-compliant data muxing, nothing needs to be done to
     -- the hrdata vector. Otherwise, we need to duplicate 32-bit lanes
-    if CORE_ACDM /= 0 then
+    if regarea/=0 and ar.req.hio='1' and ar.req.startaddr(5)='1' then
+      so.hrdata := ahbdrivedata(regdata);
+    elsif CORE_ACDM /= 0 then
       so.hrdata := ahbdrivedata(rbrdata);
     else
       so.hrdata := ahbselectdata(ahbdrivedata(rbrdata),ar.haddr(4 downto 2),ar.hsize);

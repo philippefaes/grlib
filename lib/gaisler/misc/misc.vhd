@@ -386,7 +386,8 @@ package misc is
     fcfs        : integer range 0 to NAHBMST := 0;
     fcfsmtech   : integer range 0 to NTECH := inferred;
     scantest    : integer range 0 to 1 := 0;
-    split       : integer range 0 to 1 := 1);
+    split       : integer range 0 to 1 := 1;
+    pipe        : integer range 0 to 128 := 128);
   port (
     rstn        : in  std_ulogic;
     hclkm       : in  std_ulogic;
@@ -1068,6 +1069,99 @@ package misc is
       );
   end component;
 
+  component ahbwbax is
+    generic (
+      ahbbits: integer;
+      blocksz: integer := 16;
+      mstmode: integer := 0
+      );
+    port (
+      clk: in std_ulogic;
+      rst: in std_ulogic;
+      -- Wide-side slave inputs
+      wi_hready:    in  std_ulogic;
+      wi_hsel:      in  std_ulogic;
+      wi_htrans:    in  std_logic_vector(1 downto 0);
+      wi_hsize:     in  std_logic_vector(2 downto 0);
+      wi_hburst:    in  std_logic_vector(2 downto 0);
+      wi_hwrite:    in  std_ulogic;
+      wi_haddr:     in  std_logic_vector(31 downto 0);
+      wi_hwdata:    in  std_logic_vector(AHBDW-1 downto 0);
+      wi_hmbsel:    in  std_logic_vector(0 to NAHBAMR-1);
+      wi_hmaster:   in  std_logic_vector(3 downto 0);
+      wi_hprot:     in  std_logic_vector(3 downto 0);
+      wi_hmastlock: in  std_ulogic;
+      -- Wide-side slave outputs
+      wo_hready:    out std_ulogic;
+      wo_hresp :    out std_logic_vector(1 downto 0);
+      wo_hrdata:    out std_logic_vector(AHBDW-1 downto 0);
+      -- Narrow-side slave inputs
+      ni_hready:    out std_ulogic;
+      ni_htrans:    out std_logic_vector(1 downto 0);
+      ni_hsize:     out std_logic_vector(2 downto 0);
+      ni_hburst:    out std_logic_vector(2 downto 0);
+      ni_hwrite:    out std_ulogic;
+      ni_haddr:     out std_logic_vector(31 downto 0);
+      ni_hwdata:    out std_logic_vector(31 downto 0);
+      ni_hmbsel:    out std_logic_vector(0 to NAHBAMR-1);
+      ni_hmaster:   out std_logic_vector(3 downto 0);
+      ni_hprot :    out std_logic_vector(3 downto 0);
+      ni_hmastlock: out std_ulogic;
+      -- Narrow-side slave outputs
+      no_hready:    in  std_ulogic;
+      no_hresp:     in  std_logic_vector(1 downto 0);
+      no_hrdata:    in  std_logic_vector(31 downto 0)
+      );
+  end component;
+
+  component ahbswba is
+    generic (
+      hindex: integer;
+      ahbbits: integer;
+      blocksz: integer := 16
+      );
+    port (
+      clk: in std_ulogic;
+      rst: in std_ulogic;
+      ahbsi_bus: in ahb_slv_in_type;
+      ahbso_bus: out ahb_slv_out_type;
+      ahbsi_slv: out ahb_slv_in_type;
+      ahbso_slv: in ahb_slv_out_type
+      );
+  end component;
+
+  component ahbswbav is
+    generic (
+      slvmask: integer;
+      ahbbits: integer;
+      blocksz: integer
+      );
+    port (
+      clk: in std_ulogic;
+      rst: in std_ulogic;
+      ahbsi_bus: in ahb_slv_in_type;
+      ahbso_bus: out ahb_slv_out_vector;
+      ahbsi_slv: out ahb_slv_in_vector_type(NAHBSLV-1 downto 0);
+      ahbso_slv: in ahb_slv_out_vector
+      );
+  end component;
+
+  component ahbmwba is
+    generic (
+      hindex: integer;
+      ahbbits: integer;
+      blocksz: integer := 16
+      );
+    port (
+      clk: in std_ulogic;
+      rst: in std_ulogic;
+      ahbmo_mst : in ahb_mst_out_type;
+      ahbmi_mst: out ahb_mst_in_type;
+      ahbmo_bus: out ahb_mst_out_type;
+      ahbmi_bus: in ahb_mst_in_type
+      );
+  end component;
+
   -----------------------------------------------------------------------------
   -- GRPULSE
   -----------------------------------------------------------------------------
@@ -1137,6 +1231,44 @@ package misc is
       apbo:       out   APB_Slv_Out_Type);
   end component;
 
+
+   -----------------------------------------------------------------------------
+   -- AHBFROM - Microsemi/Actel Flash ROM
+   -----------------------------------------------------------------------------
+   component ahbfrom is
+   generic (
+      tech:          integer := 0;
+      hindex:        integer := 0;
+      haddr:         integer := 0;
+      hmask:         integer := 16#fff#;
+      width8:        integer  := 0;
+      memoryfile:    string := "from.mem";
+      progfile:      string := "from.ufc");
+   port (
+      rstn:    in    std_ulogic;
+      clk:     in    std_ulogic;
+      ahbi:    in    ahb_slv_in_type;
+      ahbo:    out   ahb_slv_out_type);
+   end component;
+
+  -----------------------------------------------------------------------------
+  -- Interrupt generator
+  -----------------------------------------------------------------------------
+  component irqgen
+    generic (
+      pindex   : integer := 0;
+      paddr    : integer := 0;
+      pmask    : integer := 16#fff#;
+      ngen     : integer range 1 to 15 := 1
+      );
+    port (
+      rstn   : in  std_ulogic;
+      clk    : in  std_ulogic;
+      apbi   : in  apb_slv_in_type;
+      apbo   : out apb_slv_out_type
+      );
+  end component;
+  
   -----------------------------------------------------------------------------
   -- Function declarations
   -----------------------------------------------------------------------------
