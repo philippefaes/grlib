@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings xmlns:com.sigasi.hdt.vhdl.scoping.librarymapping.model="com.sigasi.hdt.vhdl.scoping.librarymapping" Version="2">
+<com.sigasi.hdt.shared.librarymapping.model:LibraryMappings xmlns:com.sigasi.hdt.shared.librarymapping.model="com.sigasi.hdt.vhdl.scoping.librarymapping" Version="2">
   <Mappings Location="" Library="gaisler"/>
   <Mappings Location="ambatest" Library="gaisler"/>
   <Mappings Location="ddr" Library="gaisler"/>
@@ -11,7 +11,6 @@
   <Mappings Location="ddr/ddrsp.in.vhd" Library="not mapped"/>
   <Mappings Location="ddr/mig.in.vhd" Library="not mapped"/>
   <Mappings Location="ddr/mig_series7.in.vhd" Library="not mapped"/>
-  <Mappings Location="ddrv1" Library="not mapped"/>
   <Mappings Location="gr1553b/gr1553b.in.vhd" Library="not mapped"/>
   <Mappings Location="gr1553b/gr1553b_2.in.vhd" Library="not mapped"/>
   <Mappings Location="greth/greth.in.vhd" Library="not mapped"/>
@@ -23,10 +22,7 @@
   <Mappings Location="jtag/bscan.in.vhd" Library="not mapped"/>
   <Mappings Location="jtag/jtag.in.vhd" Library="not mapped"/>
   <Mappings Location="jtag/jtag2.in.vhd" Library="not mapped"/>
-  <Mappings Location="leon3/irqmp.in.vhd" Library="not mapped"/>
   <Mappings Location="leon3/leon3.in.vhd" Library="not mapped"/>
-  <Mappings Location="leon3ftv2/leon3net.in.vhd" Library="not mapped"/>
-  <Mappings Location="leon3v1/grfpuw.vhd" Library="not mapped"/>
   <Mappings Location="memctrl/sdctrl.in.vhd" Library="not mapped"/>
   <Mappings Location="memctrl/srctrl.in.vhd" Library="not mapped"/>
   <Mappings Location="memctrl/ssrctrl.in.vhd" Library="not mapped"/>
@@ -42,8 +38,10 @@
   <Mappings Location="misc/ps2vga.in.vhd" Library="not mapped"/>
   <Mappings Location="misc/svgactrl.in.vhd" Library="not mapped"/>
   <Mappings Location="net/edcl.in.vhd" Library="not mapped"/>
-  <Mappings Location="pci/pci.in.vhd" Library="not mapped"/>
-  <Mappings Location="pci/pcitrace.in.vhd" Library="not mapped"/>
+  <Mappings Location="pci/grpci1/pci.in.vhd" Library="not mapped"/>
+  <Mappings Location="pci/pcitrace/pcitrace.in.vhd" Library="not mapped"/>
+  <Mappings Location="pci/ptf/pt_pci_monitor.vhd" Library="not mapped"/>
+  <Mappings Location="pciexp/pciexp.in.vhd" Library="not mapped"/>
   <Mappings Location="spacewire/router.in.vhd" Library="not mapped"/>
   <Mappings Location="spacewire/spacewire.in.vhd" Library="not mapped"/>
   <Mappings Location="spi/spi2ahb.in.vhd" Library="not mapped"/>
@@ -55,4 +53,4 @@
   <Mappings Location="usb/grusb_dcl.in.vhd" Library="not mapped"/>
   <Mappings Location="usb/grusbdc.in.vhd" Library="not mapped"/>
   <Mappings Location="usb/grusbhc.in.vhd" Library="not mapped"/>
-</com.sigasi.hdt.vhdl.scoping.librarymapping.model:LibraryMappings>
+</com.sigasi.hdt.shared.librarymapping.model:LibraryMappings>

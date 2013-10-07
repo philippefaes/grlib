@@ -966,7 +966,7 @@ begin
     iop : IOBUFDS generic map (IOSTANDARD  => "DIFF_SSTL18_II")
       port map (O => o, IO => padp, IOB => padn, I => i, T => en);
   end generate;
-  default :  if (level /= lvds) and (level /= sstl18_i) and (level /= sstl18_ii) generate
+  default_1 :  if (level /= lvds) and (level /= sstl18_i) and (level /= sstl18_ii) generate
     iop : IOBUFDS generic map (IOSTANDARD => "DEFAULT")
       port map (O => o, IO => padp, IOB => padn, I => i, T => en);
   end generate;
