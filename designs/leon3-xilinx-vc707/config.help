@@ -11,8 +11,11 @@ CONFIG_SYN_INFERRED
   - Actel ProAsic/P/3, IGLOO and Axcelerator FPGAs
   - Aeroflex UT25CRH Rad-Hard 0.25 um CMOS
   - Altera: Most Altera FPGA families
+  - Altera-CycloneIII: Altera Cyclone-III/IV FPGA family
   - Altera-Stratix: Altera Stratix FPGA family
-  - Altera-StratixII: Altera Stratix-II FPGA family
+  - Altera-StratixII: Altera Stratix/Cyclone-II FPGA families
+  - Altera-StratixIII: Altera Stratix-III FPGA family
+  - Altera-StratixIV: Altera Stratix-III FPGA family
   - ATC18: Atmel-Nantes 0.18 um rad-hard CMOS
   - IHP25: IHP 0.25 um CMOS
   - IHP25RH: IHP Rad-Hard 0.25 um CMOS
@@ -259,6 +262,8 @@ CONFIG_IU_LDELAY
   One cycle gives best performance, but might create a critical path
   on targets with slow (data) cache memories. A 2-cycle delay can
   improve timing but will reduce performance with about 5%.
+
+  Note that the load delay must be 1 to support the CASA instruction.
 
 Reset address
 CONFIG_IU_RSTADDR
@@ -698,6 +703,13 @@ CONFIG_DSU_JTAG
   Amontech JTAG key, various FTDI chip based USB/JTAG devices, and
   Actel Flash Pro 3/4 cable.
 
+USB DSU enable
+CONFIG_GRUSB_DCL
+  Say Y to enable the USB Debug Communication Link
+
+CONFIG_GRUSB_DCL_ULPI
+  Select the interface of the USB transceiver that the USBDCL will be
+  connected to.
 Ethernet DSU enable
 CONFIG_DSU_ETH
   Say Y to enable the Ethernet Debug Communication Link (EDCL). The link
@@ -865,6 +877,11 @@ CONFIG_AHBRAM_START
   a 1 Mbyte slot at the selected address. Default is A00, corresponding
   to AHB address 0xA0000000.
 
+On-chip ram pipeline stage
+CONFIG_AHBRAM_PIPE
+  Set this option to add an extra pipeline stage to the read data of the 
+  on-chip RAM. This can improve timing, especially when the memory is 
+  large, at the cost of adding an additional cycle delay on read.
 Gaisler Ethernet MAC enable
 CONFIG_GRETH_ENABLE
   Say Y here to enable the Gaisler Research Ethernet MAC . The MAC has 
@@ -883,6 +900,455 @@ CONFIG_GRETH_FIFO4
   size of the FIFO depth.
 
 
+Gaisler USB 2.0 Host Controller enable
+CONFIG_GRUSBHC_ENABLE
+  Say Y here to enable the Gaisler Research USB 2.0 Host Controller.
+  The core contains one EHCI controller which can be configured to
+  contain 0 to 15 UHCI companion controllers. The controller can also
+  be configured to exclude the EHCI controller. The EHCI controller
+  contains one AHB master interface to access memory and one APB slave
+  for accessing control registers. The UHCI controller contains one AHB
+  master interface for accessing memory and one AHB slave interface for
+  accessing control registers.
+
+Gaisler Enhanced Host Controller enable
+CONFIG_GRUSBHC_EHC
+  Say Y here to enable the Gaisler Research Enhanced Host Controller.
+  This USB 2.0 controller implements the Enhanced Host Controller 
+  Interface and supports High-Speed USB traffic. 
+
+Gaisler Universal Host Controller enable
+CONFIG_GRUSBHC_UHC
+  Say Y here to enable the Gaisler Research Universal Host Controller.
+  This USB 1.1 controller implements the Universal Host Controller
+  Interface and supports Full- and Low-Speed USB traffic. Controllers
+  of this type will be configured as companion controllers if the
+  Enhanced Host Controller is enabled.
+
+CONFIG_GRUSBHC_NCC
+  Number of companion (universal) host controllers. A universal host
+  controller may handle up to fifteen ports. Some designers choose
+  to implement one universal host controller per port. If you are
+  unsure, set this value to 1 to let one controller handle all ports.
+  
+CONFIG_GRUSBHC_NPORTS
+  Number of transceivers connected to the core.
+
+CONFIG_GRUSBHC_ULPI
+  Select the interface of the transceiver(s) that the core will be
+  connected to.
+
+CONFIG_GRUSBHC_VBUSEXT
+  Selects the source for bus power generation. Select External if
+  external USB power switch is used (recommended for USB hosts) or
+  select Internal if not USB power switch is present and ULPI
+  transceiver should generate VBUS.  
+
+CONFIG_GRUSBHC_FAULTL
+  Selects active level of fault signal from external USB power switch.
+  Select None if the external USB power switch doesn't have fault 
+  detection.
+
+CONFIG_GRUSBHC_ENABLEH
+  Selects the active level of the outgoing vbus enable signal
+  (connected between the core's drvvbus output and a USB power switch
+  enable input). The UTMI+ specification defines the drvvbus signal to be
+  active high, but GRUSBHC can be configured with an active low
+  drvvbus in order to support more USB power switches without the
+  need for an external inverter.
+
+CONFIG_GRUSBHC_FAULT2H
+  Selects the active level of the incoming vbus valid indicator
+  (connected between the core's vbusvalid input and a USB power switch
+  fault ouput). The UTMI+ specification defines the vbusvalid signal to be
+  active high, but GRUSBHC can be configured with an active low
+  vbusvalid in order to support more USB power switches without the
+  need for an external inverter.
+
+CONFIG_GRUSBHC_ENDIAN
+  The host controller works internally with little endian. If the
+  controller is connected to a big endian bus (such as the AMBA bus
+  in GRLIB) endian conversion must be enabled.
+
+CONFIG_GRUSBHC_BEREGS
+  With this option enabled the register space will be arranged 
+  according to big endian addressing. If this option is 
+  not enabled the register space of both controllers will be
+  byte swapped. See the IP core user's manual for details.
+
+CONFIG_GRUSBHC_BEDESC
+  With this option enabled the in-memory transfer descriptors will
+  be in big endian format. Without this option software must byte 
+  swap all descriptors.
+
+CONFIG_GRUSBHC_BWRD
+  Maximum burst length in words.
+
+CONFIG_GRUSBHC_NPCC
+  Number of ports per companion controller. This option must be 
+  consistent with number of ports and number of companion 
+  controllers. Number of companion controller multiplied with 
+  this value may not be less than the total number of ports. 
+  In addition, there can not be a companion controller that is left 
+  without ports.
+
+CONFIG_GRUSBHC_PRR
+  If CONFIG_GRUSBHC_PRR are disabled the lowest CONFIG_GRUSBHC_NPCC
+  ports are routed to the lowest numbered companion controller and
+  so on. If CONFIG_GRUSBHC_PRR is enabled each port can be 
+  individually routed to a specific companion controller. 
+
+
+CONFIG_GRUSBHC_PR1
+  The companion controller that port 1 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR2
+  The companion controller that port 2 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR3
+  The companion controller that port 3 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR4
+  The companion controller that port 4 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR5
+  The companion controller that port 5 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR6
+  The companion controller that port 6 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR7
+  The companion controller that port 7 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR8
+  The companion controller that port 8 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR9
+  The companion controller that port 9 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR10
+  The companion controller that port 10 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR11
+  The companion controller that port 11 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR12
+  The companion controller that port 12 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR13
+  The companion controller that port 13 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR14
+  The companion controller that port 14 should be routed to. Unused
+  ports should have their value set to 0.
+
+CONFIG_GRUSBHC_PR15
+  The companion controller that port 15 should be routed to. Unused
+  ports should have their value set to 0.
+
+Gaisler Research USB 2.0 Device Controller enable
+CONFIG_GRUSBDC_ENABLE
+  Say Y here to enable the Gaisler Research USB 2.0 Device Controller.
+  The core can be configured with 1-16 IN endpoints and 1-16 OUT 
+  endpoints (including endpoint zero). The core use an AHB slave
+  interface for configuration. For data transfers the the user have the
+  option of adding an AHB master interface for DMA, or to use the slave
+  interface. The core supports 8-bit and 16-bit UTMI/UTMI+ and 
+  ULPI interfaces towards the USB transceiver.
+
+CONFIG_GRUSBDC_AHBMST
+  Say Y here to enable the AHB master interface and DMA. When master
+  interface is disabled all data transfers are handled with the AHB
+  slave interface.
+
+CONFIG_GRUSBDC_ULPI
+  Select the interface of the USB transceiver that the core will be
+  connected to.
+
+CONFIG_GRUSBDC_NEPI
+  Select number of IN endpoints (including endpoint zero).
+  Valid range is 1 - 16.
+
+CONFIG_GRUSBDC_NEPO
+  Select number of OUT endpoints (including endpoint zero).
+  Valid range is 1 - 16.
+
+CONFIG_GRUSBDC_I0
+  Select buffer size (in bytes) for IN endpoint 0.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O0
+  Select buffer size (in bytes) for OUT endpoint 0.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I1
+  Select buffer size (in bytes) for IN endpoint 1.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O1
+  Select buffer size (in bytes) for OUT endpoint 1.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I2
+  Select buffer size (in bytes) for IN endpoint 2.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O2
+  Select buffer size (in bytes) for OUT endpoint 2.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I3
+  Select buffer size (in bytes) for IN endpoint 3.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O3
+  Select buffer size (in bytes) for OUT endpoint 3.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I4
+  Select buffer size (in bytes) for IN endpoint 4.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O4
+  Select buffer size (in bytes) for OUT endpoint 4.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I5
+  Select buffer size (in bytes) for IN endpoint 5.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O5
+  Select buffer size (in bytes) for OUT endpoint 5.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I6
+  Select buffer size (in bytes) for IN endpoint 6.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O6
+  Select buffer size (in bytes) for OUT endpoint 6.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I7
+  Select buffer size (in bytes) for IN endpoint 7.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O7
+  Select buffer size (in bytes) for OUT endpoint 7.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I8
+  Select buffer size (in bytes) for IN endpoint 8.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O8
+  Select buffer size (in bytes) for OUT endpoint 8.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I9
+  Select buffer size (in bytes) for IN endpoint 9.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O9
+  Select buffer size (in bytes) for OUT endpoint 9.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I10
+  Select buffer size (in bytes) for IN endpoint 10.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O10
+  Select buffer size (in bytes) for OUT endpoint 10.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I11
+  Select buffer size (in bytes) for IN endpoint 11.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O11
+  Select buffer size (in bytes) for OUT endpoint 11.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I12
+  Select buffer size (in bytes) for IN endpoint 12.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O12
+  Select buffer size (in bytes) for OUT endpoint 12.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I13
+  Select buffer size (in bytes) for IN endpoint 13.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O13
+  Select buffer size (in bytes) for OUT endpoint 13.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I14
+  Select buffer size (in bytes) for IN endpoint 14.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O14
+  Select buffer size (in bytes) for OUT endpoint 14.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_I15
+  Select buffer size (in bytes) for IN endpoint 15.
+  Valid range is 8 - 3072.
+
+CONFIG_GRUSBDC_O15
+  Select buffer size (in bytes) for OUT endpoint 15.
+  Valid range is 8 - 3072.
+
+CAN interface enable
+CONFIG_CAN_ENABLE
+  Say Y here to enable one or more CAN cores. The cores has one
+  AHB slave interface for accessing the control registers. The CAN core
+  is register-compatible with the SAJ1000 core from Philips, with a
+  few exceptions. See the GRLIP IP manual for details.
+
+CONFIG_CAN_NUM
+  Number of CAN cores. The module allows up to 8 independent
+  CAN cores to be implemented.
+
+CAN register address
+CONFIG_CANIO
+  The control registers of each CAN core occupies 256 bytes, and 
+  address space needed for the full module is thus 2 Kbyte. The cores
+  are mapped in the AHB bus I/O area (0xFFF00000 - 0xFFFFF000). 
+  This setting defines at which address in the I/O area the registers
+  appear (HADDR[19:8]).
+
+CAN interrupt
+CONFIG_CANIRQ
+  Defines which interrupt number the CAN core will generate.
+
+CAN interrupt
+CONFIG_CANSEPIRQ
+  Say Y here to assign an individual interrupt to each CAN core,
+  starting from the base interrupt number. If set to N, all
+  CAN cores will generate the same interrupt.
+
+CAN FT memories
+CONFIG_CAN_FT
+  If you say Y here, the CAN FIFOs will be implemented using
+  SEU protected RAM blocks. Only applicable to the FT version
+  of grlib.
+
+CAN Synchronous reset
+CONFIG_CAN_SYNCRST
+  If you say Y here, the CAN core will be implemented with
+  synchronous reset rather than asynchronous. This is needed
+  when the target library does not implement registers with
+  async reset. Unless you know what you are doing, say N.
+
+Spacewire link
+CONFIG_SPW_ENABLE
+  Say Y here to enable one or more Spacewire serial links. The links
+  are based on the GRSPW core from Gaisler Research.
+
+Number of spacewire links
+CONFIG_SPW_NUM
+  Select the number of links to implement. Each link will be a
+  separate AHB master and APB slave for configuration.
+
+AHB FIFO depth
+CONFIG_SPW_AHBFIFO4
+  Select the AHB FIFO depth (in 32-bit words).
+
+RX FIFO depth
+CONFIG_SPW_RXFIFO16
+  Select the receiver FIFO depth (in bytes).
+
+RMAP protocol
+CONFIG_SPW_RMAP
+  Enable hardware target support for the RMAP protocol (
+  draft C for GRSPW1 and ECSS-E-ST-50-11C Draft V1.3 
+  for GRSPW2).
+
+RMAP Buffer depth
+CONFIG_SPW_RMAPBUF2
+  Select the size of the RMAP buffer (in bytes).
+
+RMAP CRC
+CONFIG_SPW_RMAPCRC
+  Enable hardware calculation of the RMAP CRC checksum. RMAP CRC
+  is always enabled when the RMAP hardware target is enabled so this
+  parameter will have no effect in that case.
+
+Rx unaligned
+CONFIG_SPW_RXUNAL
+  Enable support for byte writes used for non word-aligned 
+  receiver buffer addresses. Without this enabled data will
+  still be written at the correct location but complete words
+  will always be written so data outside the intended boundaries
+  might be overwritten.
+
+Netlists
+CONFIG_SPW_NETLIST
+  Use the netlist version of GRSPW. This option is required if
+  you have not licensed the source code of the Spacewire core.
+  Currently only supported for Xilinx and Actel FPGAs.
+  The AHB/RX FIFO sizes should be set to 16 word/byte. If the
+  RMAP is enabled, set the buffer size to 128 bytes. Other netlist
+  configurations can be requested from Gaisler Research.
+
+Spacewire FT
+CONFIG_SPW_FT
+  Say Y here to implement the Spacewire block rams with fault-tolerance
+  against SEU errors.
+
+Spacewire core
+CONFIG_SPW_GRSPW1
+  Select to use GRSPW1 core or GRSPW2 core.
+
+DMA channels
+CONFIG_SPW_DMACHAN
+  Set the number of DMA channels for the GRSPW2 core.
+  Set to 1 for now ...
+
+Ports
+CONFIG_SPW_PORTS
+  Set the number of SpaceWire ports for the GRSPW2 core
+
+Same clock for SpaceWire receiver and transmitter
+CONFIG_SPW_RTSAME            
+  Say Y here if the same clock is connected to both the receiver
+  and transmitter in the GRSPW2 core. This will remove two
+  asynchronous resets and some synchronization logic. This is only
+  applicable for the SDR and DDR inputs modes.
+
+
+Receiver clock type
+CONFIG_SPW_RX_SDR
+  Selects the input clocking scheme for the GRSPW2. SDR means that the
+  core samples data and strobe using single data rate registers at the
+  receiver clock frequency. DDR is the same except DDR registers are used.
+  Xor selects the traditional self clocking scheme using a xor gate. 
+  Aeroflex sets the receiver in a mode compatible with the Aeroflex
+  SpaceWire transceiver.
+
+Receiver clock type
+CONFIG_SPW_TX_SDR
+  Selects the output clocking scheme for the GRSPW2. SDR means that the
+  core transmits data and strobe using single data rate registers at the
+  transmitter clock frequency. DDR is the same except DDR registers are used.
+  Aeroflex sets the transmitter in a mode compatible with the Aeroflex
+  SpaceWire transceiver.
 UART1 enable
 CONFIG_UART1_ENABLE
   Say Y here to enable UART1, or the console UART. This is needed to

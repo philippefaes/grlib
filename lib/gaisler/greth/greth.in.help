@@ -15,4 +15,11 @@ CONFIG_GRETH_FIFO4
   The MAC core will perform AHB burst read/writes with half the
   size of the FIFO depth.
 
+CONFIG_GRETH_FT
+  Enable fault-tolerance (parity with sparing) for internal RAM
+  in Ethernet core. Note that FT for EDCL buffer is enabled via
+  separate setting.
 
+CONFIG_GRETH_EDCLFT
+  Enable protection for EDCL buffer. This is typically not used as
+  the EDCL debug link is not used in harsh environments.

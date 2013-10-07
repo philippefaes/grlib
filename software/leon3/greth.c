@@ -270,8 +270,8 @@ int greth_test(int apbaddr)
                         fail(2);
                 }
         }
-        /* Test EDCL if present */
-        if (greth.edcl) {
+        /* Test EDCL if present and enabled */
+        if (greth.edcl && greth.edclen) {
                 /* read ip address */ 
                 ipaddr = load((int)&greth.regs->edclip);
 

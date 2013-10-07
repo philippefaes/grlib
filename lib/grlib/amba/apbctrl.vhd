@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 -- pragma translate_off
@@ -70,14 +72,14 @@ constant hconfig : ahb_config_type := (
   others => zero32);
 
 constant IOAREA : std_logic_vector(11 downto 0) := 
-	conv_std_logic_vector(haddr, 12);
+        conv_std_logic_vector(haddr, 12);
 constant IOMSK  : std_logic_vector(11 downto 0) := 
-	conv_std_logic_vector(hmask, 12);
+        conv_std_logic_vector(hmask, 12);
 
 type reg_type is record
   haddr   : std_logic_vector(apbmax downto 0);   -- address bus
-  hwrite  : std_logic;  		     -- read/write
-  hready  : std_logic;  		     -- ready
+  hwrite  : std_logic;                       -- read/write
+  hready  : std_logic;                       -- ready
   penable : std_logic;
   psel    : std_logic;
   prdata  : std_logic_vector(31 downto 0);   -- read data
@@ -85,6 +87,12 @@ type reg_type is record
   state   : std_logic_vector(1 downto 0);   -- state
   cfgsel  : std_ulogic;
 end record;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RES : reg_type :=
+  (haddr => (others => '0'), hwrite => '0', hready => '1', penable => '0',
+   psel => '0', prdata => (others => '0'), pwdata => (others => '0'),
+   state => (others => '0'), cfgsel => '0');
 
 signal r, rin : reg_type;
 --pragma translate_off
@@ -109,16 +117,16 @@ begin
     -- detect start of cycle
     if (ahbi.hready = '1') then
       if ((ahbi.htrans = HTRANS_NONSEQ) or (ahbi.htrans = HTRANS_SEQ)) and
-	  (ahbi.hsel(hindex) = '1')
+          (ahbi.hsel(hindex) = '1')
       then
         v.hready := '0'; v.hwrite := ahbi.hwrite; 
-	v.haddr(apbmax downto 0) := ahbi.haddr(apbmax downto 0); 
-	v.state := "01"; v.psel := not ahbi.hwrite;
+        v.haddr(apbmax downto 0) := ahbi.haddr(apbmax downto 0); 
+        v.state := "01"; v.psel := not ahbi.hwrite;
       end if;
     end if;
 
     case r.state is
-    when "00" => null;		-- idle
+    when "00" => null;          -- idle
     when "01" =>
       if r.hwrite = '0' then v.penable := '1'; 
       else v.pwdata := ahbreadword(ahbi.hwdata, r.haddr(4 downto 2)); end if;
@@ -167,11 +175,12 @@ begin
     ahbo.hrdata <= ahbdrivedata(r.prdata);
     ahbo.hirq   <= pirq;
 
-    if rst = '0' then
-      v.penable := '0'; v.hready := '1'; v.psel := '0'; v.state := "00";
-      v.hwrite := '0';
+    if (not RESET_ALL) and (rst = '0') then
+      v.penable := RES.penable; v.hready := RES.hready;
+      v.psel := RES.psel; v.state := RES.state;
+      v.hwrite := RES.hwrite;
 -- pragma translate_off
-      v.haddr := (others => '0');
+      v.haddr := RES.haddr;
 -- pragma translate_on
     end if;
 
@@ -212,7 +221,14 @@ begin
   ahbo.hresp  <= HRESP_OKAY;
 
   reg : process(clk)
-  begin if rising_edge(clk) then r <= rin; end if; end process;
+  begin
+    if rising_edge(clk) then
+      r <= rin;
+      if RESET_ALL and rst = '0' then
+        r <= RES;
+      end if;
+    end if;
+  end process;
 
 -- pragma translate_off
 
@@ -271,15 +287,15 @@ begin
           print("apbctrl:       I/O ports at " & 
             tost(memstart & (apbo(i).pconfig(1)(31 downto 20) and
                              apbo(i).pconfig(1)(15 downto 4))) &
-		"00, size " & tost(iosize) & " " & iounit);
+                "00, size " & tost(iosize) & " " & iounit);
           if mcheck /= 0 then
             memmap(i).start := (apbo(i).pconfig(1)(31 downto 20) and
                                 apbo(i).pconfig(1)(15 downto 4));
             memmap(i).stop := memmap(i).start + 2**k;
           end if;
         end if;
-	assert (apbo(i).pindex = i) or (icheck = 0)
-	report "APB slave index error on slave " & tost(i) &
+        assert (apbo(i).pindex = i) or (icheck = 0)
+        report "APB slave index error on slave " & tost(i) &
           ". Detected index value " & tost(apbo(i).pindex) severity failure;
         if mcheck /= 0 then
           for j in 0 to i loop

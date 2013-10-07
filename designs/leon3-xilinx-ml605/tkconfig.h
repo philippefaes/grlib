@@ -22,7 +22,13 @@
 #define CONFIG_SYN_TECH stratix2
 #elif defined CONFIG_SYN_STRATIXIII
 #define CONFIG_SYN_TECH stratix3
+#elif defined CONFIG_SYN_STRATIXIV
+#define CONFIG_SYN_TECH stratix4
+#elif defined CONFIG_SYN_CYCLONEII
+#define CONFIG_SYN_TECH stratix2
 #elif defined CONFIG_SYN_CYCLONEIII
+#define CONFIG_SYN_TECH cyclone3
+#elif defined CONFIG_SYN_CYCLONEIV
 #define CONFIG_SYN_TECH cyclone3
 #elif defined CONFIG_SYN_EASIC45
 #define CONFIG_SYN_TECH easic45
@@ -783,10 +789,25 @@
 #define CFG_AHBRAMSZ 32
 #elif CONFIG_AHBRAM_SZ64
 #define CFG_AHBRAMSZ 64
+#elif CONFIG_AHBRAM_SZ128
+#define CFG_AHBRAMSZ 128
+#elif CONFIG_AHBRAM_SZ256
+#define CFG_AHBRAMSZ 256
+#elif CONFIG_AHBRAM_SZ512
+#define CFG_AHBRAMSZ 512
+#elif CONFIG_AHBRAM_SZ1024
+#define CFG_AHBRAMSZ 1024
+#elif CONFIG_AHBRAM_SZ2048
+#define CFG_AHBRAMSZ 2048
+#elif CONFIG_AHBRAM_SZ4096
+#define CFG_AHBRAMSZ 4096
 #else
 #define CFG_AHBRAMSZ 1
 #endif
 
+#ifndef CONFIG_AHBRAM_PIPE
+#define CONFIG_AHBRAM_PIPE 0
+#endif
 #ifndef CONFIG_GRETH_ENABLE
 #define CONFIG_GRETH_ENABLE 0
 #endif
@@ -915,6 +936,48 @@
 
 #ifndef CONFIG_GRACECTRL
 #define CONFIG_GRACECTRL 0
+#endif
+
+#if defined CONFIG_PCIEXP_SIMPLE_TARGET
+#define CFG_PCIE 1
+#define CFG_PCIETYPE 1
+#define CFG_PCIEMASTER 0
+#elif defined CONFIG_PCIEXP_MASTER_TARGET
+#define CFG_PCIE 1
+#define CFG_PCIETYPE 1
+#define CFG_PCIEMASTER 1
+#elif defined CONFIG_PCIEXP_MASTER_FIFO_DMA
+#define CFG_PCIE 1
+#define CFG_PCIETYPE 3
+#define CFG_PCIEMASTER 0
+#elif defined CONFIG_PCIEXP_MASTER_FIFO
+#define CFG_PCIE 0
+#define CFG_PCIETYPE 2
+#define CFG_PCIEMASTER 0
+#else
+#define CFG_PCIE 0
+#define CFG_PCIETYPE 0
+#define CFG_PCIEMASTER 0
+#endif
+
+#ifndef CONFIG_PCIEXP_VENDORID
+#define CONFIG_PCIEXP_VENDORID 0
+#endif
+#ifndef CONFIG_PCIEXP_DEVICEID
+#define CONFIG_PCIEXP_DEVICEID 0
+#endif
+
+
+#if defined CONFIG_LANE_WIDTH1
+#define CFG_LANE_WIDTH 1
+#elif defined CONFIG_LANE_WIDTH2
+#define CFG_LANE_WIDTH 2
+#elif defined CONFIG_LANE_WIDTH4
+#define CFG_LANE_WIDTH 4
+#elif defined CONFIG_LANE_WIDTH8
+#define CFG_LANE_WIDTH 8
+#else
+#define CFG_LANE_WIDTH 1
 #endif
 
 

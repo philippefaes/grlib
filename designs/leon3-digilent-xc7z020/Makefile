@@ -18,7 +18,7 @@ SIMTOP=testbench
 BITGEN=$(GRLIB)/boards/$(BOARD)/default.ut
 CLEAN=soft-clean
 VCOMOPT=-explicit
-VLOGOPT= +define+1Gb +define+sg125 +define+x8
+VLOGOPT= +define+x1Gb +define+sg125 +define+x8
 VSIMOPT=  -t ps -novopt +notimingchecks $(SIMTOP)
 TECHLIBS = secureip unisim 
 
@@ -28,7 +28,7 @@ LDFLAGS=-Wl,-msparcleon0
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
 	tmtc openchip ihp usbhc spw gsi cypress hynix \
 	spansion leon4 leon4v0 secureip
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan pci ambatest can \
+DIRSKIP = b1553 pci/pcif leon2 leon2ft crypto satcan pci ambatest can \
 	usb grusbhc spacewire ascs slink spi hcan \
 	leon4 leon4v0 l2cache pwm gr1553b iommu ac97 secureip
 FILESKIP = grcan.vhd ddr2.v mobile_ddr.v

@@ -173,11 +173,13 @@ package spwcomp is
       --apb slv out
       prdata	 : out  std_logic_vector(31 downto 0);
       --spw in
-      di           : in   std_logic_vector(1 downto 0);
-      si           : in   std_logic_vector(1 downto 0);
+      d            : in   std_logic_vector(1 downto 0);
+      nd           : in   std_logic_vector(9 downto 0);
+      dconnect     : in   std_logic_vector(3 downto 0);
       --spw out
       do           : out  std_logic_vector(1 downto 0);
       so           : out  std_logic_vector(1 downto 0);
+      rxrsto       : out  std_ulogic;
       --time iface
       tickin       : in   std_ulogic;
       tickout      : out  std_ulogic;
@@ -192,8 +194,6 @@ package spwcomp is
       rmapnodeaddr : in   std_logic_vector(7 downto 0);
       --clk bufs
       rxclki       : in   std_logic_vector(1 downto 0);
-      nrxclki      : in   std_logic_vector(1 downto 0);
-      rxclko       : out  std_logic_vector(1 downto 0);
       --rx ahb fifo
       rxrenable    : out  std_ulogic;
       rxraddress   : out  std_logic_vector(4 downto 0);
@@ -259,11 +259,12 @@ package spwcomp is
       --apb slv out
       prdata	   : out  std_logic_vector(31 downto 0);
       --spw in
-      di           : in   std_logic_vector(1 downto 0);
-      si           : in   std_logic_vector(1 downto 0);
+      d            : in   std_logic_vector(1 downto 0);
+      nd           : in   std_logic_vector(1 downto 0);
       --spw out
       do           : out  std_logic_vector(1 downto 0);
       so           : out  std_logic_vector(1 downto 0);
+      rxrsto       : out  std_ulogic;
       --time iface
       tickin       : in   std_ulogic;
       tickout      : out  std_ulogic;
@@ -278,8 +279,6 @@ package spwcomp is
       rmapnodeaddr : in   std_logic_vector(7 downto 0);
       --clk bufs
       rxclki       : in   std_logic_vector(1 downto 0);
-      nrxclki      : in   std_logic_vector(1 downto 0);
-      rxclko       : out  std_logic_vector(1 downto 0);
       --rx ahb fifo
       rxrenable    : out  std_ulogic;
       rxraddress   : out  std_logic_vector(4 downto 0);
@@ -344,11 +343,12 @@ package spwcomp is
       --apb slv out
       prdata	   : out  std_logic_vector(31 downto 0);
       --spw in
-      di           : in   std_logic_vector(1 downto 0);
-      si           : in   std_logic_vector(1 downto 0);
+      d            : in   std_logic_vector(1 downto 0);
+      nd           : in   std_logic_vector(1 downto 0);
       --spw out
       do           : out  std_logic_vector(1 downto 0);
       so           : out  std_logic_vector(1 downto 0);
+      rxrsto       : out  std_ulogic;
       --time iface
       tickin       : in   std_ulogic;
       tickout      : out  std_ulogic;
@@ -363,8 +363,6 @@ package spwcomp is
       rmapnodeaddr : in   std_logic_vector(7 downto 0);
       --clk bufs
       rxclki       : in   std_logic_vector(1 downto 0);
-      nrxclki      : in   std_logic_vector(1 downto 0);
-      rxclko       : out  std_logic_vector(1 downto 0);
       --rx ahb fifo
       rxrenable    : out  std_ulogic;
       rxraddress   : out  std_logic_vector(4 downto 0);
@@ -425,6 +423,7 @@ package spwcomp is
       rst          : in  std_ulogic;
       clk          : in  std_ulogic;
       txclk        : in  std_ulogic;
+      rxclk        : in  std_logic_vector(1 downto 0);
       --ahb mst in
       hgrant       : in  std_ulogic;
       hready       : in  std_ulogic;
@@ -441,19 +440,21 @@ package spwcomp is
       hprot        : out  std_logic_vector(3 downto 0);
       hwdata       : out  std_logic_vector(31 downto 0);
       --apb slv in
-      psel	 : in   std_ulogic;
-      penable	 : in   std_ulogic;
-      paddr	 : in   std_logic_vector(31 downto 0);
-      pwrite	 : in   std_ulogic;
-      pwdata	 : in   std_logic_vector(31 downto 0);
+      psel	   : in   std_ulogic;
+      penable	   : in   std_ulogic;
+      paddr	   : in   std_logic_vector(31 downto 0);
+      pwrite	   : in   std_ulogic;
+      pwdata	   : in   std_logic_vector(31 downto 0);
       --apb slv out
-      prdata	 : out  std_logic_vector(31 downto 0);
+      prdata	   : out  std_logic_vector(31 downto 0);
       --spw in
-      di           : in   std_logic_vector(1 downto 0);
-      si           : in   std_logic_vector(1 downto 0);
+      d            : in   std_logic_vector(1 downto 0);
+      nd           : in   std_logic_vector(9 downto 0);
+      dconnect     : in   std_logic_vector(3 downto 0);
       --spw out
       do           : out  std_logic_vector(1 downto 0);
       so           : out  std_logic_vector(1 downto 0);
+      rxrsto       : out  std_ulogic;
       --time iface
       tickin       : in   std_ulogic;
       tickout      : out  std_ulogic;

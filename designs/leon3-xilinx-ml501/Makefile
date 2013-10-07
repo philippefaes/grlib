@@ -7,7 +7,7 @@ DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 #UCF=$(GRLIB)/boards/$(BOARD)/$(TOP).ucf
 UCF=leon3mp.ucf
 ifeq ("$(CONFIG_MIG_DDR2)","y")
-UCF+=mig.ucf
+UCF+=leon3mp_mig.ucf
 endif
 ifeq ("$(CONFIG_DDR2SP)","y")
 UCF+=ddr2spa.ucf
@@ -52,16 +52,15 @@ SIMTOP=testbench
 #SDCFILE=$(GRLIB)/boards/$(BOARD)/default.sdc
 SDCFILE=default.sdc
 BITGEN=$(GRLIB)/boards/$(BOARD)/default.ut
-CLEAN=soft-clean
+CLEAN=soft-clean migclean
 
 include $(GRLIB)/software/leon3/Makefile
-XLDFLAGS=-L./ lib3tests.a -Ttext=0x40000000
 
 TECHLIBS = unisim
 
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
 	tmtc openchip ihp usbhc spw fmf gsi spansion
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan can pci leon3ft ambatest \
+DIRSKIP = b1553 pci/pcif leon2 leon2ft crypto satcan can pci leon3ft ambatest \
 	grusbhc usb spacewire hcan leon4 leon4v0 l2cache \
 	slink ascs pwm gr1553b iommu
 
@@ -73,8 +72,9 @@ include $(GRLIB)/bin/Makefile
 ##################  project specific targets ##########################
 
 mig_36_1 mig:
+	cp grlib_mig/* .
 	coregen -b mig.xco -p .
 	patch -p0 < mig.diff
 
 migclean:
-	-rm -rf mig_36* tmp coregen.log
+	-rm -rf coregen.* mig_36* mig.* mig.diff tmp

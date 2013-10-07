@@ -2,7 +2,7 @@
  * System test software for GRGPIO core
  * 
  * Copyright (C) 2005 - 2008, Gaisler Research
- * Copyright (C) 2008 - 2010, Aeroflex Gaisler
+ * Copyright (C) 2008 - 2013, Aeroflex Gaisler
  *
  * This file contains two test functions:
  *
@@ -119,7 +119,7 @@ int gpio_test_irq(int addr, int imask, int pirq, int irqgen)
         /* Set up interrupt handler */
         if (irqgen == 0) {
                 /* Fixed mapping IO[i] = interrupt pirq + i */
-                for (i=1; i <width; i++) {
+                for (i=pirq ? 1 : 0; i <width; i++) {
                         if ((pirq+i) < 32) {
                                 catch_interrupt(gpio_irqhandler, pirq+i);
                                 /* Enable interrupt on IRQMP */
@@ -161,7 +161,7 @@ int gpio_test_irq(int addr, int imask, int pirq, int irqgen)
                 numirq = 0;
 
                 /* Assert interrupts */
-                for (i = irqgen ? 0 : 1; i < width; i++) {
+                for (i = (irqgen != 0 || pirq != 0) ? 0 : 1; i < width; i++) {
 
                         /* Drive line i low */
                         pio[2] = (1 << i);
@@ -177,9 +177,9 @@ int gpio_test_irq(int addr, int imask, int pirq, int irqgen)
 
         
                 /* Check interrupts */
-                for (i = irqgen ? 0 : 1; i < width; i++) {
+                for (i = (irqgen != 0 || pirq != 0) ? 0 : 1; i < width; i++) {
                         /* Skip lines that cannot generate irqs */
-                        if (imask & (1 << width) == 0)
+                        if ((imask & (1 << i)) == 0)
                                 continue;
                         numirq++;
                 

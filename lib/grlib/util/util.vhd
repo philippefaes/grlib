@@ -49,4 +49,27 @@ begin
   end process;
 end;
 
+
+library ieee;
+use ieee.std_logic_1164.all;
+library grlib;
+use grlib.stdlib.all;
+
+entity report_design is
+  generic (msg1, fabtech, memtech : string := ""; mdel : integer := 4);
+end;
+
+architecture beh of report_design is
+begin
+
+  x : report_version
+    generic map (
+      msg1 => msg1,
+      msg2 => "GRLIB Version " & tost(LIBVHDL_VERSION/1000) & "." & tost((LIBVHDL_VERSION mod 1000)/100)
+      & "." & tost(LIBVHDL_VERSION mod 100) & ", build " & tost(LIBVHDL_BUILD),
+      msg3 => "Target technology: " & fabtech & ", memory library: " & memtech,
+      mdel => mdel);
+
+end;
+
 -- pragma translate_on

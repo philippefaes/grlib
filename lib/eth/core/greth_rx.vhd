@@ -97,7 +97,7 @@ architecture rtl of greth_rx is
   signal rxrst      : std_ulogic;
   signal vcc        : std_ulogic;
 
-  attribute sync_set_reset : string;
+  -- attribute sync_set_reset : string;
   attribute sync_set_reset of rxrst : signal is "true";
 
 begin

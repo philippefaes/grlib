@@ -38,6 +38,7 @@ entity scanregi is
     pad     : in std_ulogic;
     core    : out std_ulogic;
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -53,12 +54,12 @@ signal d1, d2, q1, q2, m3i, o1o : std_ulogic;
 begin
 
   gen0: if tech = 0 generate
-    x: scanregi_inf generic map (intesten) port map (pad,core,tck,tdi,tdo,bsshft,bscapt,bsupd,bsdrive,bshighz);
+    x: scanregi_inf generic map (intesten) port map (pad,core,tck,tckn,tdi,tdo,bsshft,bscapt,bsupd,bsdrive,bshighz);
   end generate;
   map0: if tech /= 0 generate
     iten: if intesten /= 0 generate
       m1 : grmux2 generic map (tech) port map (pad, q1, bsdrive, core);
-      f1 : grdff  generic map (tech) port map (tck, d1, q1);
+      f1 : grdff  generic map (tech) port map (tckn, d1, q1);
       m2 : grmux2 generic map (tech) port map (q1, q2, bsupd, d1);
     end generate;
     itdis: if intesten = 0 generate
@@ -92,6 +93,7 @@ entity scanrego is
     core    : in std_ulogic;
     samp    : in std_ulogic;
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -107,7 +109,7 @@ signal d1, d2, q1, q2, m3i, o1o : std_ulogic;
 begin
 
   gen0: if tech = 0 generate
-    x: scanrego_inf port map (pad,core,samp,tck,tdi,tdo,bsshft,bscapt,bsupd,bsdrive);
+    x: scanrego_inf port map (pad,core,samp,tck,tckn,tdi,tdo,bsshft,bscapt,bsupd,bsdrive);
   end generate;
  
   map0: if tech /= 0 generate
@@ -115,7 +117,7 @@ begin
     m2 : grmux2 generic map (tech) port map (q1, q2, bsupd, d1);
     m3 : grmux2 generic map (tech) port map (m3i, tdi, bsshft, d2);
     m4 : grmux2 generic map (tech) port map (q2, samp, bscapt, m3i);
-    f1 : grdff  generic map (tech) port map (tck, d1, q1);
+    f1 : grdff  generic map (tech) port map (tckn, d1, q1);
     f2 : grdff  generic map (tech) port map (tck, d2, q2);
     tdo <= q2;
   end generate;
@@ -142,6 +144,7 @@ entity scanregto is
     coreo   : in std_ulogic;
     coreoen : in std_ulogic;
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -157,9 +160,9 @@ signal tdo1, padoenx : std_ulogic;
 begin
 
     x1: scanrego generic map (tech)
-	port map (pado, coreo, samp, tck, tdo1, tdo, bsshft, bscapt, bsupdo, bsdrive);
+	port map (pado, coreo, samp, tck, tckn, tdo1, tdo, bsshft, bscapt, bsupdo, bsdrive);
     x2: scanrego generic map (tech)
-	port map (padoenx, coreoen, coreoen, tck, tdi, tdo1, bsshft, bscapt, bsupdo, bsdrive);
+	port map (padoenx, coreoen, coreoen, tck, tckn, tdi, tdo1, bsshft, bscapt, bsupdo, bsdrive);
 
     hz : if hzsup = 1 generate
       x3 : if oepol = 0 generate
@@ -197,6 +200,7 @@ entity scanregio is
     coreoen : in std_ulogic;
     corei   : out std_ulogic;
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -215,15 +219,15 @@ begin
   gen0: if tech = 0 generate
     x: scanregio_inf
       generic map (hzsup,intesten)
-      port map (pado,padoen,padi,coreo,coreoen,corei,tck,tdi,tdo,
+      port map (pado,padoen,padi,coreo,coreoen,corei,tck,tckn,tdi,tdo,
                 bsshft,bscapt,bsupdi,bsupdo,bsdrive,bshighz);
   end generate;
   map0: if tech /= 0 generate
     x0: scanregi generic map (tech,intesten)
-	port map (padi, corei, tck, tdo1, tdo, bsshft, bscapt, bsupdi, bsdrive, bshighz);
+	port map (padi, corei, tck, tckn, tdo1, tdo, bsshft, bscapt, bsupdi, bsdrive, bshighz);
     x1: scanregto generic map (tech, hzsup, oepol)
 	port map (pado, padoen, coreo, coreo, coreoen, 
-		 tck, tdi, tdo1, bsshft, bscapt, bsupdo, bsdrive, bshighz);
+		 tck, tckn, tdi, tdo1, bsshft, bscapt, bsupdo, bsdrive, bshighz);
   end generate;
   
 end;

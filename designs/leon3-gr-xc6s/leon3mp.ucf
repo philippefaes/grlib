@@ -44,24 +44,31 @@ TIMESPEC "TS_clk2" = PERIOD "clk2" 5.000 ns HIGH 50.00%;
 # -------------------------------
 # RGMII interface
 
-NET "erx_clk" TNM_NET = "erx_clk";
-TIMESPEC "TS_erx_clk" = PERIOD "erx_clk" 8.000 ns HIGH 50.00%;
-#OFFSET = IN 10ns VALID 5ns BEFORE erx_clk TIMEGRP "erx_clk" RISING;
-OFFSET = IN 5ns valid 8ns BEFORE erx_clk TIMEGRP "erx_clk" RISING;
-
+# -- GTX clock inout
 NET "clk125" TNM_NET = "clk125";
 TIMESPEC "TS_clk125" = PERIOD "clk125" 8.000 ns HIGH 50.00%;
 
-NET "clkm" TNM_NET = "clkm";
-NET "rgmii0?tx_clk" TNM_NET = "rgmii0_tx_clk";
-TIMESPEC "TS_tx_clk_freq" = PERIOD rgmii0_tx_clk 8.00 ns;
-TIMESPEC "TS_clkm_rgmii0_tx_clk" = FROM "clkm" TO "rgmii0_tx_clk" 8 ns DATAPATHONLY;
-TIMESPEC "TS_rgmii0_tx_clk_clkm" = FROM "rgmii0_tx_clk" TO "clkm" 8 ns DATAPATHONLY;
+NET "erx_clk" TNM_NET = "erx_clk";
+TIMESPEC "TS_erx_clk" = PERIOD "erx_clk" 8.000 ns HIGH 50.00%;
 
-#NET "gmiii_gtx_clk" TNM_NET = "gmiii_gtx_clk";
-#TIMESPEC "TS_clkm_rgmiii_gtx_clk" = FROM "clkm" TO "gmiii_gtx_clk" TIG;
-#TIMESPEC "TS_gmiii_gtx_clk_clkm" = FROM "gmiii_gtx_clk" TO "clkm" TIG;
-# -------------------------------
+INST "etx_clk" SLEW = FAST;
+INST "etxd*  " SLEW = FAST;
+INST "etx_en " SLEW = FAST;
+
+INST "erxd*"   TNM = IN_RGMII; 
+INST "erx_dv"  TNM = IN_RGMII;
+
+# See http://www.xilinx.com/support/documentation/sw_manuals/xilinx11/ug612.pdf figure 2-4
+# http://www.xilinx.com/support/documentation/sw_manuals/xilinx14_4/ug612.pdf
+
+# Use when IODELAY is inserted
+TIMEGRP "IN_RGMII" OFFSET = IN 1.1 ns VALID 2.2 ns BEFORE "erx_clk" RISING; 
+TIMEGRP "IN_RGMII" OFFSET = IN 1.1 ns VALID 2.2 ns BEFORE "erx_clk" FALLING;
+
+# No IODELAY
+# Please, note that these will fail but will be fixed by setup script in GRMON2
+#TIMEGRP "IN_RGMII" OFFSET = IN 1.5 ns VALID 2.25 ns BEFORE "erx_clk" RISING;
+#TIMEGRP "IN_RGMII" OFFSET = IN 1.5 ns VALID 2.25 ns BEFORE "erx_clk" FALLING;
 
 ############################################################################
 # I/O STANDARDS AND LOCATIONS
@@ -191,20 +198,20 @@ NET "emdc"    LOC = "j16" | IOSTANDARD =LVCMOS33;
 NET "emdint"  LOC = "l15" | IOSTANDARD =LVCMOS33;
 NET "emdio"   LOC = "h18" | IOSTANDARD =LVCMOS33;
 
-NET "erx_dv"   LOC = "k16" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
-NET "erx_clk"  LOC = "k19" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
+NET "erx_dv"   LOC = "k16" | IOSTANDARD =LVCMOS33;
+NET "erx_clk"  LOC = "k19" | IOSTANDARD =LVCMOS33;
 
-NET "erxd(0)" LOC = "h19" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
-NET "erxd(1)" LOC = "k17" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
-NET "erxd(2)" LOC = "n16" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
-NET "erxd(3)" LOC = "m17" | IOSTANDARD =LVCMOS33 | IOBDELAY = NONE;
+NET "erxd(0)" LOC = "h19" | IOSTANDARD =LVCMOS33;
+NET "erxd(1)" LOC = "k17" | IOSTANDARD =LVCMOS33;
+NET "erxd(2)" LOC = "n16" | IOSTANDARD =LVCMOS33;
+NET "erxd(3)" LOC = "m17" | IOSTANDARD =LVCMOS33;
 
-NET "etx_en"  LOC = "m18" | IOSTANDARD =LVTTL | FAST; 
-NET "etx_clk" LOC = "m19" | IOSTANDARD =LVTTL | SLOW;
-NET "etxd(0)" LOC = "p17" | IOSTANDARD =LVTTL | FAST;
-NET "etxd(1)" LOC = "m16" | IOSTANDARD =LVTTL | FAST;
-NET "etxd(2)" LOC = "n19" | IOSTANDARD =LVTTL | FAST;
-NET "etxd(3)" LOC = "n20" | IOSTANDARD =LVTTL | FAST;
+NET "etx_en"  LOC = "m18" | IOSTANDARD =LVTTL | FAST | DRIVE = 12; 
+NET "etx_clk" LOC = "m19" | IOSTANDARD =LVTTL | FAST | DRIVE = 12;
+NET "etxd(0)" LOC = "p17" | IOSTANDARD =LVTTL | FAST | DRIVE = 12;
+NET "etxd(1)" LOC = "m16" | IOSTANDARD =LVTTL | FAST | DRIVE = 12;
+NET "etxd(2)" LOC = "n19" | IOSTANDARD =LVTTL | FAST | DRIVE = 12;
+NET "etxd(3)" LOC = "n20" | IOSTANDARD =LVTTL | FAST | DRIVE = 12;
 
 
 # I2C interface conecting to Monitor via DVI-I connector J4

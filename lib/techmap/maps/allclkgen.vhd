@@ -115,7 +115,9 @@ component clkgen_virtex7
     freq     : integer := 25000);
   port (
     clkin   : in  std_logic;
-    clk     : out std_logic;			-- main clock
+    clk     : out std_logic;      -- main clock
+    clk90   : out std_ulogic;     -- main clock 90deg
+    clkio   : out std_ulogic;     -- IO ref clock
     cgi     : in clkgen_in_type;
     cgo     : out clkgen_out_type);
 end component; 
@@ -477,6 +479,9 @@ end component;
   end component;
 
   component clkgen_dare
+  generic (
+    noclkfb : integer := 1
+  );
   port (
     clkin   : in  std_logic;
     clk     : out std_logic;			-- main clock
@@ -487,9 +492,10 @@ end component;
     cgo     : out clkgen_out_type;
     clk4x   : out std_logic;			-- 4x clock
     clk1xu  : out std_logic;			-- unscaled 1X clock
-    clk2xu  : out std_logic);			-- unscaled 2X clock
-  end component; 
-
+    clk2xu  : out std_logic;			-- unscaled 2X clock
+    clk8x   : out std_logic);
+  end component;
+  
   component clkgen_easic90
     generic (
       clk_mul   : integer;

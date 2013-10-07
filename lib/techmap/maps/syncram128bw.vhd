@@ -34,7 +34,7 @@ use grlib.config_types.all;
 use grlib.stdlib.all;
 
 entity syncram128bw is
-  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0);
+  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0; custombits: integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -42,7 +42,10 @@ entity syncram128bw is
     dataout : out std_logic_vector (127 downto 0);
     enable  : in  std_logic_vector (15 downto 0);
     write   : in  std_logic_vector (15 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(16*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(16*custombits-1 downto 0));
 end;
 
 architecture rtl of syncram128bw is
@@ -93,23 +96,31 @@ architecture rtl of syncram128bw is
     dataout : out std_logic_vector (127 downto 0);
     enable  : in  std_logic_vector (15 downto 0);
     write   : in  std_logic_vector (15 downto 0);
-    testin  : in  std_logic_vector (3 downto 0) := "0000"
+    tdbn    : in  std_ulogic
   );
   end component;
 
   signal xenable, xwrite : std_logic_vector(15 downto 0);
+  signal custominx,customoutx: std_logic_vector(syncram_customif_maxwidth downto 0);
 
 begin
 
   xenable <= enable when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
   xwrite <= write when testen=0 or testin(TESTIN_WIDTH-2)='0' else (others => '0');
 
+  custominx(custominx'high downto custombits) <= (others => '0');
+  custominx(custombits-1 downto 0) <= customin(custombits-1 downto 0);
+
+  nocust: if syncram_has_customif(tech)=0 or has_sram128bw(tech)=0 generate
+    customoutx <= (others => '0');
+  end generate;
+  
   s64 : if has_sram128bw(tech) = 1 generate
     xc2v : if (is_unisim(tech) = 1) generate 
       x0 : unisim_syncram128bw generic map (abits)
          port map (clk, address, datain, dataout, xenable, xwrite);
     end generate;
-    alt : if (tech = stratix2) or (tech = stratix3) or 
+    alt : if (tech = stratix2) or (tech = stratix3) or (tech = stratix4) or 
 	(tech = cyclone3) or (tech = altera) generate
       x0 : altera_syncram128bw generic map (abits)
          port map (clk, address, datain, dataout, xenable, xwrite);
@@ -120,8 +131,12 @@ begin
     end generate;
     ut09: if tech = ut90 generate
       x0 : ut90nhbd_syncram128bw generic map (abits)
-         port map (clk, address, datain, dataout, xenable, xwrite, testin);
+         port map (clk, address, datain, dataout, xenable, xwrite, testin(TESTIN_WIDTH-3));
     end generate;
+
+    customout(16*custombits-1 downto custombits) <= (others => '0');
+    customout(custombits-1 downto 0) <= customoutx(custombits-1 downto 0);
+
 -- pragma translate_off
     dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
       x : process
@@ -137,9 +152,11 @@ begin
 
   nos64 : if has_sram128bw(tech) = 0 generate
     rx : for i in 0 to 15 generate
-      x0 : syncram generic map (tech, abits, 8, testen)
+      x0 : syncram generic map (tech, abits, 8, testen, custombits)
          port map (clk, address, datain(i*8+7 downto i*8), 
-	    dataout(i*8+7 downto i*8), enable(i), write(i), testin);
+	    dataout(i*8+7 downto i*8), enable(i), write(i), testin,
+                   customclk, customin((i+1)*custombits-1 downto i*custombits),
+                   customout((i+1)*custombits-1 downto i*custombits));
     end generate;
   end generate;
 

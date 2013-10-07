@@ -17,10 +17,10 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Package: 	cpu_disasx
--- File:	cpu_disasx.vhd
--- Author:	Jiri Gaisler, Gaisler Research
--- Description:	SPARC disassembler according to SPARC V8 manual 
+-- Package:     cpu_disasx
+-- File:        cpu_disasx.vhd
+-- Author:      Jiri Gaisler, Gaisler Research
+-- Description: SPARC disassembler according to SPARC V8 manual 
 ------------------------------------------------------------------------------
 
 library ieee;

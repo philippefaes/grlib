@@ -67,6 +67,7 @@ constant log2x  : log2arr := (
   8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
   8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
   others => 9);
+function log2ext(i: integer) return integer;
 
 function decode(v : std_logic_vector) return std_logic_vector;
 function genmux(s,v : std_logic_vector) return std_ulogic;
@@ -112,6 +113,10 @@ procedure print(s : string);
 
 component report_version
   generic (msg1, msg2, msg3, msg4 : string := ""; mdel : integer := 4);
+end component;
+
+component report_design
+  generic (msg1, fabtech, memtech : string := ""; mdel : integer := 4);
 end component;
 
 -- pragma translate_on
@@ -425,6 +430,17 @@ end;
 function conv_std_logic(b : boolean) return std_ulogic is
 begin
   if b then return('1'); else return('0'); end if;
+end;
+
+function log2ext(i: integer) return integer is
+  variable v: std_logic_vector(31 downto 0);
+begin
+  if i=0 then return 0; end if;
+  v := std_logic_vector(to_unsigned((i-1),v'length));
+  for x in v'high downto v'low loop
+    if v(x)='1' then return x+1; end if;
+  end loop;
+  return 0;
 end;
 
 -- pragma translate_off

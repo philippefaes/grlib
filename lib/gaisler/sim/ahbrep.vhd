@@ -129,6 +129,8 @@ begin
           print (tost(errcnt) & " errors detected, halting with IU error mode");
         end if;
         print ("");
+      when "000110" =>
+        grlib.testlib.print("Checkpoint " & tost(conv_integer(hwdata(15 downto 0))));
       when others =>
       end case;
     end if;

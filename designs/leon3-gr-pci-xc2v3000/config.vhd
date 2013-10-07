@@ -123,6 +123,7 @@ package config is
   constant CFG_AHBRAMEN : integer := 0;
   constant CFG_AHBRSZ : integer := 1;
   constant CFG_AHBRADDR : integer := 16#A00#;
+  constant CFG_AHBRPIPE : integer := 0;
 -- Gaisler Ethernet core
   constant CFG_GRETH : integer := 1;
   constant CFG_GRETH1G : integer := 0;
@@ -137,7 +138,6 @@ package config is
   constant CFG_PCI_ARB : integer := 0;
   constant CFG_PCI_ARBAPB : integer := 0;
   constant CFG_PCI_ARB_NGNT : integer := 4;
-
 -- PCI trace buffer
   constant CFG_PCITBUFEN: integer := 0;
   constant CFG_PCITBUF : integer := 256;

@@ -39,6 +39,7 @@ entity bscanregs is
     sigi: in  std_logic_vector(nsigs-1 downto 0);
     sigo: out std_logic_vector(nsigs-1 downto 0);
     tck: in std_ulogic;
+    tckn:in std_ulogic;
     tdi: in std_ulogic;
     tdo: out std_ulogic;
     bsshft: in std_ulogic;
@@ -69,13 +70,13 @@ begin
       irgen: if ((dirmask / (2**x)) mod 2)=0 generate
         ireg: scanregi
           generic map (tech)
-          port map (sigi(x),sigo(x),tck,itdi(x),itdi(x+1),bsshft,bscapt,bsupdi,bsdrive,bshighz);
+          port map (sigi(x),sigo(x),tck,tckn,itdi(x),itdi(x+1),bsshft,bscapt,bsupdi,bsdrive,bshighz);
       end generate;
       
       orgen: if ((dirmask / (2**x)) mod 2)/=0 generate
         oreg: scanrego
           generic map (tech)
-          port map (sigo(x),sigi(x),sigi(x),tck,itdi(x),itdi(x+1),bsshft,bscapt,bsupdo,bsdrive);
+          port map (sigo(x),sigi(x),sigi(x),tck,tckn,itdi(x),itdi(x+1),bsshft,bscapt,bsupdo,bsdrive);
       end generate;
       
     end generate;

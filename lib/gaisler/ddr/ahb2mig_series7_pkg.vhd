@@ -51,7 +51,15 @@ package ahb2mig_series7_pkg is
 -- AHB2MIG Subprograms
 -------------------------------------------------------------------------------
 
+ function nbrmaxmigcmds (
+    datawidth : integer)
+    return integer;
+
  function nbrmigcmds (
+    hwrite    : std_logic;
+    hsize     : std_logic_vector;
+    htrans    : std_logic_vector;
+    step      : unsigned;
     datawidth : integer)
     return integer;
 
@@ -97,21 +105,70 @@ end;
 
 package body ahb2mig_series7_pkg is
 
-  -- Number of MIG commands
-  function nbrmigcmds(
+  -- Number of Max MIG commands
+  function nbrmaxmigcmds(
   datawidth : integer)
   return integer is
   variable ret : integer;
   begin
-    case datawidth is
-    when 128 =>
-       ret:= 4;
-    when 64 =>
-       ret:= 4;
-    -- 32
-    when others =>
-       ret:= 4;
-    end case;
+     case datawidth is
+     when 128 =>
+        ret:= 4;
+     when 64 =>
+        ret := 2;
+     when others =>
+        ret := 2;
+     end case;
+    return ret;
+  end function nbrmaxmigcmds;
+
+  -- Number of MIG commands
+  function nbrmigcmds(
+  hwrite    : std_logic;
+  hsize     : std_logic_vector;
+  htrans    : std_logic_vector;
+  step      : unsigned;
+  datawidth : integer)
+  return integer is
+  variable ret : integer;
+  begin
+    if (hwrite = '0') then
+       case datawidth is
+       when 128 =>
+          if (hsize = HSIZE_4WORD) then
+             ret:= 4;
+          elsif (hsize = HSIZE_DWORD) then
+             ret := 2;
+          elsif (hsize = HSIZE_WORD) then
+             ret := 1;
+          else
+             ret := 1;
+          end if;
+       when 64 =>
+          if (hsize = HSIZE_DWORD) then
+             ret := 2;
+          elsif (hsize = HSIZE_WORD) then
+             ret := 2;
+          else
+             ret := 1;
+          end if;
+       -- 32
+       when others =>
+          if (hsize = HSIZE_WORD) then
+             ret := 2;
+          else
+             ret := 1;
+          end if;
+       end case;
+
+       if (htrans /= HTRANS_SEQ) then
+          ret := 1;
+       end if;
+
+
+    else
+       ret := to_integer(shift_right(step,4)) + 1;
+    end if;
 
     return ret;
   end function nbrmigcmds;

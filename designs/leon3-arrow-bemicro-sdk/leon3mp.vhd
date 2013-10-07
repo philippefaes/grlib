@@ -286,7 +286,7 @@ begin
           cp         => 0,
           mac        => CFG_MAC,
           pclow      => pclow,
-          notag      => 0,
+          notag      => CFG_NOTAG,
           nwp        => CFG_NWP,
           icen       => CFG_ICEN,
           irepl      => CFG_IREPL,
@@ -861,7 +861,8 @@ begin
         hindex => 5,
         haddr  => CFG_AHBRADDR,
         tech   => CFG_MEMTECH,
-        kbytes => CFG_AHBRSZ)
+        kbytes => CFG_AHBRSZ,
+        pipe => CFG_AHBRPIPE)
       port map (
         rst   => rstn,
         clk   => clkm,
@@ -900,12 +901,10 @@ begin
 -----------------------------------------------------------------------
 
 -- pragma translate_off
-  x : report_version 
+  x : report_design
   generic map (
    msg1 => "LEON3 BeMicro SDK Design",
-   msg2 => "GRLIB Version " & tost(LIBVHDL_VERSION/1000) & "." & tost((LIBVHDL_VERSION mod 1000)/100)
-      & "." & tost(LIBVHDL_VERSION mod 100) & ", build " & tost(LIBVHDL_BUILD),
-   msg3 => "Target technology: " & tech_table(fabtech) & ",  memory library: " & tech_table(memtech),
+   fabtech => tech_table(fabtech), memtech => tech_table(memtech),
    mdel => 1
   );
 -- pragma translate_on

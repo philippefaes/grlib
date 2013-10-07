@@ -3,7 +3,7 @@
 #
 # Written by Jiri Gaisler, Gaisler Research
 #
-# Comments and bug reports to jiri@gaisler.com
+# Comments and bug reports to support@gaisler.com
 #
 #
 
@@ -51,7 +51,7 @@ comment 'Peripherals             '
   mainmenu_option next_comment
   comment 'UART, timer, I/O port and interrupt controller'
     source lib/gaisler/uart/uart1.in
-    source lib/gaisler/leon3/irqmp.in
+    source lib/gaisler/irqmp/irqmp.in
     source lib/gaisler/misc/gptimer.in
 #    source lib/gaisler/misc/grgpio.in
   endmenu

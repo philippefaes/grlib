@@ -154,9 +154,9 @@ begin
     ahbc : ddr2spax_ahb
       generic map (hindex => hindex, haddr => haddr, hmask => hmask, ioaddr => ioaddr, iomask => iomask,
                    nosync => nosync, burstlen => burstlen, ahbbits => xahbw, revision => revision,
-                   ddrbits => ddrbits)
+                   ddrbits => ddrbits, regarea => 0)
       port map (ahb_rst, clk_ahb, ahbsi, ahbso, request, start_tog, response,
-                wbwaddr, wbwdata, wbwrite, wbwritebig, rbraddr, rbrdata);
+                wbwaddr, wbwdata, wbwrite, wbwritebig, rbraddr, rbrdata, hwidth, FTFE_BEID_DDR2);
     ce <= '0';
   end generate;
 

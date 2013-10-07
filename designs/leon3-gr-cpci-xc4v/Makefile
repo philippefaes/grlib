@@ -5,6 +5,9 @@ BOARD=gr-cpci-xc4v
 include $(GRLIB)/boards/$(BOARD)/Makefile.inc
 DEVICE=$(PART)-$(PACKAGE)$(SPEED)
 UCF=$(GRLIB)/boards/$(BOARD)/$(TOP).ucf
+ifeq ("$(CONFIG_SPW_ENABLE)","y")
+UCF+=$(GRLIB)/boards/$(BOARD)/$(TOP)_spw.ucf
+endif
 QSF=$(GRLIB)/boards/$(BOARD)/$(TOP).qsf
 EFFORT=high
 XSTOPT=
@@ -22,7 +25,7 @@ TECHLIBS = unisim secureip
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 \
 	tmtc openchip hynix cypress ihp usbhc fmf spansion gsi
 DIRSKIP = b1553 leon2 leon2ft leon3ft crypto satcan ddr usb grusbhc \
-	leon4 leon4v0 l2cache iommu pcif slink ascs
+	leon4 leon4v0 l2cache iommu pci/pcif slink ascs
 
 include $(GRLIB)/bin/Makefile
 include $(GRLIB)/software/leon3/Makefile

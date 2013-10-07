@@ -46,7 +46,7 @@ entity spictrl is
     paddr  : integer := 0;                -- APB address
     pmask  : integer := 16#fff#;          -- APB mask
     pirq   : integer := 0;                -- interrupt index
-    
+
     -- SPI controller configuration
     fdepth    : integer range 1 to 7      := 1;  -- FIFO depth is 2^fdepth
     slvselen  : integer range 0 to 1      := 0;  -- Slave select register enable
@@ -55,7 +55,7 @@ entity spictrl is
     odmode    : integer range 0 to 1      := 0;  -- Support open drain mode, only
                                                 -- set if pads are i/o or od pads.
     automode  : integer range 0 to 1      := 0;  -- Enable automated transfer mode
-    acntbits  : integer range 1 to 32     := 32; -- # Bits in am period counter 
+    acntbits  : integer range 1 to 32     := 32; -- # Bits in am period counter
     aslvsel   : integer range 0 to 1      := 0;  -- Automatic slave select
     twen      : integer range 0 to 1      := 1;  -- Enable three wire mode
     maxwlen   : integer range 0 to 15     := 0;  -- Maximum word length
@@ -70,12 +70,13 @@ entity spictrl is
     automask0 : integer                   := 0;  -- Mask 0 for automated transfers
     automask1 : integer                   := 0;  -- Mask 1 for automated transfers
     automask2 : integer                   := 0;  -- Mask 2 for automated transfers
-    automask3 : integer                   := 0   -- Mask 3 for automated transfers
+    automask3 : integer                   := 0;  -- Mask 3 for automated transfers
+    ignore    : integer range 0 to 1      := 0   -- Ignore samples
     );
   port (
     rstn   : in std_ulogic;
     clk    : in std_ulogic;
-    
+
     -- APB signals
     apbi   : in  apb_slv_in_type;
     apbo   : out apb_slv_out_type;
@@ -93,7 +94,7 @@ architecture rtl of spictrl is
   -- Constants
   -----------------------------------------------------------------------------
   constant SPICTRL_REV : integer := 5;
-  
+
   constant PCONFIG : apb_config_type := (
   0 => ahb_device_reg(VENDOR_GAISLER, GAISLER_SPICTRL, 0, SPICTRL_REV, pirq),
   1 => apb_iobar(paddr, pmask));
@@ -122,10 +123,11 @@ architecture rtl of spictrl is
       automask0 : integer                  := 0;
       automask1 : integer                  := 0;
       automask2 : integer                  := 0;
-      automask3 : integer                  := 0);
+      automask3 : integer                  := 0;
+      ignore    : integer range 0 to 1     := 0);
     port (
       rstn          : in std_ulogic;
-      clk           : in std_ulogic; 
+      clk           : in std_ulogic;
       -- APB signals
       apbi_psel     : in  std_ulogic;
       apbi_penable  : in  std_ulogic;
@@ -145,6 +147,7 @@ architecture rtl of spictrl is
       spii_spisel   : in  std_ulogic;
       spii_astart   : in  std_ulogic;
       spii_cstart   : in  std_ulogic;
+      spii_ignore   : in  std_ulogic;
       spio_miso     : out std_ulogic;
       spio_misooen  : out std_ulogic;
       spio_mosi     : out std_ulogic;
@@ -161,7 +164,7 @@ architecture rtl of spictrl is
   -- Signals
   -----------------------------------------------------------------------------
   signal apbo_pirq : std_ulogic;
-  
+
 begin
 
   ctrl_rtl : if netlist = 0 generate
@@ -186,7 +189,8 @@ begin
         automask0 => automask0,
         automask1 => automask1,
         automask2 => automask2,
-        automask3 => automask3)
+        automask3 => automask3,
+        ignore    => ignore)
       port map (
         rstn         => rstn,
         clk          => clk,
@@ -209,6 +213,7 @@ begin
         spii_spisel  => spii.spisel,
         spii_astart  => spii.astart,
         spii_cstart  => spii.cstart,
+        spii_ignore  => spii.ignore,
         spio_miso    => spio.miso,
         spio_misooen => spio.misooen,
         spio_mosi    => spio.mosi,
@@ -284,13 +289,13 @@ begin
 
   apbo.pconfig <= PCONFIG;
   apbo.pindex <= pindex;
-  
+
   -- Boot message
   -- pragma translate_off
-  bootmsg : report_version 
+  bootmsg : report_version
     generic map (
       "spictrl" & tost(pindex) & ": SPI controller, rev " &
       tost(SPICTRL_REV) & ", irq " & tost(pirq));
   -- pragma translate_on
-  
+
 end architecture rtl;

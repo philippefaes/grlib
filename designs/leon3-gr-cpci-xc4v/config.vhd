@@ -1,5 +1,7 @@
 
 
+
+
 -----------------------------------------------------------------------------
 -- LEON3 Demonstration design test bench configuration
 -- Copyright (C) 2009 Aeroflex Gaisler
@@ -118,6 +120,7 @@ package config is
   constant CFG_AHBRAMEN : integer := 0;
   constant CFG_AHBRSZ : integer := 1;
   constant CFG_AHBRADDR : integer := 16#A00#;
+  constant CFG_AHBRPIPE : integer := 0;
 -- Gaisler Ethernet core
   constant CFG_GRETH : integer := 1;
   constant CFG_GRETH1G : integer := 0;
@@ -153,7 +156,6 @@ package config is
   constant CFG_PCIDID : integer := 16#0054#;
   constant CFG_PCIDEPTH : integer := 8;
   constant CFG_PCI_MTF : integer := 1;
-
 -- GRPCI2 interface
   constant CFG_GRPCI2_MASTER : integer := 0;
   constant CFG_GRPCI2_TARGET : integer := 0;

@@ -21,7 +21,7 @@ SYNPOPT="set_option -pipe 1; set_option -retiming 1; set_option -write_apr_const
 TECHLIBS = altera altera_mf cycloneiii
 LIBSKIP = core1553bbc core1553brm core1553brt gr1553 corePCIF \
 	tmtc openchip hynix cypress ihp fmf spansion gsi
-DIRSKIP = b1553 pcif leon2 leon2ft crypto satcan ddr \
+DIRSKIP = b1553 pci/pcif leon2 leon2ft crypto satcan ddr \
 	slink ascs leon3ft leon4 leon4v0 l2cache \
 	spacewire usb pwm gr1553b iommu pci leon3ft hcan 
 

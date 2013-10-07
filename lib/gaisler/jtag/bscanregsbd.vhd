@@ -44,6 +44,7 @@ entity bscanregsbd is
     corei   : out std_logic_vector(nsigs-1 downto 0);
     
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -74,7 +75,7 @@ begin
       r: scanregio
         generic map (tech,hzsup)
         port map (pado(x),padoen(x),padi(x),coreo(x),coreoen(x),corei(x),
-                  tck,ltdi(x),ltdi(x+1),bsshft,bscapt,bsupdi,bsupdo,bsdrive,bshighz);    
+                  tck,tckn,ltdi(x),ltdi(x+1),bsshft,bscapt,bsupdi,bsupdo,bsdrive,bshighz);
     end generate;
     
     ltdi(0) <= tdi;

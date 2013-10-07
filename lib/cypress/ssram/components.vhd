@@ -28,7 +28,7 @@ package components is
 
     generic (
 
-	fname  : string := "sram.srec"; -- File to read from
+	fname  : string := "ram.srec"; -- File to read from
 			 
         -- Constant parameters
 	addr_bits : INTEGER := 18;
@@ -104,7 +104,7 @@ package components is
 
   component CY7C1380D
      GENERIC (
-	fname  : string := "sram.srec"; -- File to read from
+	fname  : string := "ram.srec"; -- File to read from
         -- Constant Parameters
         addr_bits : INTEGER :=      19;         -- This is external address
         data_bits : INTEGER :=      36; 

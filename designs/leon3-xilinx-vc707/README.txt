@@ -2,53 +2,63 @@ This leon3 design is tailored to the Xilinx Virtex-7 VC707 board
 
 http://www.xilinx.com/vc707
 
+Note: This design requires that the GRLIB_SIMULATOR variable is
+correctly set. Please refer to the documentation in doc/grlib.pdf for
+additional information.
+
+Note: The Vivado flow and parts of this design are still
+experimental. Currently the design configuration should be left as-is.
+
+Note: You must have both Vivado 2013.2 and Xilinx ISE 14.6 in your 
+path for the make targets to work.
+
 Simulation and synthesis
 ------------------------
 
 The design uses the Xilinx MIG memory interface with an AHB-2.0
-interface. The MIG source code cannot be distributed due to the
-prohibitive Xilinx license, so the MIG must be re-generated with 
+interface and Xilinx SGMII PHY Interface. The MIG or the SGMII PHY 
+source code cannot be distributed due to the prohibitive Xilinx 
+license, so the MIG and/or the SGMII must be re-generated with 
 coregen before simulation and synthesis can be done.
 
-To generate the MIG and install the Xilinx unisim simulation
-library, do as follows:
+Xilinx MIG and SGMII interface will automatically be generated when 
+Vivado is launched  
 
-  make vsim
-  make mig_series7
-
-To simulate and run systest.c on the Leon design using the memory 
+To simulate using XSIM and run systest.c on the Leon design using the memory 
 controller from Xilinx use the make targets:
 
   make soft
-  make vsim-launch
+  make vivado-launch
 
-With the generic USE_MIG_INTERFACE_MODEL can the user select to use the real
-XILINX memory contoller + MICRON memory model or a simplified model. For speed
-select the simplified model by setting the generic USE_MIG_INTERFACE_MODEL to TRUE.
+To simulate using Modelsim/Aldec and run systest.c on the Leon design using 
+the memory controller from Xilinx use the make targets:
 
-Synthesis will ONLY work with Vivado 2012.02 installed or newer, and 
+  make map_xilinx_vhdl_lib
+  make vsim (only required if Modelsim is used as simulator)
+  make mig_series7
+  make sgmii_series7
+
+Synthesis will ONLY work with Vivado 2013.02 installed or newer, and 
 the XILINX variable properly set in the shell. To synthesize the design, do
 
   make vivado
 
-and then
-
-  make vivado-prog-fpga
+and then use iMPACT programming tool:
   
-  or use xilinx programming tool
-  
-  impact -b vivado/leon3-xilinx-vc707/leon3-xilinx-vc707.runs/impl_1/leon3mp.bit
+  make ise-prog-fpga
 
 to program the FPGA.
 
-The MIG can be disabled either by deselecting the MIG controller in 'xconfig' or
-manually editing the config.vhd file. When no MIG is present in the system normal
-GRLIB flow can be used and no extra compile steps are needed. Also when when no
-MIG is present it is possible to control and set the system frequency via xconfig. 
-Note that the system frequency can be modified via Xilinx Coregen when the 
-MIG is present.
+The MIG and SGMII IP can be disabled either by deselecting the memory controller 
+and Gaisler Ethernet interface in 'xconfig' or manually editing the config.vhd file. 
+When no MIG and no SGMII block is present in the system normal GRLIB flow can be 
+used and no extra compile steps are needed. Also when when no MIG is present it 
+is possible to control and set the system frequency via xconfig. 
+Note that the system frequency can be modified via Vivado when the MIG is present
+by modifying within specified limits for the MIG IP.
 
-Compiling and launching modelsim when no memory controller is present:
+Compiling and launching modelsim when no memory controller and no ethernet interface
+is present:
 
   make vsim
   make vsim-launch
@@ -69,9 +79,9 @@ DEBUG - Enable extra debug information when using Micron DDR3 models
 Design specifics
 ----------------
 
-* Synthesis should be done using Vivado 2012.02 or newer
+* Synthesis should be done using Vivado 2013.02 or newer
 
-* The DDR3 controller is implemented with Xilinx MIG Series7 1.6 and 
+* The DDR3 controller is implemented with Xilinx MIG Series7 2.0 and 
   runs of the 200 MHz clock. The DDR3 memory runs at 400 MHz
   (DDR3-800). grmon-2.0.30-74 or later is needed to detect the
    DDR3 memory.
@@ -101,12 +111,15 @@ Design specifics
   needs to be installed and compiled with the following command: Please, note the MIG Series7 
   only have to be generated if it is going to be used in the system.
 
+  make map_xilinx_vhdl_lib
   make vsim
   make mig_series7
+  make sgmii_series7
 
-  Then rebuild the scripts and simulation model:
+  Then rebuild the sofwtare and launch the simulator simulation:
 
-  make distclean vsim
+  make soft
+  make vsim-launch
 
   Modelsim v10.1 or newer is required and simulate Xilinx memory
   controller for Series 7.
@@ -119,7 +132,6 @@ Design specifics
 
 * The JTAG DSU interface is enabled and accesible via the JTAG port.
   Start grmon with -xilusb to connect.
-
 
 * Output from GRMON is:
 
@@ -220,5 +232,301 @@ grmon2> verify systest.exe
   Total size: 275.28kB (85.23kbit/s)
   Entry point 0x40000000
   Image of /home/ringhage/grlib_git/designs/leon3-xilinx-vc707/systest.exe verified without errors
+  
+grmon2> 
+
+* grmon output using Ethernet
+
+grmon -eth -ip 192.168.0.51 -u -nb
+  
+  GRMON2 LEON debug monitor v2.0.33-88-g17c6483 internal version
+  
+  Copyright (C) 2012 Aeroflex Gaisler - All rights reserved.
+  For latest updates, go to http://www.gaisler.com/
+  Comments or bug-reports to support@gaisler.com
+  
+
+Parsing -eth
+Parsing -ip 192.168.0.51
+Parsing -u
+Parsing -nb
+
+Commands missing help:
+ debug
+ datacache
+
+ Ethernet startup...
+  GRLIB build version: 4129
+  Detected frequency:  100 MHz
+  
+  Component                            Vendor
+  LEON3 SPARC V8 Processor             Aeroflex Gaisler
+  AHB Debug UART                       Aeroflex Gaisler
+  JTAG Debug Link                      Aeroflex Gaisler
+  GR Ethernet MAC                      Aeroflex Gaisler
+  USB Debug Communication Link         Aeroflex Gaisler
+  LEON2 Memory Controller              European Space Agency
+  AHB/APB Bridge                       Aeroflex Gaisler
+  LEON3 Debug Support Unit             Aeroflex Gaisler
+  Single-port AHB SRAM module          Aeroflex Gaisler
+  Xilinx MIG DDR3 Controller           Aeroflex Gaisler
+  Single-port AHB SRAM module          Aeroflex Gaisler
+  Generic UART                         Aeroflex Gaisler
+  Multi-processor Interrupt Ctrl.      Aeroflex Gaisler
+  Modular Timer Unit                   Aeroflex Gaisler
+  AMBA Wrapper for OC I2C-master       Aeroflex Gaisler
+  General Purpose I/O port             Aeroflex Gaisler
+  Unknown device                       Aeroflex Gaisler
+  
+  Use command 'info sys' to print a detailed report of attached cores
+
+grmon2> info sys
+  cpu0      Aeroflex Gaisler  LEON3 SPARC V8 Processor    
+            AHB Master 0
+  ahbuart0  Aeroflex Gaisler  AHB Debug UART    
+            AHB Master 1
+            APB: 80000700 - 80000800
+            Baudrate 115200, AHB frequency 100.00 MHz
+  ahbjtag0  Aeroflex Gaisler  JTAG Debug Link    
+            AHB Master 2
+  greth0    Aeroflex Gaisler  GR Ethernet MAC    
+            AHB Master 3
+            APB: 80000E00 - 80000F00
+            IRQ: 12
+            1000 Mbit capable
+            edcl ip 192.168.0.51, buffer 2 kbyte
+  adev4     Aeroflex Gaisler  USB Debug Communication Link    
+            AHB Master 4
+  mctrl0    European Space Agency  LEON2 Memory Controller    
+            AHB: 00000000 - 20000000
+            APB: 80000000 - 80000100
+            16-bit prom @ 0x00000000
+  apbmst0   Aeroflex Gaisler  AHB/APB Bridge    
+            AHB: 80000000 - 80100000
+  dsu0      Aeroflex Gaisler  LEON3 Debug Support Unit    
+            AHB: 90000000 - A0000000
+            AHB trace: 256 lines, 32-bit bus
+            CPU0:  win 8, hwbp 2, itrace 256, V8 mul/div, srmmu, lddel 1
+                   stack pointer 0x7ffffff0
+                   icache 4 * 4 kB, 32 B/line dir
+                   dcache 4 * 4 kB, 32 B/line dir
+  ahbram0   Aeroflex Gaisler  Single-port AHB SRAM module    
+            AHB: 20000000 - 20100000
+            32-bit static ram: 4 kB @ 0x20000000
+  mig0      Aeroflex Gaisler  Xilinx MIG DDR3 Controller    
+            AHB: 40000000 - 80000000
+            APB: 80000400 - 80000500
+            SDRAM: 1024 Mbyte
+  ahbram1   Aeroflex Gaisler  Single-port AHB SRAM module    
+            AHB: A0000000 - A0100000
+            32-bit static ram: 4 kB @ 0xa0000000
+  uart0     Aeroflex Gaisler  Generic UART    
+            APB: 80000100 - 80000200
+            IRQ: 2
+            Baudrate 38343
+  irqmp0    Aeroflex Gaisler  Multi-processor Interrupt Ctrl.    
+            APB: 80000200 - 80000300
+  gptimer0  Aeroflex Gaisler  Modular Timer Unit    
+            APB: 80000300 - 80000400
+            IRQ: 8
+            8-bit scalar, 2 * 32-bit timers, divisor 100
+  i2cmst0   Aeroflex Gaisler  AMBA Wrapper for OC I2C-master    
+            APB: 80000900 - 80000A00
+            IRQ: 11
+  gpio0     Aeroflex Gaisler  General Purpose I/O port    
+            APB: 80000A00 - 80000B00
+  adev16    Aeroflex Gaisler  Unknown device    
+            APB: 80000B00 - 80000C00
+  
+grmon2> load /usr/local32/apps/bench/leon3/dhry.leon3
+  40000000 .text                     54.7kB /  54.7kB   [===============>] 100%
+  4000DAF0 .data                      2.7kB /   2.7kB   [===============>] 100%
+  Total size: 57.44kB (17.43Mbit/s)
+  Entry point 0x40000000
+  Image /usr/local32/apps/bench/leon3/dhry.leon3 loaded
+  
+grmon2> run
+Execution starts, 1000000 runs through Dhrystone
+Total execution time:                          4.6 s
+Microseconds for one run through Dhrystone:    4.6 
+Dhrystones per Second:                      217085.5 
+
+Dhrystones MIPS      :                       123.6 
+
+
+  Program exited normally.
+  
+grmon2> exit
+
+* grmon output using digilent
+
+ grmon -digilent -u
+  
+  GRMON2 LEON debug monitor v2.0.33-88-g17c6483 internal version
+  
+  Copyright (C) 2012 Aeroflex Gaisler - All rights reserved.
+  For latest updates, go to http://www.gaisler.com/
+  Comments or bug-reports to support@gaisler.com
+  
+
+Parsing -digilent
+Parsing -u
+
+Commands missing help:
+ debug
+ datacache
+
+ JTAG chain (1): xc7vx485t 
+  GRLIB build version: 4129
+  Detected frequency:  100 MHz
+  
+  Component                            Vendor
+  LEON3 SPARC V8 Processor             Aeroflex Gaisler
+  AHB Debug UART                       Aeroflex Gaisler
+  JTAG Debug Link                      Aeroflex Gaisler
+  GR Ethernet MAC                      Aeroflex Gaisler
+  USB Debug Communication Link         Aeroflex Gaisler
+  LEON2 Memory Controller              European Space Agency
+  AHB/APB Bridge                       Aeroflex Gaisler
+  LEON3 Debug Support Unit             Aeroflex Gaisler
+  Single-port AHB SRAM module          Aeroflex Gaisler
+  Xilinx MIG DDR3 Controller           Aeroflex Gaisler
+  Single-port AHB SRAM module          Aeroflex Gaisler
+  Generic UART                         Aeroflex Gaisler
+  Multi-processor Interrupt Ctrl.      Aeroflex Gaisler
+  Modular Timer Unit                   Aeroflex Gaisler
+  AMBA Wrapper for OC I2C-master       Aeroflex Gaisler
+  General Purpose I/O port             Aeroflex Gaisler
+  Unknown device                       Aeroflex Gaisler
+  
+  Use command 'info sys' to print a detailed report of attached cores
+
+grmon2> info sys
+  cpu0      Aeroflex Gaisler  LEON3 SPARC V8 Processor    
+            AHB Master 0
+  ahbuart0  Aeroflex Gaisler  AHB Debug UART    
+            AHB Master 1
+            APB: 80000700 - 80000800
+            Baudrate 115200, AHB frequency 100.00 MHz
+  ahbjtag0  Aeroflex Gaisler  JTAG Debug Link    
+            AHB Master 2
+  greth0    Aeroflex Gaisler  GR Ethernet MAC    
+            AHB Master 3
+            APB: 80000E00 - 80000F00
+            IRQ: 12
+            1000 Mbit capable
+            edcl ip 192.168.0.51, buffer 2 kbyte
+  adev4     Aeroflex Gaisler  USB Debug Communication Link    
+            AHB Master 4
+  mctrl0    European Space Agency  LEON2 Memory Controller    
+            AHB: 00000000 - 20000000
+            APB: 80000000 - 80000100
+            16-bit prom @ 0x00000000
+  apbmst0   Aeroflex Gaisler  AHB/APB Bridge    
+            AHB: 80000000 - 80100000
+  dsu0      Aeroflex Gaisler  LEON3 Debug Support Unit    
+            AHB: 90000000 - A0000000
+            AHB trace: 256 lines, 32-bit bus
+            CPU0:  win 8, hwbp 2, itrace 256, V8 mul/div, srmmu, lddel 1
+                   stack pointer 0x7ffffff0
+                   icache 4 * 4 kB, 32 B/line dir
+                   dcache 4 * 4 kB, 32 B/line dir
+  ahbram0   Aeroflex Gaisler  Single-port AHB SRAM module    
+            AHB: 20000000 - 20100000
+            32-bit static ram: 4 kB @ 0x20000000
+  mig0      Aeroflex Gaisler  Xilinx MIG DDR3 Controller    
+            AHB: 40000000 - 80000000
+            APB: 80000400 - 80000500
+            SDRAM: 1024 Mbyte
+  ahbram1   Aeroflex Gaisler  Single-port AHB SRAM module    
+            AHB: A0000000 - A0100000
+            32-bit static ram: 4 kB @ 0xa0000000
+  uart0     Aeroflex Gaisler  Generic UART    
+            APB: 80000100 - 80000200
+            IRQ: 2
+            Baudrate 38343
+  irqmp0    Aeroflex Gaisler  Multi-processor Interrupt Ctrl.    
+            APB: 80000200 - 80000300
+  gptimer0  Aeroflex Gaisler  Modular Timer Unit    
+            APB: 80000300 - 80000400
+            IRQ: 8
+            8-bit scalar, 2 * 32-bit timers, divisor 100
+  i2cmst0   Aeroflex Gaisler  AMBA Wrapper for OC I2C-master    
+            APB: 80000900 - 80000A00
+            IRQ: 11
+  gpio0     Aeroflex Gaisler  General Purpose I/O port    
+            APB: 80000A00 - 80000B00
+  adev16    Aeroflex Gaisler  Unknown device    
+            APB: 80000B00 - 80000C00
+  
+grmon2> 
+
+* grmon output using USB debug link
+
+ sudo grmon -usb -nb -u
+  
+  GRMON2 LEON debug monitor v2.0.33-88-g17c6483 internal version
+  
+  Copyright (C) 2012 Aeroflex Gaisler - All rights reserved.
+  For latest updates, go to http://www.gaisler.com/
+  Comments or bug-reports to support@gaisler.com
+  
+
+Parsing -usb
+Parsing -nb
+Parsing -u
+
+Commands missing help:
+ debug
+ datacache
+
+  GRLIB build version: 4129
+  Detected frequency:  100 MHz
+  
+  Component                            Vendor
+  LEON3 SPARC V8 Processor             Aeroflex Gaisler
+  AHB Debug UART                       Aeroflex Gaisler
+  JTAG Debug Link                      Aeroflex Gaisler
+  GR Ethernet MAC                      Aeroflex Gaisler
+  USB Debug Communication Link         Aeroflex Gaisler
+  LEON2 Memory Controller              European Space Agency
+  AHB/APB Bridge                       Aeroflex Gaisler
+  LEON3 Debug Support Unit             Aeroflex Gaisler
+  Single-port AHB SRAM module          Aeroflex Gaisler
+  Xilinx MIG DDR3 Controller           Aeroflex Gaisler
+  Single-port AHB SRAM module          Aeroflex Gaisler
+  Generic UART                         Aeroflex Gaisler
+  Multi-processor Interrupt Ctrl.      Aeroflex Gaisler
+  Modular Timer Unit                   Aeroflex Gaisler
+  AMBA Wrapper for OC I2C-master       Aeroflex Gaisler
+  General Purpose I/O port             Aeroflex Gaisler
+  Unknown device                       Aeroflex Gaisler
+  
+  Use command 'info sys' to print a detailed report of attached cores
+
+grmon2> load /usr/local32/apps/bench/leon3/dhry.leon3 
+  40000000 .text                     54.7kB /  54.7kB   [===============>] 100%
+  4000DAF0 .data                      2.7kB /   2.7kB   [===============>] 100%
+  Total size: 57.44kB (24.77Mbit/s)
+  Entry point 0x40000000
+  Image /usr/local32/apps/bench/leon3/dhry.leon3 loaded
+  
+grmon2> verify  /usr/local32/apps/bench/leon3/dhry.leon3
+  40000000 .text                     54.7kB /  54.7kB   [===============>] 100%
+  4000DAF0 .data                      2.7kB /   2.7kB   [===============>] 100%
+  Total size: 57.44kB (13.84Mbit/s)
+  Entry point 0x40000000
+  Image of /usr/local32/apps/bench/leon3/dhry.leon3 verified without errors
+  
+grmon2> run
+Execution starts, 1000000 runs through Dhrystone
+Total execution time:                          4.6 s
+Microseconds for one run through Dhrystone:    4.6 
+Dhrystones per Second:                      216215.1 
+
+Dhrystones MIPS      :                       123.1 
+
+
+  Program exited normally.
   
 grmon2> 

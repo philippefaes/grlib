@@ -41,8 +41,16 @@ component ut130hbd_mux2
     o      :  out std_ulogic);
 end component;
 
+component mux2_ut90nhbd
+  port(
+    i0     :  in  std_ulogic;
+    i1     :  in  std_ulogic;
+    sel    :  in  std_ulogic;
+    o      :  out std_ulogic);
+end component;
+
 constant has_mux2 : tech_ability_type :=
-	( rhlib18t => 1, ut130 => 1, others => 0);
+	( rhlib18t => 1, ut130 => 1, ut90 => 1, others => 0);
 begin
 
   y0 : if has_mux2(tech) = 1 generate
@@ -52,6 +60,10 @@ begin
 
     ut13 : if tech = ut130 generate
       x0 : ut130hbd_mux2 port map (i0 => ip0, i1 => ip1, sel => sel, o => op);
+    end generate;
+
+    ut90n : if tech = ut90 generate
+      x0 : mux2_ut90nhbd port map (i0 => ip0, i1 => ip1, sel => sel, o => op);
     end generate;
   end generate;
 
@@ -98,13 +110,23 @@ component ut130hbd_dff
     q      :  out std_ulogic);
 end component;
 
+component dff_ut90nhbd
+  port(
+    clk    :  in  std_ulogic;
+    d      :  in  std_ulogic;
+    q      :  out std_ulogic);
+end component;
+
 constant has_dff : tech_ability_type :=
-	( ut130 => 1, others => 0);
+	( ut130 => 1, ut90 => 1, others => 0);
 begin
 
   y0 : if has_dff(tech) = 1 generate
     ut13 : if tech = ut130 generate
       x0 : ut130hbd_dff port map (clk => clk, d => d, q => q);
+    end generate;
+    ut90n : if tech = ut90 generate
+      x0 : dff_ut90nhbd port map (clk => clk, d => d, q => q);
     end generate;
   end generate;
 
@@ -132,13 +154,23 @@ component ut130hbd_or2
     q      :  out std_ulogic);
 end component;
 
+component or2_ut90nhbd
+  port(
+    i0     :  in  std_ulogic;
+    i1     :  in  std_ulogic;
+    o      :  out std_ulogic);
+end component;
+
 constant has_or2 : tech_ability_type :=
-	( ut130 => 1, others => 0);
+	( ut130 => 1, ut90 => 1, others => 0);
 begin
 
   y0 : if has_or2(tech) = 1 generate
     ut13 : if tech = ut130 generate
       x0 : ut130hbd_or2 port map (i0 => i0, i1 => i1, q => q);
+    end generate;
+    ut90n : if tech = ut90 generate
+      x0 : or2_ut90nhbd port map (i0 => i0, i1 => i1, o => q);
     end generate;
   end generate;
 
@@ -165,13 +197,23 @@ component ut130hbd_and12
     q      :  out std_ulogic);
 end component;
 
+component and12_ut90nhbd
+  port(
+    i0     :  in  std_ulogic;
+    i1     :  in  std_ulogic;
+    o      :  out std_ulogic);
+end component;
+
 constant has_and12 : tech_ability_type :=
-	( ut130 => 1, others => 0);
+	( ut130 => 1, ut90 => 1, others => 0);
 begin
 
   y0 : if has_and12(tech) = 1 generate
     ut13 : if tech = ut130 generate
       x0 : ut130hbd_and12 port map (i0 => i0, i1 => i1, q => q);
+    end generate;
+    ut90n : if tech = ut90 generate
+      x0 : and12_ut90nhbd port map (i0 => i0, i1 => i1, o => q);
     end generate;
   end generate;
 
@@ -181,3 +223,34 @@ begin
 
 end;
 
+library ieee;
+use ieee.std_logic_1164.all;
+library techmap;
+use techmap.gencomp.all;
+
+entity grnand2 is
+  generic (
+    tech: integer := 0;
+    imp: integer := 0
+    );
+  port (
+    i0: in  std_ulogic;
+    i1: in  std_ulogic;
+    q : out std_ulogic
+    );
+end;
+
+architecture rtl of grnand2 is
+
+  constant has_nand2: tech_ability_type := (others => 0);
+
+begin
+
+  y0: if has_nand2(tech)=1 generate
+  end generate;
+
+  y1: if has_nand2(tech)=0 generate
+    q <= not (i0 and i1);
+  end generate;
+
+end;

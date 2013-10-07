@@ -17,17 +17,19 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA 
 -----------------------------------------------------------------------------
--- Entity: 	gptimer
--- File:	gptimer.vhd
--- Author:	Jiri Gaisler - Gaisler Research
--- Description:	This unit implemets a set of general-purpose timers with a 
---		common prescaler. Then number of timers and the width of
---		the timers is propgrammable through generics
+-- Entity:      gptimer
+-- File:        gptimer.vhd
+-- Author:      Jiri Gaisler - Gaisler Research
+-- Description: This unit implemets a set of general-purpose timers with a 
+--              common prescaler. Then number of timers and the width of
+--              the timers is propgrammable through generics
 ------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 use grlib.devices.all;
@@ -43,10 +45,10 @@ entity gptimer is
     paddr    : integer := 0;
     pmask    : integer := 16#fff#;
     pirq     : integer := 0;
-    sepirq   : integer := 0;	-- use separate interrupts for each timer
-    sbits    : integer := 16;			-- scaler bits
-    ntimers  : integer range 1 to 7 := 1; 	-- number of timers
-    nbits    : integer := 32;			-- timer bits
+    sepirq   : integer := 0;    -- use separate interrupts for each timer
+    sbits    : integer := 16;                   -- scaler bits
+    ntimers  : integer range 1 to 7 := 1;       -- number of timers
+    nbits    : integer := 32;                   -- timer bits
     wdog     : integer := 0;
     ewdogen  : integer := 0
   );
@@ -69,15 +71,15 @@ constant pconfig : apb_config_type := (
   1 => apb_iobar(paddr, pmask));
 
 type timer_reg is record
-  enable	:  std_ulogic;	-- enable counter
-  load		:  std_ulogic;	-- load counter
-  restart	:  std_ulogic;	-- restart counter
-  irqpen  	:  std_ulogic;	-- interrupt pending
-  irqen   	:  std_ulogic;	-- interrupt enable
-  irq   	:  std_ulogic;	-- interrupt pulse
-  chain 	:  std_ulogic;	-- chain with previous timer
-  value 	:  std_logic_vector(nbits-1 downto 0);
-  reload	:  std_logic_vector(nbits-1 downto 0);
+  enable        :  std_ulogic;  -- enable counter
+  load          :  std_ulogic;  -- load counter
+  restart       :  std_ulogic;  -- restart counter
+  irqpen        :  std_ulogic;  -- interrupt pending
+  irqen         :  std_ulogic;  -- interrupt enable
+  irq           :  std_ulogic;  -- interrupt pulse
+  chain         :  std_ulogic;  -- chain with previous timer
+  value         :  std_logic_vector(nbits-1 downto 0);
+  reload        :  std_logic_vector(nbits-1 downto 0);
 end record;
 
 type timer_reg_vector is array (Natural range <> ) of timer_reg;
@@ -85,15 +87,47 @@ type timer_reg_vector is array (Natural range <> ) of timer_reg;
 constant TBITS   : integer := log2x(ntimers+1);
 
 type registers is record
-  scaler	:  std_logic_vector(sbits-1 downto 0);
-  reload 	:  std_logic_vector(sbits-1 downto 0);
+  scaler        :  std_logic_vector(sbits-1 downto 0);
+  reload        :  std_logic_vector(sbits-1 downto 0);
   tick          :  std_ulogic;
-  tsel   	:  integer range 0 to ntimers;
-  timers	:  timer_reg_vector(1 to ntimers);
+  tsel          :  integer range 0 to ntimers;
+  timers        :  timer_reg_vector(1 to ntimers);
   dishlt        :  std_ulogic;   
   wdogn         :  std_ulogic;   
   wdog         :  std_ulogic;   
 end record;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+function RESVAL_FUNC return registers is
+  variable vres : registers;
+begin
+  vres.scaler := (others => '1');
+  vres.reload := (others => '1');
+  vres.tick := '0';
+  vres.tsel := 0;
+  for i in 1 to ntimers loop
+    vres.timers(i).enable := '0';
+    vres.timers(i).load := '0';
+    vres.timers(i).restart := '0';
+    vres.timers(i).irqpen := '0';
+    vres.timers(i).irqen := '0';
+    vres.timers(i).irq := '0';
+    vres.timers(i).chain := '0';
+    vres.timers(i).value := (others => '0');
+    vres.timers(i).reload := (others => '0');
+  end loop;
+  if wdog /= 0 then
+    vres.timers(ntimers).enable := '1';  -- May be overriden by ewdogen
+    vres.timers(ntimers).load := '1';
+    vres.timers(ntimers).reload := conv_std_logic_vector(wdog, nbits);
+    vres.timers(ntimers).irqen := '1';
+  end if;
+  vres.dishlt := '0';
+  vres.wdogn := '1';
+  vres.wdog := '0';
+  return vres;
+end function RESVAL_FUNC;
+constant RESVAL : registers := RESVAL_FUNC;
 
 signal r, rin : registers;
 
@@ -113,7 +147,7 @@ begin
 
     v := r; v.tick := '0'; tick := (others => '0');
     vtimers(0) := ('0', '0', '0', '0', '0', '0', '0', 
-		    zero32(nbits-1 downto 0), zero32(nbits-1 downto 0) );
+                    zero32(nbits-1 downto 0), zero32(nbits-1 downto 0) );
     vtimers(1 to ntimers) := r.timers; xirq := (others => '0');
     for i in 1 to ntimers loop
       v.timers(i).irq := '0'; v.timers(i).load := '0';
@@ -123,9 +157,9 @@ begin
 
 -- scaler operation
 
-    scaler := ('0' & r.scaler) - 1;	-- decrement scaler
+    scaler := ('0' & r.scaler) - 1;     -- decrement scaler
 
-    if (not gpti.dhalt or r.dishlt) = '1' then 	-- halt timers in debug mode
+    if (not gpti.dhalt or r.dishlt) = '1' then  -- halt timers in debug mode
       if (scaler(sbits) = '1') then
         v.scaler := r.reload; v.tick := '1'; -- reload scaler
       else v.scaler := scaler(sbits-1 downto 0); end if;
@@ -151,33 +185,33 @@ begin
 
       if i = r.tsel then
         if (r.timers(i).enable = '1') and 
-	   (((r.timers(i).chain and nirq(i-1)) or not (r.timers(i).chain)) = '1') 
-	then
+           (((r.timers(i).chain and nirq(i-1)) or not (r.timers(i).chain)) = '1') 
+        then
           v.timers(i).irq := z and not r.timers(i).load;
-	  if (v.timers(i).irq and r.timers(i).irqen) = '1' then 
-	    v.timers(i).irqpen := '1';
-	  end if;
-	  v.timers(i).value := res;
-	  if (z and not r.timers(i).load) = '1' then 
+          if (v.timers(i).irq and r.timers(i).irqen) = '1' then 
+            v.timers(i).irqpen := '1';
+          end if;
+          v.timers(i).value := res;
+          if (z and not r.timers(i).load) = '1' then 
             v.timers(i).enable := r.timers(i).restart;
             if r.timers(i).restart = '1' then 
-	      v.timers(i).value := r.timers(i).reload;
-	    end if;
-	  end if;
+              v.timers(i).value := r.timers(i).reload;
+            end if;
+          end if;
         end if;
       end if;
       if r.timers(i).load = '1' then 
-	v.timers(i).value := r.timers(i).reload;
+        v.timers(i).value := r.timers(i).reload;
       end if;
     end loop;
 
     if sepirq /= 0 then 
       for i in 1 to ntimers loop 
-	xirq(i-1+pirq) := r.timers(i).irq and r.timers(i).irqen;
+        xirq(i-1+pirq) := r.timers(i).irq and r.timers(i).irqen;
       end loop;
     else 
       for i in 1 to ntimers loop
-	xirq(pirq) := xirq(pirq) or (r.timers(i).irq and r.timers(i).irqen);
+        xirq(pirq) := xirq(pirq) or (r.timers(i).irq and r.timers(i).irqen);
       end loop;
     end if;
 
@@ -188,9 +222,9 @@ begin
     when "00000" => readdata(sbits-1 downto 0)  := r.scaler;
     when "00001" => readdata(sbits-1 downto 0)  := r.reload;
     when "00010" => 
-	readdata(2 downto 0) := conv_std_logic_vector(ntimers, 3) ;
-	readdata(7 downto 3) := conv_std_logic_vector(pirq, 5) ;
-	if (sepirq /= 0) then readdata(8) := '1'; end if;
+        readdata(2 downto 0) := conv_std_logic_vector(ntimers, 3) ;
+        readdata(7 downto 3) := conv_std_logic_vector(pirq, 5) ;
+        if (sepirq /= 0) then readdata(8) := '1'; end if;
         readdata(9) := r.dishlt;
     when others =>
       for i in 1 to ntimers loop
@@ -198,10 +232,10 @@ begin
           case apbi.paddr(3 downto 2) is
           when "00" => readdata(nbits-1 downto 0) := r.timers(i).value;
           when "01" => readdata(nbits-1 downto 0) := r.timers(i).reload;
-    	  when "10" => readdata(6 downto 0) := 
-		gpti.dhalt & r.timers(i).chain &
-		r.timers(i).irqpen & r.timers(i).irqen & r.timers(i).load &
-		r.timers(i).restart & r.timers(i).enable;
+          when "10" => readdata(6 downto 0) := 
+                gpti.dhalt & r.timers(i).chain &
+                r.timers(i).irqpen & r.timers(i).irqen & r.timers(i).load &
+                r.timers(i).restart & r.timers(i).enable;
           when others => 
           end case;
         end if;
@@ -224,10 +258,10 @@ begin
               when "01" => v.timers(i).reload  := apbi.pwdata(nbits-1 downto 0);
               when "10" => v.timers(i).chain   := apbi.pwdata(5);
                            v.timers(i).irqpen  := v.timers(i).irqpen and not apbi.pwdata(4);
-			   v.timers(i).irqen   := apbi.pwdata(3);
-			   v.timers(i).load    := apbi.pwdata(2);
-			   v.timers(i).restart := apbi.pwdata(1);
-			   v.timers(i).enable  := apbi.pwdata(0);
+                           v.timers(i).irqen   := apbi.pwdata(3);
+                           v.timers(i).load    := apbi.pwdata(2);
+                           v.timers(i).restart := apbi.pwdata(1);
+                           v.timers(i).enable  := apbi.pwdata(0);
             when others => 
             end case;
           end if;
@@ -238,30 +272,35 @@ begin
 
 -- reset operation
 
-    if rst = '0' then 
+    if (not RESET_ALL) and (rst = '0') then 
       for i in 1 to ntimers loop
-        v.timers(i).enable := '0'; v.timers(i).irqen := '0'; v.timers(i).irqpen := '0';
+        v.timers(i).enable := RESVAL.timers(i).enable;
+        v.timers(i).irqen := RESVAL.timers(i).irqen;
+        v.timers(i).irqpen := RESVAL.timers(i).irqpen;
       end loop;
-      v.scaler := (others => '1'); v.reload := (others => '1'); 
-      v.tsel := 0; v.dishlt := '0'; v.timers(ntimers).irq := '0';
+      v.scaler := RESVAL.scaler; v.reload := RESVAL.reload;
+      v.tsel := RESVAL.tsel; v.dishlt := RESVAL.dishlt;
+      v.timers(ntimers).irq := RESVAL.timers(ntimers).irq; 
       if (wdog /= 0) then
         if ewdogen /= 0 then v.timers(ntimers).enable := gpti.wdogen;
-        else v.timers(ntimers).enable := '1'; end if;
-        v.timers(ntimers).load := '1';
-	v.timers(ntimers).reload := conv_std_logic_vector(wdog, nbits);
-	v.timers(ntimers).chain := '0'; v.timers(ntimers).irqen := '1';
-	v.timers(ntimers).irqpen := '0'; v.timers(ntimers).restart := '0';
+        else v.timers(ntimers).enable := RESVAL.timers(ntimers).enable; end if;
+        v.timers(ntimers).load := RESVAL.timers(ntimers).load;
+        v.timers(ntimers).reload := RESVAL.timers(ntimers).reload;
+        v.timers(ntimers).chain := RESVAL.timers(ntimers).chain;
+        v.timers(ntimers).irqen := RESVAL.timers(ntimers).irqen;
+        v.timers(ntimers).irqpen := RESVAL.timers(ntimers).irqpen;
+        v.timers(ntimers).restart := RESVAL.timers(ntimers).restart;
       end if;
     end if;
 
     timer1 := (others => '0'); timer1(nbits-1 downto 0) := r.timers(1).value;
 
     rin <= v;
-    apbo.prdata <= readdata; 	-- drive apb read bus
+    apbo.prdata <= readdata;    -- drive apb read bus
     apbo.pirq <= xirq;
     apbo.pindex <= pindex;
     gpto.tick <= r.tick & tick;
-    gpto.timer1 <= timer1;	-- output timer1 value for debugging
+    gpto.timer1 <= timer1;      -- output timer1 value for debugging
     gpto.wdogn <= r.wdogn;
     gpto.wdog  <= r.wdog;
 
@@ -272,16 +311,26 @@ begin
 -- registers
 
   regs : process(clk)
-  begin if rising_edge(clk) then r <= rin; end if; end process;
+  begin
+    if rising_edge(clk) then
+      r <= rin;
+      if RESET_ALL and rst = '0' then
+        r <= RESVAL;
+        if wdog /= 0 and ewdogen /= 0 then
+          r.timers(ntimers).enable <= gpti.wdogen;
+        end if;
+      end if;
+    end if;
+  end process;
 
 -- boot message
 
 -- pragma translate_off
     bootmsg : report_version 
     generic map ("gptimer" & tost(pindex) & 
-	": GR Timer Unit rev " & tost(REVISION) & 
-	", " & tost(sbits) & "-bit scaler, " & tost(ntimers) & 
-	" " & tost(nbits) & "-bit timers" & ", irq " & tost(pirq));
+        ": GR Timer Unit rev " & tost(REVISION) & 
+        ", " & tost(sbits) & "-bit scaler, " & tost(ntimers) & 
+        " " & tost(nbits) & "-bit timers" & ", irq " & tost(pirq));
 -- pragma translate_on
 
 end;

@@ -71,7 +71,7 @@ ENTITY MT46V16M16 IS
         data_bits : INTEGER := 16;
         cols_bits : INTEGER :=  9;
         index     : INTEGER :=  0;
-	fname     : string := "sdram.srec";	-- File to read from
+	fname     : string := "ram.srec";	-- File to read from
         bbits     : INTEGER :=  16;
         fdelay    : INTEGER :=  0;
         chktiming : boolean := true     -- Perform timing checks

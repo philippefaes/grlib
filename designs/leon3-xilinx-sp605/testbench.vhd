@@ -37,6 +37,7 @@ use work.config.all;	-- configuration
 
 entity testbench is
   generic (
+    pcie_target_simulation : integer := 0; -- set to 1 to test pci express, only if pcie_target is enabled
     fabtech   : integer := CFG_FABTECH;
     memtech   : integer := CFG_MEMTECH;
     padtech   : integer := CFG_PADTECH;
@@ -51,8 +52,8 @@ end;
 architecture behav of testbench is
 
 constant promfile  : string := "prom.srec";  -- rom contents
-constant sramfile  : string := "sram.srec";  -- ram contents
-constant sdramfile : string := "sdram.srec"; -- sdram contents
+constant sramfile  : string := "ram.srec";  -- ram contents
+constant sdramfile : string := "ram.srec"; -- sdram contents
 
 signal clk : std_logic := '0';
 signal Rst : std_logic := '0';			-- Reset
@@ -152,6 +153,107 @@ signal switch       : std_logic_vector(3 downto 0);    -- I/O port
 signal led          : std_logic_vector(3 downto 0);    -- I/O port
 constant lresp : boolean := false;
 
+
+-----------------------------------------------------FOR PCIE---------------
+
+
+
+  function REF_CLK_HALF_CYCLE(FREQ_SEL : integer) return integer is
+  begin
+    case FREQ_SEL is
+      when 0 => return 5000; -- 100 MHz / 5000 ps half-cycle
+      when 1 => return 4000; -- 125 MHz / 4000 ps half-cycle
+      when others => return 1; -- invalid case
+    end case;
+  end REF_CLK_HALF_CYCLE;
+
+
+component xilinx_pcie_2_0_rport_v6 is
+    generic
+    (
+      REF_CLK_FREQ                      : integer := 0;
+      ALLOW_X8_GEN2                     : boolean := FALSE;
+      PL_FAST_TRAIN                     : boolean := FALSE;
+      LINK_CAP_MAX_LINK_SPEED           : bit_vector := X"1";
+      DEVICE_ID                         : bit_vector := X"0007";
+      LINK_CAP_MAX_LINK_WIDTH           : bit_vector := X"08";
+      LTSSM_MAX_LINK_WIDTH              : bit_vector := X"08";
+      LINK_CAP_MAX_LINK_WIDTH_int       : integer := 8;
+      LINK_CTRL2_TARGET_LINK_SPEED      : bit_vector := X"2";
+      DEV_CAP_MAX_PAYLOAD_SUPPORTED     : integer := 2;
+      USER_CLK_FREQ                     : integer := 3;
+      VC0_TX_LASTPACKET                 : integer := 31;
+      VC0_RX_RAM_LIMIT                  : bit_vector := X"03FF";
+      VC0_TOTAL_CREDITS_CD              : integer := 154;
+      VC0_TOTAL_CREDITS_PD              : integer := 154
+    );
+    port (
+      sys_clk        : in  std_logic;
+      sys_reset_n    : in  std_logic;
+
+      pci_exp_rxn    : in  std_logic_vector((LINK_CAP_MAX_LINK_WIDTH_int - 1) downto 0);
+      pci_exp_rxp    : in  std_logic_vector((LINK_CAP_MAX_LINK_WIDTH_int - 1) downto 0);
+      pci_exp_txn    : out std_logic_vector((LINK_CAP_MAX_LINK_WIDTH_int - 1) downto 0);
+      pci_exp_txp    : out std_logic_vector((LINK_CAP_MAX_LINK_WIDTH_int - 1) downto 0)
+    );
+  end component xilinx_pcie_2_0_rport_v6;
+
+  component sys_clk_gen is
+    generic
+    (
+      HALFCYCLE : integer := 500;
+      OFFSET    : integer := 0
+    );
+    port
+    (
+      sys_clk   : out std_logic
+    );
+  end component sys_clk_gen;
+
+  component sys_clk_gen_ds is
+    generic
+    (
+      HALFCYCLE : integer := 500;
+      OFFSET    : integer := 0
+    );
+    port
+    (
+      sys_clk_p : out std_logic;
+      sys_clk_n : out std_logic
+    );
+  end component sys_clk_gen_ds;
+
+  --
+  -- System reset
+  --
+  signal  sys_reset_n    : std_logic;
+
+  --
+  -- System clocks
+  --
+  signal  rp_sys_clk     : std_logic;
+  signal  ep_sys_clk_p   : std_logic;
+  signal  ep_sys_clk_n   : std_logic;
+
+  --
+  -- PCI-Express Serial Interconnect
+  --
+  signal  ep_pci_exp_txn : std_logic_vector(0 downto 0);
+  signal  ep_pci_exp_txp : std_logic_vector(0 downto 0);
+  signal  rp_pci_exp_txn : std_logic_vector(0 downto 0);
+  signal  rp_pci_exp_txp : std_logic_vector(0 downto 0);
+
+  --
+  -- Misc. signals
+  --
+  signal  led_0          : std_logic;
+  signal  led_1          : std_logic;
+  signal  led_2          : std_logic;
+
+-----------------------------------------------pcie end--------------
+
+
+
 begin
 
 -- clock and reset
@@ -165,7 +267,77 @@ begin
   rxd2 <= 'H'; ctsn2 <= '0';
   button <= "0000";
   switch <= "0000";
+---------------------pcie----------------------------------------------
+pcie_sim: if pcie_target_simulation = 1 generate
+  RP : xilinx_pcie_2_0_rport_v6
+  generic map (
+    REF_CLK_FREQ                  => 1,
+    PL_FAST_TRAIN                 => TRUE,
+    ALLOW_X8_GEN2                 => FALSE,
+    LINK_CAP_MAX_LINK_SPEED       => X"1",
+    DEVICE_ID                     => X"0007",
+    LINK_CAP_MAX_LINK_WIDTH       => X"01",
+    LTSSM_MAX_LINK_WIDTH          => X"01",
+    LINK_CAP_MAX_LINK_WIDTH_int   => 1,
+    LINK_CTRL2_TARGET_LINK_SPEED  => X"1",
+    DEV_CAP_MAX_PAYLOAD_SUPPORTED => 2,
+    USER_CLK_FREQ                 => 3,
+    VC0_TX_LASTPACKET             => 31,
+    VC0_RX_RAM_LIMIT              => X"03FF",
+    VC0_TOTAL_CREDITS_CD          => 154,
+    VC0_TOTAL_CREDITS_PD          => 154
+  )
+  port map (
+    -- SYS Inteface
+    sys_clk                  => rp_sys_clk,
+    sys_reset_n              => sys_reset_n,
 
+    -- PCI-Express Interface
+    pci_exp_txn              => rp_pci_exp_txn,
+    pci_exp_txp              => rp_pci_exp_txp,
+    pci_exp_rxn              => ep_pci_exp_txn,
+    pci_exp_rxp              => ep_pci_exp_txp
+  );
+
+  --
+  -- Generate system clocks and reset
+  --
+  CLK_GEN_RP : sys_clk_gen
+  generic map (
+    HALFCYCLE => REF_CLK_HALF_CYCLE(1),
+    OFFSET    => 0
+  )
+  port map (
+    sys_clk => rp_sys_clk
+  );
+
+  CLK_GEN_EP : sys_clk_gen_ds
+  generic map (
+    HALFCYCLE => REF_CLK_HALF_CYCLE(1),
+    OFFSET    => 0
+  )
+  port map (
+    sys_clk_p => ep_sys_clk_p,
+    sys_clk_n => ep_sys_clk_n
+  );
+
+
+  BOARD_INIT : process
+  begin
+    report("[" & time'image(now) & "] : System Reset Asserted...");
+    sys_reset_n <= '0';
+
+    for n in 0 to 499 loop
+      wait until rising_edge(ep_sys_clk_p);
+    end loop;
+
+    report("[" & time'image(now) & "] : System Reset De-asserted...");
+    sys_reset_n <= '1';
+
+    wait until falling_edge(sys_reset_n); -- forever
+  end process BOARD_INIT;
+end generate;
+--------------------------------------pcie---------------------------
   cpu : entity work.leon3mp
       generic map ( fabtech, memtech, padtech, clktech, 
 	disas, dbguart, pclow )
@@ -182,7 +354,8 @@ begin
 	dvi_iic_scl, dvi_iic_sda,
 	tft_lcd_data, tft_lcd_clk_p, tft_lcd_clk_n, tft_lcd_hsync,
 	tft_lcd_vsync, tft_lcd_de, tft_lcd_reset_b,
-	spi_sel_n, spi_clk, spi_mosi,
+	spi_sel_n, spi_clk, spi_mosi, ep_pci_exp_txn(0), ep_pci_exp_txp(0), rp_pci_exp_txn(0),
+        rp_pci_exp_txp(0), ep_sys_clk_p, ep_sys_clk_n, sys_reset_n,
         sysace_mpa, sysace_mpce, sysace_mpirq, sysace_mpoe,
         sysace_mpwe, sysace_d
       );

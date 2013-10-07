@@ -108,7 +108,7 @@ begin
   end generate;
   ut90nhbd : if (tech = ut90) generate
     x0 : ut90nhbd_outpad generic map (level, slew, voltage, strength)
-         port map(pad, i);
+         port map(pad, i, cfgi(0));
   end generate;
   
 end;

@@ -215,10 +215,10 @@ NET "tft_lcd_hsync"    LOC = "j16" | IOSTANDARD = LVCMOS25;
 NET "tft_lcd_reset_b"  LOC = "l15" | IOSTANDARD = LVCMOS25;
 NET "tft_lcd_vsync"    LOC = "b22" | IOSTANDARD = LVCMOS25;
 
-NET "txd1"       LOC = "h17" | IOSTANDARD = LVCMOS25;
-NET "rxd1"       LOC = "b21" | IOSTANDARD = LVCMOS25;
-NET "ctsn1"      LOC = "f18" | IOSTANDARD = LVCMOS25;
-NET "rtsn1"      LOC = "f19" | IOSTANDARD = LVCMOS25;
+NET "rxd1"       LOC = "h17" | IOSTANDARD = LVCMOS25;
+NET "txd1"       LOC = "b21" | IOSTANDARD = LVCMOS25;
+NET "ctsn1"      LOC = "f19" | IOSTANDARD = LVCMOS25;
+NET "rtsn1"      LOC = "f18" | IOSTANDARD = LVCMOS25;
 
 
 NET "spi_sel_n" LOC = "aa3"   | IOSTANDARD = LVCMOS25;

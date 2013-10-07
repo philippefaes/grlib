@@ -42,7 +42,7 @@ package config is
   constant CFG_NOTAG : integer := 1;
   constant CFG_NWP : integer := (0);
   constant CFG_PWD : integer := 0*2;
-  constant CFG_FPU : integer := (8+0) + 16*0 + 32*0;
+  constant CFG_FPU : integer := 0 + 16*0 + 32*0;
   constant CFG_GRFPUSH : integer := 0;
   constant CFG_ICEN : integer := 1;
   constant CFG_ISETS : integer := 1;
@@ -114,6 +114,7 @@ package config is
   constant CFG_AHBRAMEN : integer := 1;
   constant CFG_AHBRSZ : integer := 4;
   constant CFG_AHBRADDR : integer := 16#A00#;
+  constant CFG_AHBRPIPE : integer := 0;
 -- UART 1
   constant CFG_UART1_ENABLE : integer := 1;
   constant CFG_UART1_FIFO : integer := 4;
@@ -133,7 +134,6 @@ package config is
   constant CFG_GRGPIO_ENABLE : integer := 0;
   constant CFG_GRGPIO_IMASK : integer := 16#0000#;
   constant CFG_GRGPIO_WIDTH : integer := 1;
-
 -- SPI controller
   constant CFG_SPICTRL_ENABLE : integer := 1;
   constant CFG_SPICTRL_NUM : integer := (1);

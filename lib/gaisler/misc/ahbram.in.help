@@ -19,3 +19,8 @@ CONFIG_AHBRAM_START
   a 1 Mbyte slot at the selected address. Default is A00, corresponding
   to AHB address 0xA0000000.
 
+On-chip ram pipeline stage
+CONFIG_AHBRAM_PIPE
+  Set this option to add an extra pipeline stage to the read data of the 
+  on-chip RAM. This can improve timing, especially when the memory is 
+  large, at the cost of adding an additional cycle delay on read.

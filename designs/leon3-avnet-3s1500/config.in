@@ -3,7 +3,7 @@
 #
 # Written by Jiri Gaisler, Gaisler Research
 #
-# Comments and bug reports to jiri@gaisler.com
+# Comments and bug reports to support@gaisler.com
 #
 #
 
@@ -62,18 +62,18 @@ comment 'Peripherals             '
 
   mainmenu_option next_comment
   comment 'PCI              '
-    source lib/gaisler/pci/pci_target.in
-    source lib/gaisler/pci/pci_mtf.in
-    source lib/gaisler/pci/pcidma.in
-    source lib/gaisler/pci/pci.in
+    source lib/gaisler/pci/grpci1/pci_target.in
+    source lib/gaisler/pci/grpci1/pci_mtf.in
+    source lib/gaisler/pci/grpci1/pcidma.in
+    source lib/gaisler/pci/grpci1/pci.in
     source lib/esa/pci/pci_arb.in
-    source lib/gaisler/pci/pcitrace.in
+    source lib/gaisler/pci/pcitrace/pcitrace.in
   endmenu
 
   mainmenu_option next_comment
   comment 'UARTs, timers and irq control         '
     source lib/gaisler/uart/uart1.in
-    source lib/gaisler/leon3/irqmp.in
+    source lib/gaisler/irqmp/irqmp.in
     source lib/gaisler/misc/gptimer.in
   endmenu
 

@@ -29,7 +29,7 @@ use techmap.gencomp.all;
 use techmap.allddr.all;
 
 entity ddr_ireg is
-generic ( tech : integer);
+generic ( tech : integer; arch : integer := 0);
 port ( Q1 : out std_ulogic;
        Q2 : out std_ulogic;
        C1 : in std_ulogic;
@@ -65,7 +65,7 @@ begin
   end generate;
 
   xil : if is_unisim(tech) = 1 generate
-    xil0 : unisim_iddr_reg generic map (tech) port map (Q1, Q2, C1, C2, CE, D, R, S);
+    xil0 : unisim_iddr_reg generic map (tech, arch) port map (Q1, Q2, C1, C2, CE, D, R, S);
   end generate;
 
 --pragma translate_off

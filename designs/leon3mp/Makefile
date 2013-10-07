@@ -15,7 +15,8 @@ SDCFILE=$(GRLIB)/boards/$(BOARD)/default.sdc
 BITGEN=$(GRLIB)/boards/$(BOARD)/default.ut
 CLEAN=soft-clean
 
-#TECHLIBS = unisim
+TECHLIBS = unisim
+DIRSKIP = leon4v0
 include $(GRLIB)/bin/Makefile
 include $(GRLIB)/software/leon3/Makefile
 

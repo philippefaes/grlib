@@ -26,83 +26,7 @@
 -- Description: SPI controller with an interface compatible with MPC83xx SPI.
 --              Relies on APB's wait state between back-to-back transfers.
 --
--- [Revision 1]
---
--- 3-wire mode. The core can be placed in 3-wire mode by writing bit 15 in the
--- mode register.
---
--- [Revision 2]
---
--- Added synhronization register on input data line so that asynchronous signals
--- will not cause glitches in the combinational logic assigning position 0 in
--- the shift tregisters. Precautionary action, no issues have been observed.
---
--- Open drain mode - requries that odmode generic is set to 1 and that the core
--- is connected to I/O or OD pads.
---
--- asvsel generic that decides if the core should use automatic slave select
---
--- A field called FACT has been added to the Mode register. This field decides
--- if the highest attainable SCK frequenecy (in master mode) should be SYSFREQ/2
--- or SYSFREQ/4. If FACT is set to 1 the core's register interface is no longer
--- compatible with the interface found in MPC83xx SoCs.
---
--- Event register now has status bit for when core has transfer in progress
---
--- Support for automatic periodic transfers has been added, see the GRIP
--- documentation for details.
---
--- [Post revision 2]
---
--- Configurable maximum word length via the maxwlen generic
---
--- [Revision 3]
---
--- Selection of transfer direction ordering in 3-wire mode (bit 3 in Mode
--- register).
---
--- [Revision 4]
---
--- Add additional resets, change counters from integer -> std_logic_vector
---
--- Add generics syncram and memtech to allow buffers to be implemented using
--- syncram_2p components.
---
--- When using syncram in automode, both TX RAMs will be written with the same
--- data and the first TX RAM will be used to send data and the other will be
--- used for the register interface.
---
--- The lines to the RX rams will be multiplexed so that one RAM is used for
--- SPI communication and the other is available over the register interface.
---
--- Support use of SYNCRAM_2PFT
---
--- Changed capability register layout
---
--- [Revision 5]
---
--- Support for SCK filtering in slave mode
---
--- Support for ignoring SPISEL input (IGSEL field in Mode register)
---
--- Bugfix for "almost" back-to-back transfers when CHPA = '0'. The core would
--- regard a transfer as finished even if SCK /= CPOL. If a new transfer was
--- started before SCK had transitioned to CPOL the core would use the wrong
--- edge for sampling MISO and changing MOSI. Added Mode register CITE field.
---
--- [Post revision 5]
--- Added support for async reset
---
--- Fixed race condition that could result in corrupted TX word if the transmit
--- queue was empty and a new word was written into the TX queue so that the queue
--- was updated in the same cycle as the last bit sample within the current word.
--- If this condition occured then transmission of the new word would begin before
--- the transmit shift register had been loaded with the new data.
---
--- Core would generate one extra SCK cycle for CPHA = 1 and FACT = 1.
---
--- Added testoen handling for scan test
---
+-------------------------------------------------------------------------------
 library ieee;
 use ieee.numeric_std.all;
 use ieee.std_logic_1164.all;
@@ -110,6 +34,8 @@ use ieee.std_logic_1164.all;
 library techmap;
 use techmap.gencomp.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.stdlib.all;
 library gaisler;
 use gaisler.spi.all;
@@ -137,7 +63,8 @@ entity spictrlx is
     automask0 : integer                  := 0;  -- Mask 0 for automated transfers
     automask1 : integer                  := 0;  -- Mask 1 for automated transfers
     automask2 : integer                  := 0;  -- Mask 2 for automated transfers
-    automask3 : integer                  := 0   -- Mask 3 for automated transfers
+    automask3 : integer                  := 0;  -- Mask 3 for automated transfers
+    ignore    : integer range 0 to 1     := 0   -- Ignore samples
     );
   port (
     rstn          : in std_ulogic;
@@ -163,6 +90,7 @@ entity spictrlx is
     spii_spisel   : in  std_ulogic;
     spii_astart   : in  std_ulogic;
     spii_cstart   : in  std_ulogic;
+    spii_ignore   : in  std_ulogic;
     spio_miso     : out std_ulogic;
     spio_misooen  : out std_ulogic;
     spio_mosi     : out std_ulogic;
@@ -556,6 +484,103 @@ architecture rtl of spictrlx is
     return false;
   end slv_start;
 
+  constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+  function spictrl_resval return spi_reg_type is
+    variable v : spi_reg_type;
+  begin
+    v.mode        := ('0','0','0','0','0','0','0','0',"0000","0000",
+                      '0','0','0','0',"00000","00", '0', '0', '0', '0');
+    v.event       := ('0', '0', '0', '0', '0', '0', '0', '0');
+    v.mask        := ('0', '0', '0', '0', '0', '0', '0', '0');
+    v.lst         := '0';
+    v.td          := (others => '0');
+    v.rd          := (others => '0');
+    v.slvsel      := (others => '1');
+    v.aslvsel     := (others => '0');
+    v.uf          := '0';
+    v.ov          := '0';
+    v.td_occ      := '0';
+    v.rd_free     := '1';
+    for i in 0 to (1-syncram)*(FIFO_DEPTH-1) loop
+      v.txfifo(i) := (others => '0');
+      v.rxfifo(i) := (others => '0');
+    end loop;
+    v.rxd         := (others => '0');
+    v.txd         := (others => '0'); v.txd(0) := '1';
+    v.txdupd      := '0';
+    v.txdbyp      := '0';
+    v.toggle      := '0';
+    v.samp        := '1';
+    v.chng        := '0';
+    v.psck        := '0';
+    v.twdir       := INPUT;
+    v.syncsamp    := (others => '0');
+    v.incrdli     := '0';
+    v.rxdone      := '0';
+    v.rxdone2     := '0';
+    v.running     := '0';
+    v.ov2         := '0';
+    v.tfreecnt    := FIFO_DEPTH;
+    v.rfreecnt    := FIFO_DEPTH;
+    v.tdfi        := (others => '0');
+    v.rdfi        := (others => '0');
+    v.tdli        := (others => '0');
+    v.rdli        := (others => '0');
+    v.rbitcnt     := (others => '0');
+    v.tbitcnt     := (others => '0');
+    v.divcnt      := (others => '0');
+    v.cgcnt       := (others => '0');
+    v.cgcntblock  := '0';
+    v.aselcnt     := (others => '0');
+    v.cgasel      := '0';
+    v.irq         := '0';
+    v.am.cfg      := ('0', '0', '0', '0', '0', '0', '0', '0', '0');
+    v.am.per      := (others => '0');
+    v.am.active   := '0';
+    v.am.lock     := '0';
+    v.am.cnt      := (others => '0');
+    v.am.skipdata := '0';
+    v.am.rxfull   := '0';
+    for i in 0 to (1-syncram)*(FIFO_DEPTH-1) loop
+      v.am.rxfifo := (others => (others => '0'));
+      v.am.txfifo := (others => (others => '0'));
+    end loop;
+    v.am.rfreecnt  := 0;
+    v.am.mask      := (others => '0');
+    v.am.mask_shdw := (others => '1');
+    v.am.unread    := (others => '0');
+    v.am.at        := '0';
+    v.am.rxread    := '0';
+    v.am.txwrite   := '0';
+    v.am.txread    := '0';
+    v.am.apbaddr   := (others => '0');
+    v.am.rxsel     := '0';
+    for i in 1 downto 0 loop
+      v.spii(i).miso   := '1';
+      v.spii(i).mosi   := '1';
+      v.spii(i).sck    := '0';
+      v.spii(i).spisel := '1'; 
+    end loop;
+    v.spio.miso     := '1';
+    v.spio.misooen  := INPUT;
+    v.spio.mosi     := '1';
+    v.spio.mosioen  := INPUT;
+    v.spio.sck      := '0';
+    v.spio.sckoen   := INPUT;
+    v.spio.enable   := '0';
+    v.spio.astart   := '0';
+    v.spio.aready   := '0';
+    v.spiolb.mosi := '1';
+    v.spiolb.sck  := '1';
+    v.astart   := '0';
+    v.cstart   := '0';
+    v.txdupd2  := '0';
+    v.twdir2   := '0';
+    return v;
+  end spictrl_resval;
+  constant RES : spi_reg_type := spictrl_resval;
+  
+  
   -----------------------------------------------------------------------------
   -- Signals
   -----------------------------------------------------------------------------
@@ -579,7 +604,7 @@ begin
   comb: process (r, rstn, apbi_psel, apbi_penable, apbi_paddr, apbi_pwrite,
                  apbi_pwdata, apbi_testen, apbi_testrst, apbi_scanen,
                  apbi_testoen, spii_miso, spii_mosi, spii_sck, spii_spisel,
-                 spii_astart, rx_do, tx_do, spii_cstart)
+                 spii_astart, rx_do, tx_do, spii_cstart, spii_ignore)
     variable v        : spi_reg_type;
     variable apbaddr  : std_logic_vector(APBH downto 2);
     variable apbout   : std_logic_vector(31 downto 0);
@@ -940,9 +965,11 @@ begin
           v.rd := select_data(rx_do(0), len);
         end if;
       end if;
-      v.rdfi := r.rdfi + 1;
-      v.rfreecnt := r.rfreecnt + 1;
-      v.rd_free := '0';
+      if not ((ignore > 0) and (spii_ignore = '1')) then
+        v.rdfi := r.rdfi + 1;
+        v.rfreecnt := r.rfreecnt + 1;
+        v.rd_free := '0';
+      end if;
     end if;
     if v.rd_free = '1' and r.rfreecnt /= FIFO_DEPTH then rx_rd := '1'; end if;
 
@@ -1404,19 +1431,21 @@ begin
     if ((AM_EN = 0 or (r.mode.amen and r.am.skipdata) = '0') and
         r.rxdone = '1') then
       if AM_EN = 1 and r.am.active = '1'then
-        -- Check mask, maybe we need to skip next word in fifo
-        v.rdli := r.rdli + 1;
-        v.am.rfreecnt := v.am.rfreecnt - 1;
-        if DISCONT_AM_MASK then
-          for i in 0 to aloop loop
-            if i > conv_integer(r.rdli) and rstop3 = '0' then
-              if amask(i) = '0' then
-                v.rdli := v.rdli + 1;
-              else
-                rstop3 := '1';
+        if not ((ignore > 0) and (spii_ignore = '1')) then
+          -- Check mask, maybe we need to skip next word in fifo
+          v.rdli := r.rdli + 1;
+          v.am.rfreecnt := v.am.rfreecnt - 1;
+          if DISCONT_AM_MASK then
+            for i in 0 to aloop loop
+              if i > conv_integer(r.rdli) and rstop3 = '0' then
+                if amask(i) = '0' then
+                  v.rdli := v.rdli + 1;
+                else
+                  rstop3 := '1';
+                end if;
               end if;
-            end if;
-          end loop;
+            end loop;
+          end if;
         end if;
       else
         v.rdli := r.rdli + 1;
@@ -1476,7 +1505,9 @@ begin
         end if;
         if (TW_EN = 0 or r.mode.tw = '0' or r.mode.loopb = '1' or r.twdir = OUTPUT) then
           if r.uf = '0' then
-            v.tfreecnt := v.tfreecnt + 1;
+            if not ((ignore > 0) and (spii_ignore = '1')) then
+              v.tfreecnt := v.tfreecnt + 1;
+            end if;
           end if;
           v.txdupd := '1'; tx_rd := '1';
         end if;
@@ -1522,18 +1553,20 @@ begin
           v.tdfi := v.tdfi + 1;
         else
           -- Check mask, might need to skip next word
-          if DISCONT_AM_MASK then
-            for i in 0 to aloop loop
-              if tstop3 = '0' and i > conv_integer(v.tdfi) then
-                if amask(i) = '0' then
-                  v.tdfi := v.tdfi + 1;
-                else
-                  tstop3 := '1';
-                end if;
-              end if;
-            end loop;
-          end if;
-          v.tdfi := v.tdfi + 1;
+          if not (((ignore > 0) and (spii_ignore = '1'))) then
+             if DISCONT_AM_MASK then
+               for i in 0 to aloop loop
+                 if tstop3 = '0' and i > conv_integer(v.tdfi) then
+                   if amask(i) = '0' then
+                     v.tdfi := v.tdfi + 1;
+                   else
+                     tstop3 := '1';
+                   end if;
+                 end if;
+               end loop;
+             end if;
+             v.tdfi := v.tdfi + 1;
+           end if;
         end if;
       elsif v.txdbyp = '0' then
         -- Bus idle value
@@ -1618,31 +1651,31 @@ begin
     end if;
 
     -- Core is disabled
-    if (rstn = '0') or (r.mode.en = '0') then
+    if ((not RESET_ALL) and rstn = '0') or (r.mode.en = '0') then
       v.tfreecnt := FIFO_DEPTH;
       v.rfreecnt := FIFO_DEPTH;
-      v.tdfi := (others => '0'); v.rdfi := (others => '0');
-      v.tdli := (others => '0'); v.rdli := (others => '0');
-      v.rd_free := '1';
-      v.td_occ := '0';
-      v.lst := '0';
-      v.uf := '0';
-      v.ov := '0';
-      v.running := '0';
-      v.event.tip := '0';
-      v.incrdli := '0';
+      v.tdfi := RES.tdfi; v.rdfi := RES.rdfi;
+      v.tdli := RES.tdli; v.rdli := RES.rdli;
+      v.rd_free := RES.rd_free;
+      v.td_occ := RES.td_occ;
+      v.lst := RES.lst;
+      v.uf := RES.uf;
+      v.ov := RES.ov;
+      v.running := RES.running;
+      v.event.tip := RES.event.tip;
+      v.incrdli := RES.incrdli;
       if TW_EN = 1 then
-        v.twdir := INPUT;
+        v.twdir := RES.twdir;
       end if;
-      v.spio.miso := '1';
-      v.spio.mosi := '1';
+      v.spio.miso := RES.spio.miso;
+      v.spio.mosi := RES.spio.mosi;
       if syncrst = 1 or (r.mode.en = '0') then
-        v.spio.misooen := INPUT;
-        v.spio.mosioen := INPUT;
-        v.spio.sckoen  := INPUT;
+        v.spio.misooen := RES.spio.misooen;
+        v.spio.mosioen := RES.spio.mosioen;
+        v.spio.sckoen  := RES.spio.sckoen;
       end if;
       if AM_EN = 1 then
-        v.event.at := '0';
+        v.event.at := RES.event.at;
       end if;
       -- Need to assign samp, chng and psck here if spisel is low when the
       -- core is enabled
@@ -1650,62 +1683,48 @@ begin
       v.chng := r.mode.cpha;
       v.psck := r.mode.cpol;
       if AM_EN = 1 then
-        v.am.active := '0';
-        v.am.cfg.act := '0';
-        v.am.cfg.eact := '0';
-        v.am.unread := (others=>'0');
-        v.am.rxsel := '0';
+        v.am.active := RES.am.active;
+        v.am.cfg.act := RES.am.cfg.act;
+        v.am.cfg.eact := RES.am.cfg.eact;
+        v.am.unread := RES.am.unread;
+        v.am.rxsel := RES.am.rxsel;
       end if;
       v.rxdone2 := '0';
       v.divcnt := (others => '0');
     end if;
 
     -- Chip reset
-    if rstn = '0' then
-      v.mode := ('0','0','0','0','0','0','0','0',"0000","0000",
-                 '0','0','0','0',"00000","00", '0', '0', '0', '0');
-      v.event.tip := '0';
-      v.event.lt := '0';
-      v.event.ov := '0';
-      v.event.un := '0';
-      v.event.mme := '0';
-      v.event.ne := '0';
-      v.event.nf := '0';
-      v.mask.tip := '0';
-      v.mask.lt := '0';
-      v.mask.ov := '0';
-      v.mask.un := '0';
-      v.mask.mme := '0';
-      v.mask.ne := '0';
-      v.mask.nf := '0';
+    if (not RESET_ALL) and (rstn = '0') then
+      v.mode := RES.mode;
+      v.event.tip := RES.event.tip;
+      v.event.lt := RES.event.lt;
+      v.event.ov := RES.event.ov;
+      v.event.un := RES.event.un;
+      v.event.mme := RES.event.mme;
+      v.event.ne := RES.event.ne;
+      v.event.nf := RES.event.nf;
+      v.mask := RES.mask;
       if AM_EN = 1 then
-        v.event.at := '0';
-        v.mask.at := '0';
+        v.event.at := RES.event.at;
         if PROG_AM_MASK then
-          v.am.mask_shdw := (others=>'1');
+          v.am.mask_shdw := RES.am.mask_shdw;
         end if;
-        v.am.per := (others=>'0');
-        v.am.cfg.seq := '0';
-        v.am.cfg.strict := '0';
-        v.am.cfg.ovtb := '0';
-        v.am.cfg.ovdb := '0';
-        v.am.cfg.erpt := '0';
-        v.am.cfg.lock := '0';
-        v.am.cfg.ecgc := '0';
-        v.am.rxread  := '0';
-        v.am.txwrite := '0';
-        v.am.txread  := '0';
-        v.am.apbaddr := (others => '0');
-        v.am.rxsel := '0';
-        v.cgcntblock := '0';
+        v.am.per := RES.am.per;
+        v.am.cfg := RES.am.cfg;
+        v.am.rxread  := RES.am.rxread;
+        v.am.txwrite := RES.am.txwrite;
+        v.am.txread  := RES.am.txread;
+        v.am.apbaddr := RES.am.apbaddr;
+        v.am.rxsel := RES.am.rxsel;
+        v.cgcntblock := RES.cgcntblock;
       end if;
-      v.lst := '0';
+      v.lst := RES.lst;
       if syncrst = 1 then
-        v.slvsel := (others => '1');
+        v.slvsel := RES.slvsel;
       end if;
-      v.cgcnt := (others => '0');
-      v.rbitcnt := (others => '0'); v.tbitcnt := (others => '0');
-      v.txd := (others => '0'); v.txd(0) := '1';
+      v.cgcnt := RES.cgcnt;
+      v.rbitcnt := RES.rbitcnt; v.tbitcnt := RES.tbitcnt;
+      v.txd := RES.txd;
     end if;
 
     -- Drive unused bit if open drain mode is not supported
@@ -1988,20 +2007,21 @@ begin
     if rising_edge(clk) then
       r <= rin;
       if rstn = '0' then
-        r.spio.sck <= '0';
-        r.rbitcnt <= (others => '0'); r.tbitcnt <= (others => '0');
-      else
-        r.spio.sck <= rin.spio.sck;
-        r.rbitcnt <= rin.rbitcnt;
-	r.tbitcnt <= rin.tbitcnt;
+        r.spio.sck <= RES.spio.sck;
+        r.rbitcnt <= RES.rbitcnt; r.tbitcnt <= RES.tbitcnt;
+        if RESET_ALL then
+          r <= RES;
+          -- Do not use synchronous reset for sync. registers
+          r.spii <= rin.spii;
+        end if;
       end if;
     end if;
     if syncrst = 0 and arstn = '0' then
-      r.spio.misooen  <= INPUT;
-      r.spio.mosioen  <= INPUT;
-      r.spio.sckoen   <= INPUT;
+      r.spio.misooen  <= RES.spio.misooen;
+      r.spio.mosioen  <= RES.spio.mosioen;
+      r.spio.sckoen   <= RES.spio.sckoen;
       if SLVSEL_EN /= 0 then
-        r.slvsel <= (others => '1');
+        r.slvsel <= RES.slvsel;
       end if;
     end if;
   end process reg;

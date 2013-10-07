@@ -20,6 +20,11 @@ if { [file readable .config] == 1} then {
 	if { $argc > 0 } then {
 		if { [lindex $argv 0] != "-D" } then {
 			read_config .config
+			if { [lindex $argv 0] == "-regen" } then {
+				catch {exec cp -f .config .config.old};
+				writeconfig .config config.h
+				exit 2
+			}
 		}
 		else
 		{

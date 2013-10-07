@@ -214,7 +214,7 @@ signal memo  : memory_out_type;
 signal wpo   : wprot_out_type;
 signal sdi   : sdctrl_in_type;
 signal sdo   : sdctrl_out_type;
-signal sdo2, sdo3 : sdctrl_out_type;
+signal sdo2  : sdctrl_out_type;
 
 signal apbi  : apb_slv_in_type;
 signal apbo  : apb_slv_out_vector := (others => apb_none);
@@ -394,7 +394,7 @@ begin
     cpu : for i in 0 to NCPU-1 generate
       u0 : leon3s			-- LEON3 processor      
       generic map (i, fabtech, memtech, CFG_NWIN, CFG_DSU, CFG_FPU, CFG_V8, 
-	0, CFG_MAC, pclow, 0, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
+	0, CFG_MAC, pclow, CFG_NOTAG, CFG_NWP, CFG_ICEN, CFG_IREPL, CFG_ISETS, CFG_ILINE, 
 	CFG_ISETSZ, CFG_ILOCK, CFG_DCEN, CFG_DREPL, CFG_DSETS, CFG_DLINE, CFG_DSETSZ,
 	CFG_DLOCK, CFG_DSNOOP, CFG_ILRAMEN, CFG_ILRAMSZ, CFG_ILRAMADDR, CFG_DLRAMEN,
         CFG_DLRAMSZ, CFG_DLRAMADDR, CFG_MMUEN, CFG_ITLBNUM, CFG_DTLBNUM, CFG_TLB_TYPE, CFG_TLB_REP, 
@@ -557,7 +557,7 @@ begin
 ----------------------------------------------------------------------
   
   grace: if CFG_GRACECTRL = 1 generate
-    grace0 : gracectrl generic map (hindex => 4, hirq => 13,
+    grace0 : gracectrl generic map (hindex => 4, hirq => 3,
         haddr => 16#002#, hmask => 16#fff#, split => CFG_SPLIT)
       port map (rstn, clkm, clkace, ahbsi, ahbso(4), acei, aceo);
   end generate;
@@ -670,7 +670,7 @@ begin
     
     i2cdvi : i2cmst
       generic map (pindex => 9, paddr => 9, pmask => 16#FFF#,
-                   pirq => 14, filter => I2C_FILTER)
+                   pirq => 6, filter => I2C_FILTER)
       port map (rstn, clkm, apbi, apbo(9), dvi_i2ci, dvi_i2co);
   end generate;
 
@@ -805,7 +805,7 @@ begin
 
   ocram : if CFG_AHBRAMEN = 1 generate 
     ahbram0 : ahbram generic map (hindex => 7, haddr => CFG_AHBRADDR, 
-	tech => CFG_MEMTECH, kbytes => CFG_AHBRSZ)
+	tech => CFG_MEMTECH, kbytes => CFG_AHBRSZ, pipe => CFG_AHBRPIPE)
     port map ( rstn, clkm, ahbsi, ahbso(7));
   end generate;
 
@@ -839,12 +839,10 @@ begin
 -----------------------------------------------------------------------
 
 -- pragma translate_off
-  x : report_version 
+  x : report_design 
   generic map (
    msg1 => system_table(XILINX_ML501),
-   msg2 => "GRLIB Version " & tost(LIBVHDL_VERSION/1000) & "." & tost((LIBVHDL_VERSION mod 1000)/100)
-      & "." & tost(LIBVHDL_VERSION mod 100) & ", build " & tost(LIBVHDL_BUILD),
-   msg3 => "Target technology: " & tech_table(fabtech) & ",  memory library: " & tech_table(memtech),
+   fabtech => tech_table(fabtech), memtech => tech_table(memtech),
    mdel => 1
   );
 -- pragma translate_on

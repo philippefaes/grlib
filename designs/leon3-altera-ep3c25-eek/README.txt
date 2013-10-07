@@ -9,8 +9,8 @@ Multimedia Daughter Card.
 
 The leon3 design can be synthesized with quartus or synplify,
 and can reach 60 - 70 MHz depending on configuration and synthesis
-options. Use 'make quartus' or 'make quartus-synp' to run the
-complete flow. To program the FPGA in batch mode, use 
+options. Use 'make quartus' to run the complete flow. To program
+the FPGA in batch mode, use 
 'make quartus-prog-fpga' or 
 'make quartus-prog-fpga-ref (reference config).
 

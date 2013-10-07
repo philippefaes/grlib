@@ -10,7 +10,6 @@ library STD;
 use STD.TEXTIO.all;
 
 package vpkg is
-signal GSR : std_logic := '0';
 signal GTS : std_logic := '0';
 
   PROCEDURE GenericValueCheckMessage (

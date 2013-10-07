@@ -628,7 +628,8 @@ component ut90nhbd_iopad  is
     pad      : inout std_ulogic;
     i        : in std_ulogic;
     en       : in std_ulogic;
-    o        : out std_ulogic);
+    o        : out std_ulogic;
+    slewctrl : in  std_ulogic);
 end component;
 
 component ut90nhbd_outpad is
@@ -639,7 +640,8 @@ component ut90nhbd_outpad is
     strength : integer := 0);
   port(
     pad      : out std_ulogic;
-    i        : in std_ulogic);
+    i        : in std_ulogic;
+    slewctrl : in std_ulogic);
 end component;
 
 component ut90nhbd_toutpad  is
@@ -651,7 +653,8 @@ component ut90nhbd_toutpad  is
   port (
     pad      : out std_ulogic;
     i        : in  std_ulogic;
-    en       : in  std_ulogic);
+    en       : in  std_ulogic;
+    slewctrl : in  std_ulogic);
 end component;
 
 component rhumc_lvds_combo 

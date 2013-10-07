@@ -37,7 +37,7 @@ use grlib.stdlib.all;
 entity syncram_2pbw is
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
 	sepclk : integer := 0; wrfst : integer := 0; testen : integer := 0;
-	words : integer := 0);
+	words : integer := 0; custombits : integer := 1);
   port (
     rclk     : in std_ulogic;
     renable  : in std_logic_vector((dbits/8-1) downto 0);
@@ -47,7 +47,10 @@ entity syncram_2pbw is
     write    : in std_logic_vector((dbits/8-1) downto 0);
     waddress : in std_logic_vector((abits-1) downto 0);
     datain   : in std_logic_vector((dbits-1) downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector((dbits/8)*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector((dbits/8)*custombits-1 downto 0));
 end;
 
 architecture rtl of syncram_2pbw is
@@ -61,6 +64,7 @@ architecture rtl of syncram_2pbw is
   constant iwrfst : integer := (1-syncram_2p_write_through(tech)) * wrfst;
 
   signal xrenable,xwrite : std_logic_vector(dbits/8-1 downto 0);
+  signal custominx,customoutx: std_logic_vector(syncram_customif_maxwidth downto 0);
 
 begin
 
@@ -157,7 +161,18 @@ begin
       end generate;
     end generate wrfst_gen;
   
-    n2x : if tech = easic45 generate
+  custominx(custominx'high downto custombits) <= (others => '0');
+  custominx(custombits-1 downto 0) <= customin;
+
+  nocust: if has_sram_2pbw(tech)=0 or syncram_has_customif(tech)=0 generate
+    customoutx <= (others => '0');
+  end generate;
+  co0: if has_sram_2pbw(tech)=1 generate
+    customout(custombits-1 downto 0) <= customoutx(custombits-1 downto 0);
+    customout(customout'high downto custombits) <= (others => '0');
+  end generate;
+
+  n2x : if tech = easic45 generate
       x0 : n2x_syncram_2p_be generic map (abits, dbits, sepclk, iwrfst)
         port map (rclk, renable2, raddress, dataoutx, wclk,
                   write, waddress, datain);
@@ -193,9 +208,11 @@ begin
 
   nos2pbw : if has_sram_2pbw(tech) /= 1 generate
     rx : for i in 0 to dbits/8-1 generate
-      x0 : syncram_2p generic map (tech, abits, 8, sepclk, wrfst, testen, words)
+      x0 : syncram_2p generic map (tech, abits, 8, sepclk, wrfst, testen, words, custombits)
         port map (rclk, renable(i), raddress, dataout(i*8+7 downto i*8), wclk, write(i),
-                  waddress, datain(i*8+7 downto i*8), testin);
+                  waddress, datain(i*8+7 downto i*8), testin,
+                  customclk, customin((i+1)*custombits-1 downto i*custombits),
+                  customout((i+1)*custombits-1 downto i*custombits));
     end generate;
   end generate;
 

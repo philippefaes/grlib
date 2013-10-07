@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 library gaisler;
@@ -55,26 +57,24 @@ architecture rtl of mmutw is
     read        : std_logic;
   end record;
 
+  constant write_buffer_none : write_buffer_type := (
+    addr => (others => '0'), data => (others => '0'), read => '0');
+  
   type states is (idle, waitm, pte, lv1, lv2, lv3, lv4);
   type tw_rtype is record
     state       : states;
     wb          : write_buffer_type;
     req         : std_logic;
     walk_op     : std_logic;
-    
-    --#dump
-    -- pragma translate_off
-    finish      : std_logic;
-    index       : std_logic_vector(31-2 downto 0);
-    lvl         : std_logic_vector(1 downto 0);
-    fault_mexc  : std_logic;
-    fault_trans : std_logic;
-    fault_lvl   : std_logic_vector(1 downto 0);
-    pte,ptd,inv,rvd : std_logic;
-    goon, found : std_logic;
-    base        : std_logic_vector(31 downto 0);
-    -- pragma translate_on
   end record;
+
+  constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+  constant RRES : tw_rtype := (
+    state   => idle,
+    wb      => write_buffer_none,
+    req     => '0',
+    walk_op => '0');
+  
   signal c,r : tw_rtype;
   
 begin  
@@ -258,11 +258,11 @@ begin
     end if;
         
     -- # reset
-    if ( rst = '0' ) then
-      v.state := idle;
-      v.req := '0';
-      v.walk_op := '0';
-      v.wb.read := '0';
+    if (not RESET_ALL) and ( rst = '0' ) then
+      v.state := RRES.state;
+      v.req := RRES.req;
+      v.walk_op := RRES.walk_op;
+      v.wb.read := RRES.wb.read;
     end if;
 
     --# drive signals
@@ -282,29 +282,18 @@ begin
     mcmmi.read     <= r.wb.read;
     mcmmi.lock     <= '0';
     mcmmi.req      <= r.req;
-    
-    --#dump
-    -- pragma translate_off
-    v.finish := finish;
-    v.index := index;
-    v.lvl   := lvl;
-    v.fault_mexc := fault_mexc;
-    v.fault_trans := fault_trans;
-    v.fault_lvl := fault_lvl;
-    v.pte   := pte;
-    v.ptd   := ptd;
-    v.inv   := inv;
-    v.rvd   := rvd;
-    v.goon  := goon;
-    v.found := found;
-    v.base  := base;
-    -- pragma translate_on
 
     c <= v;
   end process p0;
 
   p1: process (clk)
-  begin if rising_edge(clk) then r <= c; end if;
+  begin
+    if rising_edge(clk) then
+      r <= c;
+      if RESET_ALL and (rst = '0') then
+        r <= RRES;
+      end if;
+    end if;
   end process p1;
     
 end rtl;

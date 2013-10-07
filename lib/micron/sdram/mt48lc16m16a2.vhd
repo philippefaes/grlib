@@ -233,7 +233,7 @@ ENTITY mt48lc16m16a2 IS
         data_bits : INTEGER := 16;
         col_bits  : INTEGER :=  9;
         index     : INTEGER :=  0;
-	fname     : string := "sdram.srec"	-- File to read from
+	fname     : string := "ram.srec"	-- File to read from
     );
     PORT (
         Dq    : INOUT STD_LOGIC_VECTOR (data_bits - 1 DOWNTO 0) := (OTHERS => 'Z');

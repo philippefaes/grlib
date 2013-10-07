@@ -741,6 +741,34 @@ begin
   ahbso.hindex  <= hindex;
   ahbso.hsplit  <= (others => '0');
 
+  driveundriven : block
+  begin
+    sdo.qdrive <= '0';
+    sdo.nbdrive <= '0';
+    sdo.ce <= '0';
+    sdo.moben <= '0';
+    sdo.cal_rst <= '0';
+    sdo.oct <= '0';
+    sdo.dqs_gate <= '0';
+    sdo.xsdcsn <= (others => '1');
+    sdo.data(127 downto sdbits) <= (others => '0');
+    sdo.cb <= (others => '0');
+    sdo.ba <= (others => '0');
+    sdo.sdck <= (others => '0');
+    sdo.cal_en <= (others => '0');
+    sdo.cal_inc <= (others => '0');
+    sdo.cal_pll <= (others => '0');
+    sdo.odt <= (others => '0');
+    sdo.conf <= (others => '0');
+    sdo.vcbdrive <= (others => '0');
+    sdo.cbdqm <= (others => '0');
+    sdo.cbcal_en <= (others => '0');
+    sdo.cbcal_inc <= (others => '0');
+    sdo.read_pend <= (others => '0');
+    sdo.regwdata <= (others => '0');
+    sdo.regwrite <= (others => '0');
+  end block driveundriven;
+  
   regs : process(clk, rst) begin
     if rising_edge(clk) then
       r <= ri; rbdrive <= ribdrive;

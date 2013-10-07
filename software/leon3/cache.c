@@ -160,8 +160,34 @@ cachetest()
 
 long long int getdw();
 
-    
- maintest()
+void cache_test_init_state()
+{
+	int ITAGS, DTAGS;
+	int ILINESZ, DLINESZ;
+	int ITAG_BITS, ILINEBITS, DTAG_BITS, DLINEBITS;
+
+	ILINEBITS = (icconf >> 16) & 7;
+	DLINEBITS = ((dcconf >> 16) & 7);
+	ITAG_BITS = ((icconf >> 20) & 15) + 8 - ILINEBITS;
+	DTAG_BITS = ((dcconf >> 20) & 15) + 8 - DLINEBITS;
+	isetsize = (1<<((icconf >> 20) & 15)) * 1024;
+	dsetsize = (1<<((dcconf >> 20) & 15)) * 1024;
+	isetbits = ((icconf >> 20) & 15) + 10;
+	dsetbits = ((dcconf >> 20) & 15) + 10;
+	ITAGS = (1 << ITAG_BITS);
+	ILINESZ = (1 << ILINEBITS);
+	DTAGS = (1 << DTAG_BITS);
+ 	DLINESZ = (1 << DLINEBITS); 
+	ITAGAMSK = 0x7fffffff - (1 << (ITAG_BITS + ILINEBITS +2)) + 1;
+	DTAGAMSK = 0x7fffffff - (1 << (DTAG_BITS + DLINEBITS +2)) + 1;
+	DSETS = ((dcconf >> 24) & 3) + 1;
+
+	ITAGLOW = 10 + ((icconf >> 20) & 15);
+	DTAGLOW = 10 + ((dcconf >> 20) & 15);
+}
+
+
+maintest()
 {
 
 	volatile double mrl[8192 + 8]; /* enough for 64 K caches */

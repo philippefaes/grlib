@@ -20,3 +20,10 @@
 #define CFG_GRETH_FIFO 8
 #endif
 
+#ifndef CONFIG_GRETH_FT
+#define CONFIG_GRETH_FT 0
+#endif
+
+#ifndef CONFIG_GRETH_EDCLFT
+#define CONFIG_GRETH_EDCLFT 0
+#endif

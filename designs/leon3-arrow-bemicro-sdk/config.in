@@ -4,7 +4,7 @@
 # Comments and bug reports to support@gaisler.com
 #
 
-mainmenu_name "LEON3 Altera BeMicro SDK Design Configuration"
+mainmenu_name "LEON3 Design Configuration"
 
 mainmenu_option next_comment
   comment 'Synthesis      '
@@ -49,7 +49,7 @@ comment 'Peripherals             '
   mainmenu_option next_comment
   comment 'UARTs, timers and irq control         '
     source lib/gaisler/uart/uart1.in
-    source lib/gaisler/leon3/irqmp.in
+    source lib/gaisler/irqmp/irqmp.in
     source lib/gaisler/misc/gptimer.in
     source lib/gaisler/misc/grgpio.in
   endmenu

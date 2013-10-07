@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 use grlib.devices.all;
@@ -62,6 +64,9 @@ type reg_type is record
   active  : std_ulogic;
 end record;
 
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RES : reg_type := ('0', '0', '0', '0');
+
 signal r, rin : reg_type;
 
 begin
@@ -76,7 +81,7 @@ begin
   variable haddr   : std_logic_vector(31 downto 0);   -- AHB address
   variable hwdata  : std_logic_vector(AHBDW-1 downto 0);   -- AHB write data
   variable htrans  : std_logic_vector(1 downto 0);    -- transfer type
-  variable hwrite  : std_ulogic;  		      -- read/write
+  variable hwrite  : std_ulogic;                      -- read/write
   variable hburst  : std_logic_vector(2 downto 0);    -- burst type
   variable newaddr : std_logic_vector(9 downto 0); -- next sequential address
   variable hbusreq : std_ulogic;   -- bus request
@@ -110,14 +115,14 @@ begin
 
     if r.active = '1' then
       if ahbi.hready = '1' then
-	case ahbi.hresp is
-	when HRESP_OKAY => ready := '1';
-	when HRESP_RETRY | HRESP_SPLIT=> retry := '1';
-	when others => ready := '1'; mexc := '1';
-	end case;
+        case ahbi.hresp is
+        when HRESP_OKAY => ready := '1';
+        when HRESP_RETRY | HRESP_SPLIT=> retry := '1';
+        when others => ready := '1'; mexc := '1';
+        end case;
       end if;
       if ((ahbi.hresp = HRESP_RETRY) or (ahbi.hresp = HRESP_SPLIT)) then
-	v.retry := not ahbi.hready;
+        v.retry := not ahbi.hready;
       else v.retry := '0'; end if;
     end if;
 
@@ -133,7 +138,9 @@ begin
       end if;
     end if;
 
-    if rst = '0' then v.retry := '0'; v.active := '0'; end if;
+    if (not RESET_ALL) and (rst = '0') then
+      v.retry := RES.retry; v.active := RES.active;
+    end if;
 
     rin <= v;
 
@@ -160,7 +167,14 @@ begin
 
   end process;
 
-    regs : process(clk)
-    begin if rising_edge(clk) then r <= rin; end if; end process;
+  regs : process(clk)
+  begin
+    if rising_edge(clk) then
+      r <= rin;
+      if RESET_ALL and rst = '0' then
+        r <= RES;
+      end if;
+    end if;
+  end process;
 
 end;

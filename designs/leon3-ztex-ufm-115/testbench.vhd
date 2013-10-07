@@ -54,7 +54,7 @@ end;
 
 architecture behav of testbench is
   constant promfile  : string  := "prom.srec";        -- rom contents
-  constant sdramfile : string  := "sdram.srec";       -- sdram contents
+  constant sdramfile : string  := "ram.srec";       -- sdram contents
 
   constant lresp    : boolean := false;
 

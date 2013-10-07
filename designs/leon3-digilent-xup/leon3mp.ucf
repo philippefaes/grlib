@@ -31,7 +31,7 @@ NET "ddr_clk_fb" TNM_NET = "ddr_clk_fb";
 TIMESPEC "TS_ddr_clk_fb" = PERIOD "ddr_clk_fb" 8.00 ns HIGH 50 %;
 NET "ddr_clk_fb" MAXDELAY = 1660 ps;
 NET "*dqinl*" MAXDELAY = 1900 ps;
-NET "ddrsp0.ddr0/ddr64.ddrc/rwdata*" MAXDELAY = 2100 ps;
+NET "ddrsp0.ddr0/ddrc/rbwdata*" MAXDELAY = 2100 ps;
 
 NET erx_clk PERIOD = 40.000 ;
 OFFSET = in : 10.000 : BEFORE erx_clk ;

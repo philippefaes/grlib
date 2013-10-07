@@ -1,6 +1,6 @@
 /* mkdevice.c, a utility to generate LEON device.vhd from a config file.
-   Written by Jiri Gaisler, jiri@gaisler.com
-   Copyright Gaisler Research, all rights reserved.
+   Written by Jiri Gaisler
+   Copyright Aeroflex Gaisler, all rights reserved.
 */
 
 #include <stdlib.h>

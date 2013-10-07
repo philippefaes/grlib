@@ -757,7 +757,9 @@ begin
   sdo.cbcal_inc  <= (others => '0'); 
   sdo.read_pend  <= (others => '0'); 
   sdo.regwdata  <= (others => '0'); 
-  sdo.regwrite  <= (others => '0'); 
+  sdo.regwrite  <= (others => '0');
+  sdo.dqs_gate <= '0';
+  sdo.nbdrive <= '0';
 
   regs : process(clk, rst) begin
     if rising_edge(clk) then

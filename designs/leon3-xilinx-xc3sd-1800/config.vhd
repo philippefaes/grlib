@@ -143,6 +143,7 @@ package config is
   constant CFG_AHBRAMEN : integer := 0;
   constant CFG_AHBRSZ : integer := 1;
   constant CFG_AHBRADDR : integer := 16#A00#;
+  constant CFG_AHBRPIPE : integer := 0;
 -- Gaisler Ethernet core
   constant CFG_GRETH : integer := 1;
   constant CFG_GRETH1G : integer := 0;
@@ -153,7 +154,6 @@ package config is
 -- LEON3 interrupt controller
   constant CFG_IRQ3_ENABLE : integer := 1;
   constant CFG_IRQ3_NSEC : integer := 0;
-
 -- Modular timer
   constant CFG_GPT_ENABLE : integer := 1;
   constant CFG_GPT_NTIM : integer := (2);
@@ -181,6 +181,7 @@ package config is
   constant CFG_SPIMCTRL_SCALER : integer := 1;
   constant CFG_SPIMCTRL_ASCALER : integer := 1;
   constant CFG_SPIMCTRL_PWRUPCNT : integer := 0;
+  constant CFG_SPIMCTRL_OFFSET : integer := 16#0#;
 
 -- SPI controller
   constant CFG_SPICTRL_ENABLE : integer := 0;

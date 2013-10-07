@@ -14,7 +14,6 @@ syncram.vhd
 syncram64.vhd
 syncram_2p.vhd
 syncram_dp.vhd
-syncfifo.vhd
 syncramft.vhd
 syncram_2pft.vhd
 regfile_3p.vhd
@@ -46,7 +45,7 @@ grgates.vhd
 inpad_ddr.vhd outpad_ddr.vhd iopad_ddr.vhd
 syncram128bw.vhd syncram256bw.vhd
 syncram128.vhd syncramww.vhd
-syncram156bw.vhd 
+syncram156bw.vhd
 techmult.vhd
 spictrl_net.vhd
 scanreg.vhd
@@ -54,3 +53,4 @@ syncrambw.vhd
 syncram_2pbw.vhd
 obt1553_net.vhd
 sdram_phy.vhd
+from.vhd

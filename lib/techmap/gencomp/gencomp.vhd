@@ -37,7 +37,7 @@ package gencomp is
 
 -- technologies and libraries
 
-constant NTECH : integer := 51;
+constant NTECH : integer := 52;
 type tech_ability_type is array (0 to NTECH) of integer;
 
 constant inferred    : integer := 0;
@@ -92,6 +92,7 @@ constant virtex7     : integer := 48;
 constant kintex7     : integer := 49;
 constant artix7      : integer := 50;
 constant zynq7000    : integer := 51;
+constant rhlib13t    : integer := 52;
 
 constant DEFMEMTECH  : integer := inferred;
 constant DEFPADTECH  : integer := inferred;
@@ -126,6 +127,9 @@ constant syncram_2p_dest_rw_collision : tech_ability_type :=
 constant syncram_dp_dest_rw_collision : tech_ability_type :=
         (memartisan => 1, smic013 => 1, easic45 => 1, others => 0);
 
+constant syncram_has_customif : tech_ability_type := (others => 0);
+constant syncram_customif_maxwidth: integer := 64;  -- Expand as needed
+
 constant has_sram : tech_ability_type :=
 	(atc18s => 0, others => 1);
 
@@ -151,7 +155,7 @@ constant has_sram64 : tech_ability_type :=
 constant has_sram128bw : tech_ability_type := (
 	virtex2 => 1, virtex4 => 1, virtex5 => 1, spartan3 => 1,
 	spartan3e => 1, spartan6 => 1, virtex6 => 1,  virtex7 => 1, kintex7 => 1,
-	altera => 1, cyclone3 => 1, stratix2 => 1, stratix3 => 1,
+	altera => 1, cyclone3 => 1, stratix2 => 1, stratix3 => 1, stratix4 => 1,
 	ut90 => 1, others => 0);
 
 constant has_sram128 : tech_ability_type := (
@@ -162,19 +166,31 @@ constant has_sram128 : tech_ability_type := (
 constant has_sram156bw : tech_ability_type := (
 	virtex2 => 0, virtex4 => 0, virtex5 => 0, spartan3 => 0,
 	spartan3e => 0, spartan6 => 0, virtex6 => 0, virtex7 => 0, kintex7 => 0,
-	altera => 0, cyclone3 => 0, stratix2 => 0, stratix3 => 0,
+	altera => 0, cyclone3 => 0, stratix2 => 0, stratix3 => 0, stratix4 => 0,
 	tm65gpl => 0, custom1 => 1, ut90 => 1, others => 0);
 
 constant has_sram256bw : tech_ability_type := (
 	virtex2 => 1, virtex4 => 1, virtex5 => 1, spartan3 => 1,
 	spartan3e => 1, spartan6 => 1, virtex6 => 1, virtex7 => 1, kintex7 => 1,
-	altera => 1, cyclone3 => 1, stratix2 => 1, stratix3 => 1,
+	altera => 1, cyclone3 => 1, stratix2 => 1, stratix3 => 1, stratix4 => 1,
 	tm65gpl => 0, cmos9sf => 1, others => 0);
 
 constant has_sram_2pbw : tech_ability_type := (
     easic45 => 1, others => 0);
 
 constant has_srambw : tech_ability_type := (easic45 => 1, others => 0);
+
+-- ram_raw_latency - describes how many edges on the write-port clock that
+-- must pass before data is commited to memory. for example, if the write data
+-- is commited to memory on the falling edge after a write cycle, and is
+-- available to the read port after a short T_{raw} then ram_raw_latency
+-- should be set to 1. If the data is available to the read port immediately
+-- after the write-port clock rising edge that latches the write operation then
+-- ram_raw_latency(tech) should return 0. If T_{raw} cannot be assumed to be
+-- negligible (for instance, it is longer than a clock cycle on the read port)
+-- then the ram_raw_latency value should be increased to cover also T_{raw}.
+-- this value is important for cores that use DP or 2P memories in CDC.
+constant ram_raw_latency : tech_ability_type := (easic45 => 1, others => 0);
 
 constant padoen_polarity : tech_ability_type :=
         (axcel => 1, proasic => 1, umc => 1, rhumc => 1, apa3 => 1,
@@ -232,6 +248,10 @@ constant has_tapsel : tech_ability_type :=
 	 spartan6 => 1, virtex6 => 1, virtex7 => 1, kintex7 => 1,
 	 artix7 => 1, zynq7000 => 1, others => 0);
 
+constant tap_tck_gated : tech_ability_type :=
+  ( virtex => 1, virtex2 => 1, virtex4 => 1, virtex5 => 1, spartan3 => 1, spartan3e => 1,
+    spartan6 => 0, others => 0);
+
 constant need_extra_sync_reset : tech_ability_type :=
 	(axcel => 1, atc18s => 1, ut25 => 1, rhumc => 1, tsmc90 => 1,
 	 rhlib18t => 1, atc18rha => 1, easic90 => 1, tm65gpl => 1,
@@ -273,7 +293,7 @@ constant ddr2phy_builtin_pads: tech_ability_type := (
    -- Wrapped DDR2 IP cores with builtin pads
    easic45 => 1,
    -- Below techs have builtin pads for legacy reasons, can be converted if needed
-   spartan6 => 1, easic90 => 1, spartan3 => 1, stratix3 => 1, stratix2 => 1,
+   easic90 => 1, spartan3 => 1, stratix3 => 1, stratix2 => 1,
    others => 0);
 
 constant ddr2phy_has_fbclk: tech_ability_type :=
@@ -352,7 +372,8 @@ constant ddrphy_ptctrl: tech_ability_type := (
   apa3l     => "proasic3l ", ut130     => "ut130hbd  ",
   ut90      => "ut90nhbd  ", gf65      => "gf65g     ",
   virtex7   => "virtex7   ", kintex7   => "kintex7   ",
-  artix7    => "artix7    ", zynq7000  => "zynq7000  ");
+  artix7    => "artix7    ", zynq7000  => "zynq7000  ",
+  rhlib13t  => "rhlib13t  ");
 
 -- pragma translate_on
 
@@ -401,7 +422,7 @@ constant dci      : integer := 5;
 -- synchronous single-port ram
   component syncram
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
-	testen : integer := 0);
+	testen : integer := 0; custombits : integer := 1);
   port (
     clk      : in std_ulogic;
     address  : in std_logic_vector((abits -1) downto 0);
@@ -409,14 +430,17 @@ constant dci      : integer := 5;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic;
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(custombits-1 downto 0));
   end component;
 
 -- synchronous two-port ram (1 read, 1 write port)
   component syncram_2p
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
 	sepclk : integer := 0; wrfst : integer := 0; testen : integer := 0;
-	words : integer := 0);
+	words : integer := 0; custombits : integer := 1);
   port (
     rclk     : in std_ulogic;
     renable  : in std_ulogic;
@@ -426,13 +450,16 @@ constant dci      : integer := 5;
     write    : in std_ulogic;
     waddress : in std_logic_vector((abits -1) downto 0);
     datain   : in std_logic_vector((dbits -1) downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(custombits-1 downto 0));
   end component;
 
 -- synchronous dual-port ram (2 read/write ports)
   component syncram_dp
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
-	testen : integer := 0);
+	testen : integer := 0; custombits : integer := 1);
   port (
     clk1     : in std_ulogic;
     address1 : in std_logic_vector((abits -1) downto 0);
@@ -446,13 +473,17 @@ constant dci      : integer := 5;
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic;
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(custombits-1 downto 0));
   end component;
 
 -- synchronous 3-port regfile (2 read, 1 write port)
   component regfile_3p
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
-           wrfst : integer := 0; numregs : integer := 64; testen : integer := 0);
+           wrfst : integer := 0; numregs : integer := 64; testen : integer := 0;
+           custombits : integer := 1);
   port (
     wclk   : in  std_ulogic;
     waddr  : in  std_logic_vector((abits -1) downto 0);
@@ -465,13 +496,16 @@ constant dci      : integer := 5;
     raddr2 : in  std_logic_vector((abits -1) downto 0);
     re2    : in  std_ulogic;
     rdata2 : out std_logic_vector((dbits -1) downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(2*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(2*custombits-1 downto 0));
   end component;
 
 -- 64-bit synchronous single-port ram with 32-bit write strobe
   component syncram64
   generic (tech : integer := 0; abits : integer := 6; testen : integer := 0;
-	   paren : integer := 0);
+	   paren : integer := 0; custombits : integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -479,13 +513,16 @@ constant dci      : integer := 5;
     dataout : out std_logic_vector (63+8*paren downto 0);
     enable  : in  std_logic_vector (1 downto 0);
     write   : in  std_logic_vector (1 downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(2*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(2*custombits-1 downto 0));
   end component;
 
 -- 128-bit synchronous single-port ram with 32-bit write strobe
   component syncram128
   generic (tech : integer := 0; abits : integer := 6; testen : integer := 0;
-	   paren : integer := 0);
+	   paren : integer := 0; custombits : integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -493,12 +530,15 @@ constant dci      : integer := 5;
     dataout : out std_logic_vector (127+16*paren downto 0);
     enable  : in  std_logic_vector (3 downto 0);
     write   : in  std_logic_vector (3 downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(4*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(4*custombits-1 downto 0));
   end component;
 
   component syncramft
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
-	ft : integer range 0 to 3 := 0; testen : integer := 0 );
+	ft : integer range 0 to 3 := 0; testen : integer := 0; custombits : integer := 1 );
   port (
     clk      : in std_ulogic;
     address  : in std_logic_vector((abits -1) downto 0);
@@ -508,13 +548,16 @@ constant dci      : integer := 5;
     enable   : in std_ulogic;
     error    : out std_logic_vector(((dbits + 7) / 8)-1 downto 0);
     testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
-    errinj   : in std_logic_vector(((dbits + 7)/8)*2-1 downto 0) := (others => '0'));
+    errinj   : in std_logic_vector(((dbits + 7)/8)*2-1 downto 0) := (others => '0');
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(3*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(3*custombits-1 downto 0));
   end component;
 
   component syncram_2pft
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
 	sepclk : integer := 0; wrfst : integer := 0; ft : integer := 0;
-        testen : integer := 0; words : integer := 0);
+        testen : integer := 0; words : integer := 0; custombits : integer := 1);
   port (
     rclk     : in std_ulogic;
     renable  : in std_ulogic;
@@ -525,27 +568,14 @@ constant dci      : integer := 5;
     waddress : in std_logic_vector((abits -1) downto 0);
     datain   : in std_logic_vector((dbits -1) downto 0);
     error    : out std_logic_vector(((dbits + 7) / 8)-1 downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
-  end component;
-
-  component syncfifo
-  generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
-	sepclk : integer := 0; wrfst : integer := 0);
-  port (
-    rst      : in std_ulogic;
-    rclk     : in std_ulogic;
-    renable  : in std_ulogic;
-    dataout  : out std_logic_vector((dbits -1) downto 0);
-    wclk     : in std_ulogic;
-    write    : in std_ulogic;
-    datain   : in std_logic_vector((dbits -1) downto 0);
-    full     : out std_ulogic;
-    empty    : out std_ulogic
-  );
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(3*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(3*custombits-1 downto 0));
   end component;
 
   component syncram128bw
-  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0);
+  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0; custombits : integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -553,11 +583,14 @@ constant dci      : integer := 5;
     dataout : out std_logic_vector (127 downto 0);
     enable  : in  std_logic_vector (15 downto 0);
     write   : in  std_logic_vector (15 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(16*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(16*custombits-1 downto 0));
   end component;
 
   component syncram156bw
-  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0);
+  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0; custombits : integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -565,11 +598,14 @@ constant dci      : integer := 5;
     dataout : out std_logic_vector (155 downto 0);
     enable  : in  std_logic_vector (15 downto 0);
     write   : in  std_logic_vector (15 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(20*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(20*custombits-1 downto 0));
   end component;
 
   component syncram256bw is
-  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0);
+  generic (tech : integer := 0; abits : integer := 6; testen : integer := 0; custombits : integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -577,12 +613,15 @@ constant dci      : integer := 5;
     dataout : out std_logic_vector (255 downto 0);
     enable  : in  std_logic_vector (31 downto 0);
     write   : in  std_logic_vector (31 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(32*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(32*custombits-1 downto 0));
   end component;
 
   component syncrambw
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
-    testen : integer := 0);
+    testen : integer := 0; custombits : integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits-1 downto 0);
@@ -590,13 +629,16 @@ constant dci      : integer := 5;
     dataout : out std_logic_vector (dbits-1 downto 0);
     enable  : in  std_logic_vector (dbits/8-1 downto 0);
     write   : in  std_logic_vector (dbits/8-1 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector((dbits/8)*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector((dbits/8)*custombits-1 downto 0));
   end component;
 
   component syncram_2pbw
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 8;
 	sepclk : integer := 0; wrfst : integer := 0; testen : integer := 0;
-	words : integer := 0);
+	words : integer := 0; custombits : integer := 1);
   port (
     rclk     : in std_ulogic;
     renable  : in std_logic_vector((dbits/8-1) downto 0);
@@ -606,7 +648,25 @@ constant dci      : integer := 5;
     write    : in std_logic_vector((dbits/8-1) downto 0);
     waddress : in std_logic_vector((abits-1) downto 0);
     datain   : in std_logic_vector((dbits-1) downto 0);
-    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none);
+    testin   : in std_logic_vector(TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector((dbits/8)*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector((dbits/8)*custombits-1 downto 0));
+  end component;
+
+  component from is
+    generic (
+      timingcheckson:   boolean := True;
+      instancepath:     string  := "*";
+      xon:              boolean := False;
+      msgon:            boolean := True;
+      data_x:           integer := 1;
+      memoryfile:       string  := "";
+      progfile:         string  := "");
+   port (
+      clk:        in    std_ulogic;
+      addr:       in    std_logic_vector(6 downto 0);
+      data:       out   std_logic_vector(7 downto 0));
   end component;
 
 ---------------------------------------------------------------------------
@@ -622,7 +682,8 @@ end component;
 
 component inpadv
   generic (tech : integer := 0; level : integer := 0;
-	   voltage : integer := x33v; width : integer := 1);
+	   voltage : integer := x33v; width : integer := 1;
+           filter : integer := 0; strength : integer := 0);
   port (
     pad : in  std_logic_vector(width-1 downto 0);
     o   : out std_logic_vector(width-1 downto 0));
@@ -639,7 +700,7 @@ end component;
 component iopadv
   generic (tech : integer := 0; level : integer := 0; slew : integer := 0;
 	voltage : integer := x33v; strength : integer := 12; width : integer := 1;
-	   oepol : integer := 0);
+	   oepol : integer := 0; filter : integer := 0);
   port (
     pad : inout std_logic_vector(width-1 downto 0);
     i   : in  std_logic_vector(width-1 downto 0);
@@ -651,7 +712,7 @@ end component;
 component iopadvv is
   generic (tech : integer := 0; level : integer := 0; slew : integer := 0;
 	voltage : integer := x33v; strength : integer := 12; width : integer := 1;
-	oepol : integer := 0);
+	oepol : integer := 0; filter : integer := 0);
   port (
     pad : inout std_logic_vector(width-1 downto 0);
     i   : in  std_logic_vector(width-1 downto 0);
@@ -985,7 +1046,8 @@ port (
     clk1xu  : out std_logic;			-- unscaled 1X clock
     clk2xu  : out std_logic;			-- unscaled 2X clock
     clkb    : out std_logic;            -- Proasic3/Fusion clkB
-    clkc    : out std_logic);           -- Proasic3/Fusion clkC
+    clkc    : out std_logic;            -- Proasic3/Fusion clkC
+    clk8x   : out std_logic);           -- 8x clock
 end component;
 
 component clkand
@@ -1036,7 +1098,8 @@ component tap
     ver    : integer range 0 to 15 := 0;
     trsten : integer range 0 to 1 := 1;
     scantest : integer := 0;
-    oepol  : integer := 1);
+    oepol  : integer := 1;
+    tcknen : integer := 0);
   port (
     trst         : in std_ulogic;
     tck         : in std_ulogic;
@@ -1055,10 +1118,14 @@ component tap
     tapi_en1    : in std_ulogic;
     tapi_tdo1   : in std_ulogic;
     tapi_tdo2   : in std_ulogic;
+    tapo_ninst  : out std_logic_vector(7 downto 0);
+    tapo_iupd   : out std_ulogic;
+    tapo_tckn   : out std_ulogic;
     testen      : in std_ulogic := '0';
     testrst     : in std_ulogic := '1';
     testoen     : in std_ulogic := '0';
-    tdoen       : out std_ulogic
+    tdoen       : out std_ulogic;
+    tckn        : in std_ulogic := '0'
     );
 end component;
 
@@ -1071,6 +1138,7 @@ component scanregi
     pad     : in std_ulogic;
     core    : out std_ulogic;
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -1090,6 +1158,7 @@ component scanrego
     core    : in std_ulogic;
     samp    : in std_ulogic;    -- normally same as core unless outpad has feedback
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -1112,6 +1181,7 @@ component scanregto -- 2 scan registers: tdo<---output<--outputen<--tdi
     coreo   : in std_ulogic;
     coreoen : in std_ulogic;
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -1137,6 +1207,7 @@ component scanregio -- 3 scan registers: tdo<--input<--output<--outputen<--tdi
     coreoen : in std_ulogic;
     corei   : out std_ulogic;
     tck     : in std_ulogic;
+    tckn    : in std_ulogic;
     tdi     : in std_ulogic;
     tdo     : out std_ulogic;
     bsshft  : in std_ulogic;
@@ -1154,7 +1225,7 @@ end component;
 ---------------------------------------------------------------------------
 
 component ddr_ireg is
-generic ( tech : integer);
+generic ( tech : integer; arch : integer := 0);
 port ( Q1 : out std_ulogic;
          Q2 : out std_ulogic;
          C1 : in std_ulogic;
@@ -1165,7 +1236,7 @@ port ( Q1 : out std_ulogic;
          S : in std_ulogic);
 end component;
 
-component ddr_oreg is generic ( tech : integer);
+component ddr_oreg is generic (tech : integer; arch : integer := 0);
   port
     ( Q : out std_ulogic;
       C1 : in std_ulogic;
@@ -1717,6 +1788,8 @@ component grdff is generic( tech : integer := inferred; imp :  integer := 0);
 component gror2 is generic( tech : integer := inferred; imp :  integer := 0);
   port( i0, i1 : in std_ulogic; q : out std_ulogic); end component;
 component grand12 is generic( tech : integer := inferred; imp :  integer := 0);
+  port( i0, i1 : in std_ulogic; q : out std_ulogic); end component;
+component grnand2 is generic (tech: integer := inferred; imp: integer := 0);
   port( i0, i1 : in std_ulogic; q : out std_ulogic); end component;
 
 component techmult

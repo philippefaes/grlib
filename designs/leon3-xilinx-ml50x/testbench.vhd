@@ -61,8 +61,8 @@ end;
 architecture behav of testbench is
 
 constant promfile  : string := "prom.srec";  -- rom contents
-constant sramfile  : string := "sram.srec";  -- ram contents
-constant sdramfile : string := "sdram.srec"; -- sdram contents
+constant sramfile  : string := "ram.srec";  -- ram contents
+constant sdramfile : string := "ram.srec"; -- sdram contents
 
 signal sys_clk : std_logic := '0';
 signal sys_rst_in : std_logic := '0';			-- Reset
@@ -143,6 +143,17 @@ signal sysace_mpirq    : std_ulogic;
 signal sysace_mpoe     : std_ulogic;
 signal sysace_mpwe     : std_ulogic;
 signal sysace_d        : std_logic_vector(15 downto 0);
+--pcie--
+signal cor_sys_reset_n : std_logic := '1';
+signal ep_sys_clk_p : std_logic;
+signal ep_sys_clk_n : std_logic;
+signal rp_sys_clk : std_logic;
+
+signal cor_pci_exp_txn : std_logic_vector(CFG_NO_OF_LANES-1 downto 0) := (others => '0');
+signal cor_pci_exp_txp : std_logic_vector(CFG_NO_OF_LANES-1 downto 0) := (others => '0');
+signal cor_pci_exp_rxn : std_logic_vector(CFG_NO_OF_LANES-1 downto 0) := (others => '0');
+signal cor_pci_exp_rxp : std_logic_vector(CFG_NO_OF_LANES-1 downto 0) := (others => '0');
+--pcie end--
 
 signal GND      : std_ulogic := '0';
 signal VCC      : std_ulogic := '1';
@@ -189,7 +200,8 @@ begin
         tft_lcd_data, tft_lcd_clk_p, tft_lcd_clk_n, tft_lcd_hsync,
         tft_lcd_vsync, tft_lcd_de, tft_lcd_reset_b,
         sysace_mpa, sysace_mpce, sysace_mpirq, sysace_mpoe,
-        sysace_mpwe, sysace_d
+        sysace_mpwe, sysace_d, cor_pci_exp_txp, cor_pci_exp_txn, cor_pci_exp_rxp,
+        cor_pci_exp_rxn, ep_sys_clk_p, ep_sys_clk_n, cor_sys_reset_n
 	);
 
   ddr2mem: for i in 0 to 3 generate

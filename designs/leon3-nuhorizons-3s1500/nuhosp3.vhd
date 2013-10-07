@@ -166,8 +166,9 @@ begin
   end process;
 
 -- pragma translate_off
-    bootmsg : report_version 
-    generic map ("huhosp3" & tost(hindex) &
-    ": Nuhorizons Spartan3 board interface");
+    bootmsg : report_design
+    generic map (msg1 => "huhosp3" & tost(hindex) &
+    ": Nuhorizons Spartan3 board interface",
+    fabtech => tech_table(fabtech), memtech => tech_table(memtech));
 -- pragma translate_on
 end;

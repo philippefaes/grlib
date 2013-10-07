@@ -110,6 +110,8 @@ CONFIG_IU_LDELAY
   on targets with slow (data) cache memories. A 2-cycle delay can
   improve timing but will reduce performance with about 5%.
 
+  Note that the load delay must be 1 to support the CASA instruction.
+
 Reset address
 CONFIG_IU_RSTADDR
   By default, a SPARC processor starts execution at address 0.

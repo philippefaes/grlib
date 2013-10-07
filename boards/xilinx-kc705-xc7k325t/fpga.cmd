@@ -20,6 +20,6 @@ setMode -bs
 setCable -port auto
 Identify
 setAttribute -position 1 -attr configFileName -value "xilinx-kc705-xc7k325t.bit"
-Program -p 1 -v 
+Program -p 1
 setMode -bs
 quit

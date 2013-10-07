@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 use grlib.devices.all;
@@ -97,6 +99,24 @@ type registers is record
   bypass        :  std_logic_vector(nbits-1 downto 0);
   irqmap        :  irqmap_array_type(nbits-1 downto 0);
 end record;
+
+constant nbitszero : std_logic_vector(nbits-1 downto 0) := (others => '0');
+constant irqmapzero : irqmap_array_type(nbits-1 downto 0) := (others => (others => '0'));
+function dirzero_func return std_logic_vector is
+  variable vres : std_logic_vector(nbits-1 downto 0);
+begin
+  vres := (others => '0');
+  if oepol = 0 then vres := (others => '1'); end if;
+  return vres;
+end function dirzero_func;
+constant dirzero : std_logic_vector(nbits-1 downto 0) := dirzero_func;
+
+constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+constant RES : registers := (
+  din1 => nbitszero, din2 => nbitszero,  -- Sync. regs, not reset
+  dout => nbitszero,imask => nbitszero, level => nbitszero, edge => nbitszero,
+  ilat => nbitszero, dir => dirzero, bypass => nbitszero, irqmap => irqmapzero);
+
 
 signal r, rin : registers;
 signal arst     : std_ulogic;
@@ -275,12 +295,10 @@ begin
    end if;
 -- reset operation
 
-    if rst = '0' then
-      v.imask := (others => '0'); v.bypass := (others => '0');
-      if oepol = 1 then v.dir := (others => '0');
-      else v.dir := (others => '1'); end if;
-      v.dout := (others => '0');
-      v.irqmap := (others => (others => '0'));
+    if (not RESET_ALL) and (rst = '0') then
+      v.imask := RES.imask; v.bypass := RES.bypass;
+      v.dir := RES.dir; v.dout := RES.dout;
+      v.irqmap := RES.irqmap;
     end if;
 
     if irqgen < 2 then v.irqmap := (others => (others => '0')); end if;
@@ -313,7 +331,15 @@ begin
 
   regs : process(clk, arst)
   begin
-    if rising_edge(clk) then r <= rin; end if;
+    if rising_edge(clk) then
+      r <= rin;
+      if RESET_ALL and rst = '0' then
+        r <= RES;
+        -- Sync. registers din1 and din2 not reset
+        r.din1 <= rin.din1;
+        r.din2 <= rin.din2;
+      end if;
+    end if;
     if (syncrst = 0 ) and (arst = '0') then
       if oepol = 1 then r.dir <= (others => '0');
       else r.dir <= (others => '1'); end if;

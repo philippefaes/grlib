@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 library gaisler;
@@ -63,12 +65,9 @@ architecture rtl of mmulru is
   type lru_rtype is record
     bar   : std_logic_vector(1 downto 0);
     clear : std_logic_vector(M_ENT_MAX-1 downto 0);
-    
-    -- pragma translate_off
-    reinit : std_logic;
-    pos    : std_logic_vector(entries_log-1 downto 0);
-    -- pragma translate_on
   end record;
+
+  constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
   
   signal c,r   : lru_rtype;
   signal lruei : mmulruei_a (entries-1 downto 0);
@@ -78,14 +77,12 @@ begin
   p0: process (rst, r, lrui, lrueo)
     variable v : lru_rtype;
     variable reinit : std_logic;
-    variable v_lruei_clk : std_logic;
     variable pos : std_logic_vector(entries_log-1 downto 0);
     variable touch : std_logic;
   begin
     v := r;
     -- #init
     reinit := '0';
-    v_lruei_clk := rst;
        
     --# eather element in luri or element 0 to top
     pos := lrui.pos(entries_log-1 downto 0);
@@ -122,15 +119,8 @@ begin
     if not (r.bar = lrui.mmctrl1.bar) then
       reinit := '1';
     end if;
-    -- pragma translate_off
-    
-    -- pragma translate_on
-    if (rst) = '0' then
-       v.bar := lrui.mmctrl1.bar;
-       reinit := '1';
-    end if;
 
-    if (reinit) = '1' then
+    if (not RESET_ALL and (rst = '0')) or (reinit = '1') then
       v.bar := lrui.mmctrl1.bar;
       v.clear := (others => '0');
       case lrui.mmctrl1.bar is
@@ -146,11 +136,6 @@ begin
     end if;
 
     --# drive signals
-      
-    -- pragma translate_off
-    v.reinit := reinit;
-    v.pos    := pos;
-    -- pragma translate_on
     
     lruo.pos  <= lrueo(0).pos;
 
@@ -159,7 +144,24 @@ begin
   end process p0;
   
   p1: process (clk)
-  begin if rising_edge(clk) then r <= c; end if;
+  begin
+    if rising_edge(clk) then
+      r <= c;
+      if RESET_ALL and (rst = '0') then
+        r.bar   <= lrui.mmctrl1.bar;
+        r.clear <= (others => '0');
+        case lrui.mmctrl1.bar is
+          when "01"  => 
+            r.clear(1 downto 0)  <= "11";  -- reverse order
+          when "10"  => 
+            r.clear(2 downto 0)  <= "111";  -- reverse order
+          when "11"  => 
+            r.clear(4 downto 0)  <= "11111"; -- reverse order
+          when others => 
+            r.clear(0)  <= '1'; 
+        end case;
+      end if;
+    end if;
   end process p1;
 
   --# lru entries

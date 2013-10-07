@@ -115,19 +115,17 @@ Design specifics:
 
 * Sample output from GRMON is:
 
-bash-3.2$ grmon2cli -xilusb -regmem -u
+bash-3.2$ grmon2cli -eth -ip 192.168.0.52 -regmem -u
 
-  GRMON2 LEON debug monitor v2.0.30-194-g937ff0a internal version
+  GRMON2 LEON debug monitor v2.0.36-50-gf52dd46 internal version
 
-  Copyright (C) 2012 Aeroflex Gaisler - All rights reserved.
+  Copyright (C) 2013 Aeroflex Gaisler - All rights reserved.
   For latest updates, go to http://www.gaisler.com/
   Comments or bug-reports to support@gaisler.com
 
-Xilusb: Cable type/rev : 0x3
- JTAG chain (2): xc5vfx130t xccace
-
+ Ethernet startup...
   Device ID:           0x510
-  GRLIB build version: 4120
+  GRLIB build version: 4131
   Detected frequency:  80 MHz
 
   Component                            Vendor
@@ -171,14 +169,14 @@ grmon2> ddr2delay scan
   Bits  15- 8: ---------------------------------------------------------------- -1
   Bits   7- 0: ---------------------------------------------------------------- -1
   - Trying read-delay 1 cycles
-  Bits  63-56: OOOOOOOOOOOOOOOO-O-O------------------------------------OOOOOOOO 4
-  Bits  55-48: OOOOOOOOOOOOOOOOOOOO-O----------------------------------OOOOOOOO 6
-  Bits  47-40: OOOOOOOOOOOOOOOOOOOOOO----------------------------------OOOOOOOO 7
-  Bits  39-32: OOOOOOOOOOOOOOOOOOO-------------------------------------OOOOOOOO 5
-  Bits  31-24: OOOOOOOOOOOOOOOOOOOO------------------------------------OOOOOOOO 6
-  Bits  23-16: OOOOOOOOOOOOOOOOOOOOOO----------------------------------OOOOOOOO 7
-  Bits  15- 8: OOOOOOOOOOOOOOOOOOOOOOO---------------------------------OOOOOOOO 7
-  Bits   7- 0: OOOOOOOOOOOOOOOOOOOOO-O---------------------------------OOOOOOOO 6
+  Bits  63-56: OOOOOOOOOOOOOOO--O-O------------------------------------OOOOOOOO 3
+  Bits  55-48: OOOOOOOOOOOOOOOOOO--------------------------------------OOOOOOOO 5
+  Bits  47-40: OOOOOOOOOOOOOOOOOOO-O-----------------------------------OOOOOOOO 5
+  Bits  39-32: OOOOOOOOOOOOOOOOO-OO------------------------------------OOOOOOOO 4
+  Bits  31-24: OOOOOOOOOOOOOOOOOO-O------------------------------------OOOOOOOO 5
+  Bits  23-16: OOOOOOOOOOOOOOOOOOOO------------------------------------OOOOOOOO 6
+  Bits  15- 8: OOOOOOOOOOOOOOOOOOOO--O---------------------------------OOOOOOOO 6
+  Bits   7- 0: OOOOOOOOOOOOOOOOOOO-------------------------------------OOOOOOOO 5
   - Verifying
   - Calibration done
 
@@ -214,21 +212,22 @@ grmon2> info sys
   ddr2spa0  Aeroflex Gaisler  Single-port DDR2 controller
             AHB: 40000000 - 60000000
             AHB: FFF00100 - FFF00200
-            64-bit DDR2 : 1 * 256 MB @ 0x40000000, 4 internal banks
+            64-bit DDR2 : 1 * 1 GB @ 0x40000000, 8 internal banks
             160 MHz, col 10, ref 7.8 us, trfc 131 ns
   ddr2spa1  Aeroflex Gaisler  Single-port DDR2 controller
             AHB: 60000000 - 80000000
             AHB: FFF00200 - FFF00300
-            No SDRAM found
+            64-bit DDR2 : 1 * 512 MB @ 0x60000000, 4 internal banks
+            160 MHz, col 10, ref 7.8 us, trfc 131 ns
   dsu0      Aeroflex Gaisler  LEON3 Debug Support Unit
             AHB: D0000000 - E0000000
             AHB trace: 128 lines, 32-bit bus
-            CPU0:  win 8, hwbp 2, V8 mul/div, srmmu, lddel 1
-                   stack pointer 0x4ffffff0
+            CPU0:  win 8, hwbp 2, itrace 128, V8 mul/div, srmmu, lddel 1, GRFPU
+                   stack pointer 0x7ffffff0
                    icache 4 * 8 kB, 32 B/line lru
                    dcache 4 * 4 kB, 16 B/line lru
-            CPU1:  win 8, hwbp 2, V8 mul/div, srmmu, lddel 1
-                   stack pointer 0x4ffffff0
+            CPU1:  win 8, hwbp 2, itrace 128, V8 mul/div, srmmu, lddel 1, GRFPU
+                   stack pointer 0x7ffffff0
                    icache 4 * 8 kB, 32 B/line lru
                    dcache 4 * 4 kB, 16 B/line lru
   mctrl0    European Space Agency  LEON2 Memory Controller
@@ -240,7 +239,7 @@ grmon2> info sys
             AHB: C0000000 - C0100000
   adev13    Aeroflex Gaisler  System ACE I/F Controller
             AHB: FFF00000 - FFF00100
-            IRQ: 13
+            IRQ: 5
   uart0     Aeroflex Gaisler  Generic UART
             APB: C0000100 - C0000200
             IRQ: 2
@@ -253,7 +252,7 @@ grmon2> info sys
             8-bit scalar, 2 * 32-bit timers, divisor 80
   i2cmst0   Aeroflex Gaisler  AMBA Wrapper for OC I2C-master
             APB: C0000600 - C0000700
-            IRQ: 14
+            IRQ: 6
             Index for use in GRMON: 0
   gpio0     Aeroflex Gaisler  General Purpose I/O port
             APB: C0000800 - C0000900
@@ -275,7 +274,10 @@ grmon2> info sys
             APB: C0000D00 - C0000E00
   ahbstat0  Aeroflex Gaisler  AHB Status Register
             APB: C0000F00 - C0001000
-            IRQ: 15
+            IRQ: 7
+
+grmon2> fl
+  ambiguous command name "fl": flash float flush
 
 grmon2> fla
 
@@ -294,31 +296,31 @@ grmon2> fla
   Erase regions : 2
   Erase blocks  : 259
   Write buffer  : 64 bytes
-  Lock-down     : Not supported
+  Lock-down     : Supported
   Region  0     : 255 blocks of 128 kbytes
   Region  1     : 4 blocks of 32 kbytes
 
 grmon2> load /usr/local32/apps/bench/leon3/dhry.leon3
   40000000 .text                     54.7kB /  54.7kB   [===============>] 100%
   4000DAF0 .data                      2.7kB /   2.7kB   [===============>] 100%
-  Total size: 57.44kB (1.15Mbit/s)
+  Total size: 57.44kB (29.41Mbit/s)
   Entry point 0x40000000
   Image /usr/local32/apps/bench/leon3/dhry.leon3 loaded
 
-grmon2>  verify /usr/local32/apps/bench/leon3/dhry.leon3
+grmon2> verify /usr/local32/apps/bench/leon3/dhry.leon3
   40000000 .text                     54.7kB /  54.7kB   [===============>] 100%
   4000DAF0 .data                      2.7kB /   2.7kB   [===============>] 100%
-  Total size: 57.44kB (85.12kbit/s)
+  Total size: 57.44kB (27.68Mbit/s)
   Entry point 0x40000000
   Image of /usr/local32/apps/bench/leon3/dhry.leon3 verified without errors
 
 grmon2> run
 Execution starts, 1000000 runs through Dhrystone
-Total execution time:                          5.2 s
-Microseconds for one run through Dhrystone:    5.2
-Dhrystones per Second:                      191785.4
+Total execution time:                          5.1 s
+Microseconds for one run through Dhrystone:    5.1
+Dhrystones per Second:                      196738.5
 
-Dhrystones MIPS      :                       109.2
+Dhrystones MIPS      :                       112.0
 
 
   CPU 0:  Program exited normally.
@@ -336,35 +338,14 @@ grmon2> i2c 1 scan
   Detected I2C device at address 0x47
   Detected I2C device at address 0x50
   Detected I2C device at address 0x51
+  Detected I2C device at address 0x53
   Detected I2C device at address 0x54
 
-  Scan of I2C bus completed. 5 devices found
+  Scan of I2C bus completed. 6 devices found
 
 grmon2> i2c 0 dvi init_ml50x_dvi
 Transmitter was not set to Chrontel CH7301C (AS=0), changing...
   Initialized CH7301 DVI output for LEON/GRLIB design.
-
-grmon2>  i2c 0 dvi showreg
-  Registers for Chrontel CH7301C (AS=0) DVI transmitter:
-
-  0x1c:  04
-  0x1d:  45
-  0x1e:  f0
-  0x1f:  8a
-  0x20:  0e
-  0x21:  00
-  0x23:  00
-  0x31:  80
-  0x33:  08
-  0x34:  16
-  0x35:  30
-  0x36:  60
-  0x37:  00
-  0x48:  18
-  0x49:  c0
-  0x4a:  95
-  0x4b:  17
-  0x56:  00
 
 grmon2> spi selftest
   Self test PASSED
@@ -387,7 +368,7 @@ grmon2> pci info
     PAGE1:         0x00000000
 
 
-grmon2>
+grmon2> 
 
 
 

@@ -13,6 +13,7 @@
 /* Changelog */
 /* 2008-02-01: GRETH API separated from test  - Marko Isomaki */
 /* 2012-09-06: include stdlib.h */
+/* 2013-06-11: Clarify almalloc */
 
 #include "greth_api.h"
 #include <stdlib.h>
@@ -33,7 +34,7 @@ static inline int save(unsigned int addr, unsigned int data)
     *((volatile unsigned int *)addr) = data;
 }
 
-/* Allocate memory aligned to the size */
+/* Allocate memory aligned to the size. Size needs to be a power of two. */
 static char *almalloc(int sz)
 {
     char *tmp;
@@ -41,8 +42,10 @@ static char *almalloc(int sz)
     int i;
     tmp = malloc(2*sz);
     tmp = (char *) (((int)tmp+sz) & ~(sz -1));
+
+    /* Initialize, what will be, every ctrl word */
     tmp2 = (int *)tmp;
-    for (i = 0; i < 128; i++) {
+    for (i = 0; i < (sz / 8); i++) {
             tmp2[i*2] = 0;
     }
     return(tmp);
@@ -114,6 +117,7 @@ int greth_init(struct greth_info *greth) {
     tmp = load((int)&greth->regs->control);
     greth->gbit = (tmp >> 27) & 1;
     greth->edcl = (tmp >> 31) & 1;
+    greth->edclen = ((tmp >> 14) & 1) ^ 1;
 
     if (greth->edcl == 0) {
             /* Reset the controller. */

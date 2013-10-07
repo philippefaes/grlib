@@ -38,7 +38,7 @@ package allmem is
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic); 
+    write    : in std_ulogic);
   end component;
 
   component axcel_syncram_2p
@@ -64,7 +64,7 @@ package allmem is
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic); 
+    write    : in std_ulogic);
   end component;
 
   component proasic_syncram_2p
@@ -90,7 +90,7 @@ package allmem is
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic); 
+    write    : in std_ulogic);
   end component;
 
   component proasic3_syncram_2p
@@ -121,7 +121,7 @@ package allmem is
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
   end component;
 
   component proasic3e_syncram
@@ -132,7 +132,7 @@ package allmem is
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic); 
+    write    : in std_ulogic);
   end component;
 
   component proasic3e_syncram_2p
@@ -163,7 +163,7 @@ package allmem is
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
   end component;
 
   component proasic3l_syncram
@@ -174,7 +174,7 @@ package allmem is
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic); 
+    write    : in std_ulogic);
   end component;
 
   component proasic3l_syncram_2p
@@ -205,7 +205,107 @@ package allmem is
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
+  end component;
+
+  component proasic3_from
+    generic (
+      TimingChecksOn:      boolean := True;
+      InstancePath:        string  := "*";
+      Xon:                 boolean := False;
+      MsgOn:               boolean := True;
+      DATA_X:              integer := 1;
+      MEMORYFILE:          string  := "";
+      ACT_PROGFILE:        string  := "");
+    port(
+       CLK   : in          std_logic := 'U';
+       DO0   : out         std_logic;
+       DO1   : out         std_logic;
+       DO2   : out         std_logic;
+       DO3   : out         std_logic;
+       DO4   : out         std_logic;
+       DO5   : out         std_logic;
+       DO6   : out         std_logic;
+       DO7   : out         std_logic;
+       ADDR0 : in          std_logic := 'U';
+       ADDR1 : in          std_logic := 'U';
+       ADDR2 : in          std_logic := 'U';
+       ADDR3 : in          std_logic := 'U';
+       ADDR4 : in          std_logic := 'U';
+       ADDR5 : in          std_logic := 'U';
+       ADDR6 : in          std_logic := 'U');
+  end component;
+
+  component proasic3e_from
+    generic (
+      TimingChecksOn:      boolean := True;
+      InstancePath:        string  := "*";
+      Xon:                 boolean := False;
+      MsgOn:               boolean := True;
+      DATA_X:              integer := 1;
+      MEMORYFILE:          string  := "";
+      ACT_PROGFILE:        string  := "");
+    port(
+       CLK   : in          std_logic := 'U';
+       DO0   : out         std_logic;
+       DO1   : out         std_logic;
+       DO2   : out         std_logic;
+       DO3   : out         std_logic;
+       DO4   : out         std_logic;
+       DO5   : out         std_logic;
+       DO6   : out         std_logic;
+       DO7   : out         std_logic;
+       ADDR0 : in          std_logic := 'U';
+       ADDR1 : in          std_logic := 'U';
+       ADDR2 : in          std_logic := 'U';
+       ADDR3 : in          std_logic := 'U';
+       ADDR4 : in          std_logic := 'U';
+       ADDR5 : in          std_logic := 'U';
+       ADDR6 : in          std_logic := 'U');
+  end component;
+
+  component proasic3l_from
+    generic (
+       TimingChecksOn:      boolean := True;
+       InstancePath:        string  := "*";
+       Xon:                 boolean := False;
+       MsgOn:               boolean := True;
+       DATA_X:              integer := 1;
+       MEMORYFILE:          string  := "";
+       ACT_PROGFILE:        string  := "");
+    port(
+       CLK   : in          std_logic := 'U';
+       DO0   : out         std_logic;
+       DO1   : out         std_logic;
+       DO2   : out         std_logic;
+       DO3   : out         std_logic;
+       DO4   : out         std_logic;
+       DO5   : out         std_logic;
+       DO6   : out         std_logic;
+       DO7   : out         std_logic;
+       ADDR0 : in          std_logic := 'U';
+       ADDR1 : in          std_logic := 'U';
+       ADDR2 : in          std_logic := 'U';
+       ADDR3 : in          std_logic := 'U';
+       ADDR4 : in          std_logic := 'U';
+       ADDR5 : in          std_logic := 'U';
+       ADDR6 : in          std_logic := 'U');
+  end component;
+
+  component from is
+    generic (
+      tech:             integer := 0;
+      timingcheckson:   boolean := True;
+      instancepath:     string  := "*";
+      xon:              boolean := False;
+      msgon:            boolean := True;
+      data_x:           integer := 1;
+      memoryfile:       string  := "";
+      progfile:         string  := "");
+    port (
+      clk:     in    std_ulogic;
+      addr:    in    std_logic_vector(6 downto 0);
+      data:    out   std_logic_vector(7 downto 0));
   end component;
 
 -- Fusion family
@@ -218,7 +318,7 @@ package allmem is
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic); 
+    write    : in std_ulogic);
   end component;
 
   component fusion_syncram_2p
@@ -249,7 +349,35 @@ package allmem is
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
+  end component;
+
+  component fusion_from
+    generic (
+       TimingChecksOn:      boolean := True;
+       InstancePath:        string  := "*";
+       Xon:                 boolean := False;
+       MsgOn:               boolean := True;
+       DATA_X:              integer := 1;
+       MEMORYFILE:          string  := "";
+       ACT_PROGFILE:        string  := "");
+    port(
+       CLK   : in          std_logic := 'U';
+       DO0   : out         std_logic;
+       DO1   : out         std_logic;
+       DO2   : out         std_logic;
+       DO3   : out         std_logic;
+       DO4   : out         std_logic;
+       DO5   : out         std_logic;
+       DO6   : out         std_logic;
+       DO7   : out         std_logic;
+       ADDR0 : in          std_logic := 'U';
+       ADDR1 : in          std_logic := 'U';
+       ADDR2 : in          std_logic := 'U';
+       ADDR3 : in          std_logic := 'U';
+       ADDR4 : in          std_logic := 'U';
+       ADDR5 : in          std_logic := 'U';
+       ADDR6 : in          std_logic := 'U');
   end component;
 
 component altera_syncram
@@ -261,7 +389,7 @@ component altera_syncram
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
 end component;
 
 component altera_syncram_dp
@@ -279,7 +407,7 @@ component altera_syncram_dp
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
 end component;
 
 component generic_syncram
@@ -290,7 +418,7 @@ component generic_syncram
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     write    : in std_ulogic
-   ); 
+   );
 end component;
 
 component generic_syncram_2p
@@ -314,7 +442,7 @@ component generic_syncram_reg
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     write    : in std_ulogic
-   ); 
+   );
 end component;
 
 component generic_syncram_2p_reg
@@ -371,7 +499,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component ec_syncram_dp
@@ -389,7 +517,7 @@ end component;
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
   end component;
 
   component rh_lib18t_syncram_2p
@@ -415,7 +543,7 @@ end component;
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic; 
+    write    : in std_ulogic;
     diagin   : in std_logic_vector(1 downto 0) := "00");
   end component;
 
@@ -466,7 +594,7 @@ end component;
     datain2  : in std_logic_vector((dbits -1) downto 0);
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
-    write2   : in std_ulogic); 
+    write2   : in std_ulogic);
   end component;
 
   component virage90_syncram
@@ -478,8 +606,8 @@ end component;
     dataout  : out std_logic_vector(dbits -1 downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic);
-  end component;  
-  
+  end component;
+
   component virtex_syncram
   generic ( abits : integer := 10; dbits : integer := 8 );
   port (
@@ -489,7 +617,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component virtex_syncram_dp
@@ -507,7 +635,7 @@ end component;
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
   end component;
 
   component unisim_syncram
@@ -519,7 +647,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component unisim_syncram_dp
@@ -537,7 +665,7 @@ end component;
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
   end component;
 
   component unisim_syncram64
@@ -552,7 +680,7 @@ end component;
   );
   end component;
 
-  component virage90_syncram_dp 
+  component virage90_syncram_dp
   generic ( abits : integer := 10; dbits : integer := 8 );
   port (
     clk1     : in std_ulogic;
@@ -569,7 +697,7 @@ end component;
     write2   : in std_ulogic
    );
   end component;
-  
+
   component ut025crh_syncram
   generic ( abits : integer := 10; dbits : integer := 8 );
   port (
@@ -579,7 +707,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component ut025crh_syncram_2p
@@ -604,7 +732,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component ut130hbd_syncram_2p
@@ -720,7 +848,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component artisan_syncram
@@ -732,7 +860,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component smic13_syncram
@@ -744,7 +872,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component custom1_syncram
@@ -756,10 +884,10 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
-  component nextreme_syncram 
+  component nextreme_syncram
   generic (abits : integer := 6; dbits : integer := 8 );
   port (
     clk      : in std_ulogic;
@@ -767,7 +895,7 @@ end component;
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic); 
+    write    : in std_ulogic);
   end component;
 
   component unisim_syncram_2p is
@@ -922,7 +1050,7 @@ end component;
     waddress : in std_logic_vector((abits -1) downto 0);
     datain   : in std_logic_vector((dbits -1) downto 0));
   end component;
-  
+
   component generic_regfile_4p
   generic (tech : integer := 0; abits : integer := 6; dbits : integer := 32;
            wrfst : integer := 0; numregs : integer := 40; g0addr: integer := 0);
@@ -969,7 +1097,7 @@ end component;
     datain   : in std_logic_vector((dbits -1) downto 0));
   end component;
 
-  -- eASIC Nextreme2 
+  -- eASIC Nextreme2
   component n2x_syncram
   generic ( abits : integer := 10; dbits : integer := 8 );
   port (
@@ -979,7 +1107,7 @@ end component;
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
     write    : in std_ulogic
-   ); 
+   );
   end component;
 
   component n2x_syncram_dp
@@ -997,7 +1125,7 @@ end component;
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
     write2   : in std_ulogic
-   ); 
+   );
   end component;
 
   component n2x_syncram_2p is
@@ -1078,7 +1206,7 @@ end component;
     waddress : in  std_logic_vector((abits-1) downto 0);
     datain   : in  std_logic_vector((dbits-1) downto 0));
   end component;
-  
+
   component ut90nhbd_syncram
   generic ( abits : integer := 10; dbits : integer := 8 );
   port (
@@ -1087,8 +1215,9 @@ end component;
     datain   : in std_logic_vector((dbits -1) downto 0);
     dataout  : out std_logic_vector((dbits -1) downto 0);
     enable   : in std_ulogic;
-    write    : in std_ulogic
-   ); 
+    write    : in std_ulogic;
+    tdbn     : in std_ulogic
+   );
   end component;
 
   component ut90nhbd_syncram_2p
@@ -1101,7 +1230,8 @@ end component;
     wclk     : in std_ulogic;
     write    : in std_ulogic;
     waddress : in std_logic_vector((abits -1) downto 0);
-    datain   : in std_logic_vector((dbits -1) downto 0));
+    datain   : in std_logic_vector((dbits -1) downto 0);
+    tdbn     : in std_ulogic);
   end component;
 
   component ut90nhbd_syncram_dp
@@ -1118,8 +1248,36 @@ end component;
     datain2  : in std_logic_vector((dbits -1) downto 0);
     dataout2 : out std_logic_vector((dbits -1) downto 0);
     enable2  : in std_ulogic;
-    write2   : in std_ulogic
+    write2   : in std_ulogic;
+    tdbn     : in std_ulogic
    );
+  end component;
+
+  component rh_lib13t_syncram_2p
+  generic (abits : integer := 6; dbits : integer := 8;
+	sepclk : integer := 0);
+  port (
+    rclk     : in std_ulogic;
+    renable  : in std_ulogic;
+    raddress : in std_logic_vector((abits -1) downto 0);
+    dataout  : out std_logic_vector((dbits -1) downto 0);
+    wclk     : in std_ulogic;
+    write    : in std_ulogic;
+    waddress : in std_logic_vector((abits -1) downto 0);
+    datain   : in std_logic_vector((dbits -1) downto 0);
+    diagin   : in std_logic_vector(3 downto 0));
+  end component;
+
+  component rh_lib13t_syncram is
+  generic (abits : integer := 6; dbits : integer := 8 );
+  port (
+    clk      : in std_ulogic;
+    address  : in std_logic_vector((abits -1) downto 0);
+    datain   : in std_logic_vector((dbits -1) downto 0);
+    dataout  : out std_logic_vector((dbits -1) downto 0);
+    enable   : in std_ulogic;
+    write    : in std_ulogic;
+    diagin   : in std_logic_vector(1 downto 0) := "00");
   end component;
 
 end;

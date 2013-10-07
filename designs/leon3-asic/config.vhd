@@ -36,7 +36,7 @@ package config is
   constant CFG_NWIN : integer := (8);
   constant CFG_V8 : integer := 2 + 4*0;
   constant CFG_MAC : integer := 0;
-  constant CFG_BP : integer := 0;
+  constant CFG_BP : integer := 1;
   constant CFG_SVT : integer := 1;
   constant CFG_RSTADDR : integer := 16#00000#;
   constant CFG_LDDEL : integer := (1);

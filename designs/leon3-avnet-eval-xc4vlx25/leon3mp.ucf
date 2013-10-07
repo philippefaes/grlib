@@ -52,8 +52,8 @@ NET  "dsubre"         LOC = "T1"	| IOSTANDARD=LVCMOS25;
 #               DDR SDRAM                               #
 #########################################################
 NET	 "DDR_CKE0"       IOSTANDARD = SSTL2_I;   
-NET	 "DDR_CLK0"       IOSTANDARD = SSTL2_I;   
-NET	 "DDR_CLK0B"      IOSTANDARD = SSTL2_I;   
+NET	 "DDR_CLK0"       IOSTANDARD = DIFF_SSTL2_II;   
+NET	 "DDR_CLK0B"      IOSTANDARD = DIFF_SSTL2_II;   
 NET  	 "DDR_CLK_FB"     IOSTANDARD = LVCMOS25;  
 #NET 	 "DDR_CLK_FB" 	  TNM_NET = "DDR_CLK_FB";
 #TIMESPEC "TS_DDR_CLK_FB" = PERIOD "DDR_CLK_FB" 9.75 ns HIGH 50 %;

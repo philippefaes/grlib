@@ -170,7 +170,7 @@ architecture rtl of greth_tx is
   signal txrst   : std_ulogic;
   signal vcc     : std_ulogic;
 
-  attribute sync_set_reset : string;
+  --attribute sync_set_reset : string;
   attribute sync_set_reset of txrst : signal is "true";
 
 begin

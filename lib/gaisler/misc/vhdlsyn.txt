@@ -3,9 +3,9 @@ rstgen.vhd
 gptimer.vhd
 ahbram.vhd
 ahbdpram.vhd
-ahbtrace.vhd
-ahbtrace_mb.vhd
 ahbtrace_mmb.vhd
+ahbtrace_mb.vhd
+ahbtrace.vhd
 ahbmst.vhd
 grgpio.vhd
 ftahbram.vhd
@@ -39,3 +39,9 @@ grclkgate2x.vhd
 grtimer.vhd
 grpulse.vhd
 grversion.vhd
+ahbfrom.vhd
+ahbwbax.vhd
+ahbswba.vhd
+ahbswbav.vhd
+ahbmwba.vhd
+irqgen.vhd

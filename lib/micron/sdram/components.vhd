@@ -55,7 +55,7 @@ package components is
         data_bits : INTEGER := 16;
         col_bits  : INTEGER :=  9;
         index     : INTEGER :=  0;
-	fname     : string := "sdram.srec"	-- File to read from
+	fname     : string := "ram.srec"	-- File to read from
     );
     PORT (
         Dq    : INOUT STD_LOGIC_VECTOR (data_bits - 1 DOWNTO 0) := (OTHERS => 'Z');
@@ -93,7 +93,7 @@ package components is
         data_bits : INTEGER := 16;
         cols_bits : INTEGER :=  9;
         index     : INTEGER :=  0;
-	fname     : string := "sdram.srec";	-- File to read from
+	fname     : string := "ram.srec";	-- File to read from
         bbits     : INTEGER :=  16;
         fdelay    : INTEGER :=  0;
         chktiming : boolean := true
@@ -145,7 +145,7 @@ package components is
         data_bits : INTEGER := 16;
         col_bits  : INTEGER :=  9;
         index     : INTEGER :=  0;
-	fname     : string := "sdram.srec";	-- File to read from
+	fname     : string := "ram.srec";	-- File to read from
         err       : INTEGER :=  0
     );
     PORT (
@@ -215,7 +215,7 @@ package components is
     --    data_bits : INTEGER := 16;
     --    cols_bits : INTEGER :=  9;
     --    index     : INTEGER :=  0;
-	  --    fname     : string := "sdram.srec";	-- File to read from
+	  --    fname     : string := "ram.srec";	-- File to read from
     --    bbits     : INTEGER :=  32
     --);
     PORT (

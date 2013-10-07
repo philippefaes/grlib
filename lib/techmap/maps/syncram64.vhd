@@ -36,7 +36,7 @@ use grlib.stdlib.all;
 
 entity syncram64 is
   generic (tech : integer := 0; abits : integer := 6; testen : integer := 0;
-	   paren : integer := 0);
+	   paren : integer := 0; custombits : integer := 1);
   port (
     clk     : in  std_ulogic;
     address : in  std_logic_vector (abits -1 downto 0);
@@ -44,8 +44,10 @@ entity syncram64 is
     dataout : out std_logic_vector (63+8*paren downto 0);
     enable  : in  std_logic_vector (1 downto 0);
     write   : in  std_logic_vector (1 downto 0);
-    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none
-  );
+    testin  : in  std_logic_vector (TESTIN_WIDTH-1 downto 0) := testin_none;
+    customclk: in std_ulogic := '0';
+    customin : in std_logic_vector(2*custombits-1 downto 0) := (others => '0');
+    customout:out std_logic_vector(2*custombits-1 downto 0));
 end;
 
 architecture rtl of syncram64 is
@@ -100,8 +102,16 @@ architecture rtl of syncram64 is
 signal dinp, doutp : std_logic_vector(71 downto 0);
 signal xenable : std_logic_vector(1 downto 0);
 
+  signal custominx,customoutx: std_logic_vector(syncram_customif_maxwidth downto 0);
+  
 begin
   xenable <= enable when testen=0 or testin(TESTIN_WIDTH-2)='0' else "00";
+
+  custominx(custominx'high downto custombits) <= (others => '0');
+  custominx(custombits-1 downto 0) <= customin(custombits-1 downto 0);
+  nocust: if syncram_has_customif(tech)=0 or has_sram64(tech)=0 or paren=1 generate
+    customoutx <= (others => '0');
+  end generate;
 
 nopar : if paren = 0 generate
 
@@ -126,6 +136,10 @@ nopar : if paren = 0 generate
       x0 : n2x_syncram_we generic map (abits => abits, dbits => 64)
         port map(clk, address, datain(63 downto 0), dataout(63 downto 0), xenable, write);
     end generate;
+
+    customout(2*custombits-1 downto custombits) <= (others => '0');
+    customout(custombits-1 downto 0) <= customoutx(custombits-1 downto 0);
+    
 -- pragma translate_off
     dmsg : if GRLIB_CONFIG_ARRAY(grlib_debug_level) >= 2 generate
       x : process
@@ -140,12 +154,14 @@ nopar : if paren = 0 generate
   end generate;
 
   nos64 : if has_sram64(tech) = 0 generate
-    x0 : syncram generic map (tech, abits, 32, testen)
+    x0 : syncram generic map (tech, abits, 32, testen, custombits)
          port map (clk, address, datain(63 downto 32), dataout(63 downto 32), 
-	           enable(1), write(1), testin);
-    x1 : syncram generic map (tech, abits, 32, testen)
+	           enable(1), write(1), testin,
+                   customclk, customin(2*custombits-1 downto custombits), customout(2*custombits-1 downto custombits));
+    x1 : syncram generic map (tech, abits, 32, testen, custombits)
          port map (clk, address, datain(31 downto 0), dataout(31 downto 0), 
-	           enable(0), write(0), testin);
+	           enable(0), write(0), testin,
+                   customclk, customin(custombits-1 downto 0), customout(custombits-1 downto 0));
   end generate;
 end generate;
 
@@ -154,12 +170,14 @@ par : if paren = 1 generate
             datain(63+4*paren downto 60+4*paren) &  datain(31 downto 0);
     dataout <= doutp(71 downto 68) & doutp(35 downto 32) &
 	       doutp(67 downto 36) & doutp(31-8+8*paren downto 0);
-    x0 : syncram generic map (tech, abits, 36, testen)
+    x0 : syncram generic map (tech, abits, 36, testen, custombits)
          port map (clk, address, dinp(71 downto 36), doutp(71 downto 36), 
-	           enable(1), write(1), testin);
-    x1 : syncram generic map (tech, abits, 36, testen)
+	           enable(1), write(1), testin,
+                   customclk, customin(2*custombits-1 downto custombits), customout(2*custombits-1 downto custombits));
+    x1 : syncram generic map (tech, abits, 36, testen, custombits)
          port map (clk, address, dinp(35 downto 0), doutp(35 downto 0), 
-	           enable(0), write(0), testin);
+	           enable(0), write(0), testin,
+                   customclk, customin(custombits-1 downto 0), customout(custombits-1 downto 0));
 end generate;
 
 end;

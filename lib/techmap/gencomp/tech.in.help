@@ -11,8 +11,11 @@ CONFIG_SYN_INFERRED
   - Actel ProAsic/P/3, IGLOO and Axcelerator FPGAs
   - Aeroflex UT25CRH Rad-Hard 0.25 um CMOS
   - Altera: Most Altera FPGA families
+  - Altera-CycloneIII: Altera Cyclone-III/IV FPGA family
   - Altera-Stratix: Altera Stratix FPGA family
-  - Altera-StratixII: Altera Stratix-II FPGA family
+  - Altera-StratixII: Altera Stratix/Cyclone-II FPGA families
+  - Altera-StratixIII: Altera Stratix-III FPGA family
+  - Altera-StratixIV: Altera Stratix-III FPGA family
   - ATC18: Atmel-Nantes 0.18 um rad-hard CMOS
   - IHP25: IHP 0.25 um CMOS
   - IHP25RH: IHP Rad-Hard 0.25 um CMOS

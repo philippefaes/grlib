@@ -31,6 +31,10 @@ library gaisler;
 use gaisler.gr1553b_pkg.all;
 
 entity simtrans1553_single is
+  generic (
+    txdelay: time := 200 ns;
+    rxdelay: time := 450 ns
+    );
   port (
     buswire: inout wire1553;
     rxen: in std_logic;
@@ -46,8 +50,8 @@ architecture b of simtrans1553_single is
   signal bw_rxd, bw_txd: wire1553;
 begin
 
-  bw_rxd <= buswire after 450 ns;
-  buswire <= bw_txd after 200 ns;
+  bw_rxd <= transport buswire after rxdelay;
+  buswire <= bw_txd after txdelay;
 
   rxpr: process(bw_rxd,rxen)
     variable p,n: std_ulogic;
@@ -101,30 +105,37 @@ library gaisler;
 use gaisler.gr1553b_pkg.all;
 
 entity simtrans1553 is
-    port (
-      busA: inout wire1553;
-      busB: inout wire1553;
-      rxenA: in std_logic;
-      txinA: in std_logic;
-      txAP: in std_logic;
-      txAN: in std_logic;
-      rxAP: out std_logic;
-      rxAN: out std_logic;
-      rxenB: in std_logic;
-      txinB: in std_logic;
-      txBP: in std_logic;
-      txBN: in std_logic;
-      rxBP: out std_logic;
-      rxBN: out std_logic
-      );
+  generic (
+    txdelay: time := 200 ns;
+    rxdelay: time := 450 ns
+    );
+  port (
+    busA: inout wire1553;
+    busB: inout wire1553;
+    rxenA: in std_logic;
+    txinA: in std_logic;
+    txAP: in std_logic;
+    txAN: in std_logic;
+    rxAP: out std_logic;
+    rxAN: out std_logic;
+    rxenB: in std_logic;
+    txinB: in std_logic;
+    txBP: in std_logic;
+    txBN: in std_logic;
+    rxBP: out std_logic;
+    rxBN: out std_logic
+    );
 end;
 
 architecture s of simtrans1553 is
 begin
-
+  
   at: simtrans1553_single
+    generic map (txdelay,rxdelay)
     port map (busA,rxenA,txinA,txAP,txAN,rxAP,rxAN);
+  
   bt: simtrans1553_single
+    generic map (txdelay,rxdelay)
     port map (busB,rxenB,txinB,txBP,txBN,rxBP,rxBN);
   
 end;

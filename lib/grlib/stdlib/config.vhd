@@ -41,7 +41,7 @@ package config is
 constant CFG_AHBDW     : integer := 32;
 
 
--- CORE_ACDM - Enable AMBA Compliant Data Muxing in cores
+-- CFG_AHB_ACDM - Enable AMBA Compliant Data Muxing in cores
 --
 -- Valid values are 0 and 1
 --
@@ -52,6 +52,10 @@ constant CFG_AHBDW     : integer := 32;
 --    will select valid data, as defined in the AMBA AHB standard, from the
 --    AHB data vectors based on the address input. If a core uses a function
 --    that does not have the address input, a failure will be asserted.
+--
+-- The value of CFG_AHB_ACDM is assigned to the constant CORE_ACDM in the
+-- grlib.amba package. Note that this setting is separate from the ACDM setting
+-- of the AHBCTRL core (which is set directly via a AHBCTRL VHDL generic).
 --
 constant CFG_AHB_ACDM : integer := 0; 
 
@@ -64,6 +68,8 @@ constant GRLIB_CONFIG_ARRAY : grlib_config_array_type := (
   grlib_debug_mask => 0,
   grlib_techmap_strict_ram => 0,
   grlib_techmap_testin_extra => 0,
+  grlib_sync_reset_enable_all => 0,
+  grlib_async_reset_enable => 0,
   others => 0);
 
 end;

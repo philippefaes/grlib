@@ -49,3 +49,8 @@ fail(int dev)
 	grtestmod[1*REPORTDEV_OFFSET] = dev;
 	return(0);
 }
+
+void chkp(int n)
+{
+	grtestmod[6*REPORTDEV_OFFSET] = n;
+}

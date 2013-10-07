@@ -71,6 +71,7 @@ signal dmai : ahb_dma_in_type;
 signal dmao : ahb_dma_out_type;
 signal ltapi : tap_in_type;
 signal ltapo : tap_out_type;
+signal trst: std_ulogic;
 
 begin
   
@@ -79,7 +80,7 @@ begin
     port map (rst, clk, dmai, dmao, ahbi, ahbo);
   
   jtagcom0 : jtagcom generic map (isel => 1, nsync => nsync, ainst => ainst, dinst => dinst, reread => REREAD)
-    port map (rst, clk, ltapo, ltapi, dmao, dmai);
+    port map (rst, clk, ltapo, ltapi, dmao, dmai, tck, trst);
 
   ltapo.asel  <= asel;
   ltapo.dsel  <= dsel;
@@ -89,6 +90,7 @@ begin
   ltapo.reset <= '0';
   ltapo.inst  <= (others => '0');
   rego <= ltapi.tdo;
+  trst <= '1';
   
 -- pragma translate_off
     bootmsg : report_version 

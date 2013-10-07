@@ -101,9 +101,9 @@ package config is
   constant CFG_DSU_ETH : integer := 1 + 0 + 0;
   constant CFG_ETH_BUF : integer := 16;
   constant CFG_ETH_IPM : integer := 16#C0A8#;
-  constant CFG_ETH_IPL : integer := 16#003B#;
-  constant CFG_ETH_ENM : integer := 16#020765#;
-  constant CFG_ETH_ENL : integer := 16#003456#;
+  constant CFG_ETH_IPL : integer := 16#0033#;
+  constant CFG_ETH_ENM : integer := 16#020000#;
+  constant CFG_ETH_ENL : integer := 16#000000#;
 -- LEON2 memory controller
   constant CFG_MCTRL_LEON2 : integer := 1;
   constant CFG_MCTRL_RAM8BIT : integer := 1;
@@ -153,11 +153,11 @@ package config is
   constant CFG_AHBRAMEN : integer := 0;
   constant CFG_AHBRSZ : integer := 1;
   constant CFG_AHBRADDR : integer := 16#A00#;
-
+  constant CFG_AHBRPIPE : integer := 0;
 -- Gaisler Ethernet core
   constant CFG_GRETH : integer := 1;
-  constant CFG_GRETH1G : integer := 0;
-  constant CFG_ETH_FIFO : integer := 32;
+  constant CFG_GRETH1G : integer := 1;
+  constant CFG_ETH_FIFO : integer := 8;
 
 -- CAN 2.0 interface
   constant CFG_CAN : integer := 0;
@@ -167,24 +167,6 @@ package config is
   constant CFG_CANSEPIRQ: integer := 0;
   constant CFG_CAN_SYNCRST : integer := 0;
   constant CFG_CANFT : integer := 0;
-
--- USB Host Controller
-  constant CFG_GRUSBHC : integer := 0;
-  constant CFG_GRUSBHC_NPORTS : integer := 1;
-  constant CFG_GRUSBHC_EHC : integer := 0;
-  constant CFG_GRUSBHC_UHC : integer := 0;
-  constant CFG_GRUSBHC_NCC : integer := 1;
-  constant CFG_GRUSBHC_NPCC : integer := 1;
-  constant CFG_GRUSBHC_PRR : integer := 0;
-  constant CFG_GRUSBHC_PR1 : integer := 0*2**26 + 0*2**22 + 0*2**18 + 0*2**14 + 0*2**10 + 0*2**6 + 0*2**2 + (1/4);
-  constant CFG_GRUSBHC_PR2 : integer := 0*2**26 + 0*2**22 + 0*2**18 + 0*2**14 + 0*2**10 + 0*2**6 + 0*2**2 + (1 mod 4);
-  constant CFG_GRUSBHC_ENDIAN : integer := 1;
-  constant CFG_GRUSBHC_BEREGS : integer := 0;
-  constant CFG_GRUSBHC_BEDESC : integer := 0;
-  constant CFG_GRUSBHC_BLO : integer := 3;
-  constant CFG_GRUSBHC_BWRD : integer := 16;
-  constant CFG_GRUSBHC_UTM : integer := 2;
-  constant CFG_GRUSBHC_VBUSCONF : integer := 1;
 
 -- UART 1
   constant CFG_UART1_ENABLE : integer := 1;

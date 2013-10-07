@@ -57,12 +57,14 @@ end;
 architecture behav of testbench is
 
 constant promfile  : string := "prom.srec";  -- rom contents
-constant sramfile  : string := "sram.srec";  -- ram contents
-constant sdramfile : string := "sdram.srec"; -- sdram contents
+constant sramfile  : string := "ram.srec";  -- ram contents
+constant sdramfile : string := "ram.srec"; -- sdram contents
 
 signal clk : std_logic := '0';
 signal Rst    : std_logic := '0';			-- Reset
 constant ct : integer := clkperiod/2;
+
+signal sma_clkout : std_ulogic;
 
 signal address  : std_logic_vector(22 downto 0);
 signal data     : std_logic_vector(31 downto 24);
@@ -141,7 +143,7 @@ begin
   
   d3 : entity work.leon3mp
         generic map ( fabtech, memtech, padtech, clktech, disas, dbguart, pclow )
-        port map (rst, clk, error, address(22 downto 0), data, 
+        port map (rst, clk, sma_clkout, error, address(22 downto 0), data, 
 	sa(12 downto 0), sa(14 downto 13), sd, sdclk, sdcke, sdcsn, sdwen, 
 	sdrasn, sdcasn, sddqm, dsutx, dsurx, dsubre, dsuact,
 	oen, writen, open, open, romsn, gpio,

@@ -1,5 +1,7 @@
 
 
+
+
 -----------------------------------------------------------------------------
 -- LEON3 Demonstration design test bench configuration
 -- Copyright (C) 2012 Aeroflex Gaisler
@@ -24,7 +26,7 @@ package config is
   constant CFG_SCAN : integer := 0;
 -- Clock generator
   constant CFG_CLKTECH : integer := virtex5;
-  constant CFG_CLKMUL : integer := (8);
+  constant CFG_CLKMUL : integer := (6);
   constant CFG_CLKDIV : integer := (10);
   constant CFG_OCLKDIV : integer := 1;
   constant CFG_OCLKBDIV : integer := 0;
@@ -156,6 +158,7 @@ package config is
   constant CFG_AHBRAMEN : integer := 0;
   constant CFG_AHBRSZ : integer := 1;
   constant CFG_AHBRADDR : integer := 16#A00#;
+  constant CFG_AHBRPIPE : integer := 0;
 -- Gaisler Ethernet core
   constant CFG_GRETH : integer := 1;
   constant CFG_GRETH1G : integer := 0;
@@ -179,7 +182,6 @@ package config is
   constant CFG_GRGPIO_ENABLE : integer := 1;
   constant CFG_GRGPIO_IMASK : integer := 16#0FFFE#;
   constant CFG_GRGPIO_WIDTH : integer := (32);
-
 -- I2C master
   constant CFG_I2C_ENABLE : integer := 1;
 
@@ -194,6 +196,13 @@ package config is
 -- AMBA System ACE Interface Controller
   constant CFG_GRACECTRL : integer := 1;
 
+-- PCIEXP interface
+ constant CFG_PCIEXP : integer := 0;
+ constant CFG_PCIE_TYPE : integer := 0;
+ constant CFG_PCIE_SIM_MAS : integer := 0;
+ constant CFG_PCIEXPVID : integer := 16#0#;
+ constant CFG_PCIEXPDID : integer := 16#0#;
+  constant CFG_NO_OF_LANES : integer := 1;
 -- GRLIB debugging
   constant CFG_DUART : integer := 0;
 end;

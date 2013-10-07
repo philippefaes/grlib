@@ -56,8 +56,9 @@ package net is
     reset          : std_ulogic;
     txd            : std_logic_vector(7 downto 0);   
     tx_en          : std_ulogic; 
-    tx_er          : std_ulogic; 
-    mdc            : std_ulogic;    
+    tx_er          : std_ulogic;
+    tx_clk         : std_ulogic; 
+    mdc            : std_ulogic;
     mdio_o         : std_ulogic; 
     mdio_oe        : std_ulogic;
     gbit           : std_ulogic;
@@ -65,7 +66,25 @@ package net is
   end record;
 
   constant eth_out_none : eth_out_type :=
-    ('0', (others => '0'), '0', '0', '0', '0', '1', '0', '0');
+    ('0', (others => '0'), '0', '0', '0', '0', '0', '1', '0', '0');
+
+  type eth_sgmii_in_type is record
+    clkp           : std_ulogic;
+    clkn           : std_ulogic;
+    rxp            : std_ulogic;
+    rxn            : std_ulogic;
+    mdio_i         : std_ulogic;
+    mdint          : std_ulogic;
+  end record;
+
+  type eth_sgmii_out_type is record
+    reset          : std_ulogic;
+    txp            : std_ulogic;
+    txn            : std_ulogic;
+    mdc            : std_ulogic;
+    mdio_o         : std_ulogic;
+    mdio_oe        : std_ulogic;
+  end record;
   
   component eth_arb
     generic(
@@ -324,18 +343,27 @@ package net is
 
   component rgmii is
   generic (
-    tech    : integer := 0;
-    gmii    : integer := 0;
-    extclk  : integer := 0
+    pindex   : integer := 0;
+    paddr    : integer := 0;
+    pmask    : integer := 16#fff#;
+    tech     : integer := 0;
+    gmii     : integer := 0;
+    extclk   : integer := 0;
+    clkdiv2  : integer := 0;
+    debugmem : integer := 0
     );
   port (
-    rstn        : in  std_ulogic;
-    clk50       : in  std_ulogic;
-    clk125      : in  std_ulogic;
-    gmiii : out eth_in_type;
-    gmiio : in  eth_out_type;
-    rgmiii  : in  eth_in_type;
-    rgmiio  : out eth_out_type
+    rstn     : in  std_ulogic;
+    clk_tx_g : in  std_ulogic;
+    gmiii    : out eth_in_type;
+    gmiio    : in  eth_out_type;
+    rgmiii   : in  eth_in_type;
+    rgmiio   : out eth_out_type ;
+    -- APB Status bus
+    apb_clk  : in  std_logic;
+    apb_rstn : in  std_logic;
+    apbi     : in  apb_slv_in_type;
+    apbo     : out apb_slv_out_type
     );
   end component;
   

@@ -44,7 +44,10 @@ component grtestmod
     oen         : in std_ulogic;
     writen  	: in std_ulogic; 		
     brdyn  	: out  std_ulogic;
-    bexcn  	: out  std_ulogic
+    bexcn  	: out  std_ulogic;
+    state       : out std_logic_vector(1 downto 0);
+    testdev     : out std_logic_vector(19 downto 0);
+    subtest     : out std_logic_vector(7 downto 0)
  );
 
 end component;

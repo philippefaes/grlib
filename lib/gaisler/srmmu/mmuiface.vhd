@@ -222,7 +222,20 @@ type mmutlbfault_out_type is record
   fault_isid       : mmu_idcache;
   fault_addr       : std_logic_vector(31 downto 0);
 end record;
-  
+
+constant mmutlbfault_out_zero : mmutlbfault_out_type := (
+  fault_pro    => '0',
+  fault_pri    => '0',
+  fault_access => '0',
+  fault_mexc   => '0',
+  fault_trans  => '0',
+  fault_inv    => '0',
+  fault_lvl    => (others => '0'),
+  fault_su     => '0',
+  fault_read   => '0',
+  fault_isid   => id_icache,
+  fault_addr   => (others => '0'));
+
 type mmutlb_out_type is record
   transdata   : mmuidc_data_out_type;
   fault       : mmutlbfault_out_type;

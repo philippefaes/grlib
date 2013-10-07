@@ -2,6 +2,9 @@ This leon3 design is tailored to the Digilent Zedboard board
 
 www.zedboard.org
 
+
+NOTE: This design is experimental and not kept up to date.
+
 Simulation and synthesis
 ------------------------
 

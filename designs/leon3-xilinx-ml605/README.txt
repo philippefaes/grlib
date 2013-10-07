@@ -2,18 +2,23 @@ This leon3 design is tailored to the Xilinx Virtex-6 ML605 board
 
 http://www.xilinx.com/ml605
 
+Note: This design requires that the GRLIB_SIMULATOR variable is
+correctly set. Please refer to the documentation in doc/grlib.pdf for
+additional information.
+
 Simulation and synthesis for ISE-13
 -----------------------------------
 
-The design uses the Xilinx MIG memory interface with an AHB-2.0
-interface. The MIG source code cannot be distributed due to the
-prohibitive Xilinx license, so the MIG must be re-generated with 
-coregen before simulation and synthesis can be done.
+The design uses the Xilinx MIG memory interface and Xilinx PCI Express endpoint
+with an AHB-2.0 interface. The source code cannot be distributed due to the
+prohibitive Xilinx license, so they must be re-generated with coregen before
+simulation and synthesis can be done.
 
-To generate the MIG and install the Xilinx unisim simulation
-library, do as follows:
+To generate the MIG and PCI Express and to install the Xilinx unisim
+simulation library, do as follows:
 
   make mig
+  make pcie (do if PCI Express is enabled)
   make install-secureip
 
 This will ONLY work with ISE-13 installed, and the XILINX variable
@@ -30,16 +35,19 @@ to program the FPGA.
 Simulation and synthesis for ISE-14
 -----------------------------------
 
-The design uses the Xilinx MIG memory interface with an AHB-2.0
-interface. The MIG source code cannot be distributed due to the
-prohibitive Xilinx license, so the MIG must be re-generated with 
-coregen before simulation and synthesis can be done.
+The design uses the Xilinx MIG memory interface and Xilinx PCI Express endpoint
+with an AHB-2.0 interface. The source code cannot be distributed due to the
+prohibitive Xilinx license, so they must be re-generated with coregen before
+simulation and synthesis can be done.
 
-To generate the MIG and install the Xilinx unisim simulation
-library, do as follows:
+To generate the MIG and PCI Express and to install the Xilinx unisim
+simulation library, do as follows:
 
   make mig39
+  make pcie (do if PCI Express is enabled)
+  make install-secureip (do if PCI Express is enabled)
   make compile_xilinx_verilog_lib
+  make vsim
   make map_xilinx_verilog_lib
 
 To simulate and run systest.c on the Leon design using the memory 
@@ -58,6 +66,51 @@ and then
   make ise-prog-fpga
 
 to program the FPGA.
+
+Using the Xilinx ML605 rev E with 1 GiB of DDR3 SDRAM
+-----------------------------------------------------
+
+In order to update the MIG39 (ISE-14) flow the following steps
+should be taken:
+
+Change mig39.prj:
+
+-change the memory device to MT4JSF12864HZ-1G4
+Line 14:
+<MemoryDevice>DDR3_SDRAM/SODIMMs/MT4JSF12864HZ-1G4</MemoryDevice>
+-add another bit to the row address changing RowAddress from 13
+to 14
+Line 21:<RowAddress>14</RowAddress>
+-add a new line with the map of the new bit with the
+corresponding pin J15
+<Pin SignalName="ddr3_addr[13]" PINNumber="J15" SignalGroup="Address"
+Bank="36" />
+
+
+Change ahb2mig_ml605.vhd:
+
+-change ROW_WIDTH from 13 to 14
+Line 42: constant ROW_WIDTH : integer :=14;
+-change ADDR_WIDTH from 27 to 28:
+Line 44: constant ADDR_WIDTH : integer := 28;
+-use the new bit when generating mig address, changing "28
+downto 6" to "29 downto 6"
+Line 317: migi.app_addr <= '0' & ra.acc.haddr(29 downto 6) &
+"000";
+
+Change leon3mp.vhd:
+
+-change hmask of ahb2mig_ml605 instance to have a bit less, and
+change size to 1024MB
+ahb2mig0 : ahb2mig_ml605
+generic map ( hindex => 0, haddr => 16#400#, hmask =>
+16#C00#,--previous version E00
+MHz => 400, Mbyte => 1024, nosync =>
+boolean'pos(CFG_MIG_CLK4=12)) --CFG_CLKDIV/12)
+
+References:
+http://www.xilinx.com/support/answers/44814.htm
+http://tech.groups.yahoo.com/group/leon_sparc/message/22687
 
 Design specifics
 ----------------

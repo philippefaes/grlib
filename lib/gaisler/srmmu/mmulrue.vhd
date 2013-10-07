@@ -26,6 +26,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 library grlib;
+use grlib.config_types.all;
+use grlib.config.all;
 use grlib.amba.all;
 use grlib.stdlib.all;
 library gaisler;
@@ -49,11 +51,10 @@ architecture rtl of mmulrue is
   type lru_rtype is record
     pos      : std_logic_vector(entries_log-1 downto 0);
     movetop  : std_logic;
-    -- pragma translate_off
-    dummy  : std_logic;
-    -- pragma translate_on
   end record;
 
+  constant RESET_ALL : boolean := GRLIB_CONFIG_ARRAY(grlib_sync_reset_enable_all) = 1;
+  
   signal c,r   : lru_rtype;
 begin  
   
@@ -80,7 +81,7 @@ begin
       end if;
     end if;
 
-    if ((rst) = '0') or (lruei.flush = '1') then
+    if ((not RESET_ALL) and (rst = '0')) or (lruei.flush = '1') then
       v.pos := conv_std_logic_vector(position, entries_log);
       v.movetop := '0';
     end if;
@@ -94,7 +95,14 @@ begin
   end process p0;
 
   p1: process (clk)
-  begin if rising_edge(clk) then r <= c; end if;
+  begin
+    if rising_edge(clk) then
+      r <= c;
+      if RESET_ALL and (rst = '0') then
+        r.pos <= conv_std_logic_vector(position, entries_log);
+        r.movetop <= '0';
+      end if;
+    end if;
   end process p1;
 
 end rtl;

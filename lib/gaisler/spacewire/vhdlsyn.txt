@@ -7,3 +7,4 @@ grspw2_dma.vhd
 grspw2_fifo.vhd
 grspw_codec.vhd
 grspwrouter.vhd
+grspw_phy.vhd
